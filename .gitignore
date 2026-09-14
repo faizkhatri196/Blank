@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment & Secrets (Safety First)
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+client/.env
+client/.env.*
+!client/.env.example
+
+# Builds & Outputs
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vercel/
+
+# Uploads & Ephemeral Media
+uploads/*
+!uploads/.gitkeep
+
+# System & Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

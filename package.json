@@ -1,0 +1,28 @@
+{
+  "name": "servora",
+  "version": "0.1.0",
+  "description": "Servora — AI-Powered Field Service Operations (Solar + AC / HVAC)",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "seed": "npm --prefix server run seed",
+    "test": "npm --prefix server test",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "solar",
+    "hvac",
+    "field-service",
+    "copilot",
+    "ai",
+    "operations"
+  ],
+  "author": "Field Service Copilot Team",
+  "license": "MIT"
+}
