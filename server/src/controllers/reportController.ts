@@ -130,15 +130,25 @@ export async function submitServiceReport(req: AuthenticatedRequest, res: Respon
     });
 
     // 6. Record Pilot Feedback if provided
-    if (data.aiAccuracyRating !== undefined || data.aiHelpful !== undefined) {
+    if (
+      data.aiAccuracyRating !== undefined ||
+      data.aiHelpful !== undefined ||
+      data.wasAiSuggestionUseful !== undefined ||
+      data.aiUtilityRating !== undefined
+    ) {
       await PilotFeedback.create({
         companyId: req.companyId,
         ticketId: ticket._id,
         userId: req.userId,
         role: req.role,
         serviceType: ticket.serviceType,
-        aiUtilityRating: data.aiAccuracyRating || (data.aiHelpful ? 5 : 2),
-        diagnosisHelpfulness: data.aiAccuracyRating,
+        aiUtilityRating: data.aiUtilityRating || data.aiAccuracyRating || (data.aiHelpful ? 5 : 2),
+        wasAiSuggestionUseful: data.wasAiSuggestionUseful || (data.aiHelpful ? 'YES' : 'NO'),
+        didTechnicianHaveRequiredTools: data.didTechnicianHaveRequiredTools || (data.toolsHelpful ? 'YES' : 'NO'),
+        wasSecondVisitRequired: data.wasSecondVisitRequired || 'NO',
+        secondVisitReason: data.secondVisitReason || '',
+        additionalFeedback: data.additionalFeedback || data.technicianNotes || '',
+        diagnosisHelpfulness: data.aiAccuracyRating || data.aiUtilityRating,
         toolHelpfulness: data.toolsHelpful ? 5 : 3,
         partsHelpfulness: data.partsHelpful ? 5 : 3,
         comments: data.additionalFeedback || data.technicianNotes,

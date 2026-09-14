@@ -24,12 +24,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMobileNav }) => {
         )}
 
         <div>
-          <h1 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block shrink-0"></span>
-            <span className="truncate max-w-[130px] sm:max-w-[220px]">
-              {user?.companyName || 'Demo Field Services'}
-            </span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+              <span className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${user?.isPilotCompany ? 'bg-emerald-600 animate-pulse' : 'bg-amber-600'}`}></span>
+              <span className="truncate max-w-[130px] sm:max-w-[200px]">
+                {user?.companyName || 'Demo Field Services'}
+              </span>
+            </h1>
+            {user?.isPilotCompany ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                Real Pilot
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 uppercase tracking-wider">
+                Demo Data
+              </span>
+            )}
+          </div>
           <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Operations Center</p>
         </div>
 

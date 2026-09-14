@@ -9,6 +9,11 @@ export interface IServiceTicket extends Document {
   assetId: mongoose.Types.ObjectId;
   assetType: 'SolarSystem' | 'ACUnit';
   complaint: string;
+  rawComplaint?: string;
+  normalizedComplaint?: string;
+  isUnknownTriage?: boolean;
+  triageClassification?: 'KNOWN_PROBLEM' | 'UNKNOWN_TRIAGE' | 'PERFORMANCE_ISSUE' | 'SAFETY_CRITICAL';
+  environmentContext?: 'DEMO' | 'PILOT';
   symptoms: string[];
   errorCode?: string;
   priority: TicketPriority;
@@ -51,6 +56,20 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
       enum: ['SolarSystem', 'ACUnit'],
     },
     complaint: { type: String, required: true, trim: true },
+    rawComplaint: { type: String, trim: true },
+    normalizedComplaint: { type: String, trim: true },
+    isUnknownTriage: { type: Boolean, default: false },
+    triageClassification: {
+      type: String,
+      enum: ['KNOWN_PROBLEM', 'UNKNOWN_TRIAGE', 'PERFORMANCE_ISSUE', 'SAFETY_CRITICAL'],
+      default: 'KNOWN_PROBLEM',
+    },
+    environmentContext: {
+      type: String,
+      enum: ['DEMO', 'PILOT'],
+      default: 'DEMO',
+      index: true,
+    },
     symptoms: { type: [String], default: [] },
     errorCode: { type: String, trim: true },
     priority: {

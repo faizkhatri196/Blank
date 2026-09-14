@@ -35,6 +35,20 @@ export async function exportPilotCSV(req: AuthenticatedRequest, res: Response): 
   }
 }
 
+export async function exportPilotReportMarkdown(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { generatePilotReportMarkdown } = await import('../services/exportService');
+    const mdContent = await generatePilotReportMarkdown(req.companyId!);
+    const filename = `REAL_PILOT_REPORT-${new Date().toISOString().split('T')[0]}.md`;
+
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).send(mdContent);
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'EXPORT_FAILED', message: error.message } });
+  }
+}
+
 export async function submitFeedback(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const parseResult = createPilotFeedbackSchema.safeParse(req.body);

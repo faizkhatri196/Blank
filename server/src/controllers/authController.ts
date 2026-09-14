@@ -69,6 +69,8 @@ export async function login(req: AuthenticatedRequest, res: Response): Promise<v
           companyId: user.companyId,
           companyName: company?.name || 'Demo Field Services',
           servicesSupported: company?.servicesSupported || ['SOLAR', 'AC'],
+          isPilotCompany: company?.isPilot || false,
+          environmentContext: company?.environmentContext || (company?.isPilot ? 'PILOT' : 'DEMO'),
         },
       },
     });
@@ -101,6 +103,8 @@ export async function getMe(req: AuthenticatedRequest, res: Response): Promise<v
           companyId: user.companyId,
           companyName: company?.name || 'Demo Field Services',
           servicesSupported: company?.servicesSupported || ['SOLAR', 'AC'],
+          isPilotCompany: company?.isPilot || false,
+          environmentContext: company?.environmentContext || (company?.isPilot ? 'PILOT' : 'DEMO'),
         },
       },
     });

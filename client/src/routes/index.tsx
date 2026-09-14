@@ -36,8 +36,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="customers" element={<Customers />} />
         <Route path="pilot-insights" element={<PilotInsights />} />
         <Route path="insights" element={<Navigate to="/manager/pilot-insights" replace />} />
+        <Route path="crt-validation" element={<RealWebEvaluation />} />
         <Route path="evaluation" element={<RealWebEvaluation />} />
-        <Route path="validation" element={<Navigate to="/manager/evaluation" replace />} />
+        <Route path="validation" element={<Navigate to="/manager/crt-validation" replace />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

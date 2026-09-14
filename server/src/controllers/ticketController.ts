@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { ServiceTicket } from '../models/ServiceTicket';
+import { Company } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { SolarSystem } from '../models/SolarSystem';
 import { ACUnit } from '../models/ACUnit';
@@ -196,6 +197,12 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
 
     const ticketNumber = await generateTicketNumber(req.companyId!, data.serviceType);
 
+    const rawInput = (data as any).rawComplaint || data.complaint;
+    const { normalizeComplaint } = await import('../ai/complaintNormalizer');
+    const normalizedResult = normalizeComplaint(rawInput, data.serviceType);
+
+    const company = await Company.findById(req.companyId);
+
     const ticket = await ServiceTicket.create({
       companyId: req.companyId,
       ticketNumber,
@@ -203,7 +210,12 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       customerId: data.customerId,
       assetId: data.assetId,
       assetType,
-      complaint: data.complaint,
+      complaint: normalizedResult.normalizedComplaint,
+      rawComplaint: rawInput,
+      normalizedComplaint: normalizedResult.normalizedComplaint,
+      isUnknownTriage: normalizedResult.isUnknownTriage,
+      triageClassification: normalizedResult.triageClassification,
+      environmentContext: company?.isPilot ? 'PILOT' : 'DEMO',
       symptoms: data.symptoms,
       errorCode: data.errorCode,
       priority: data.priority,
@@ -212,7 +224,7 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       repeatVisit: data.repeatVisit || false,
       previousTicketId: data.previousTicketId,
       repeatVisitReason: data.repeatVisitReason,
-      isDemoData: data.isDemoData || false,
+      isDemoData: company?.isPilot ? false : (data.isDemoData || false),
       createdBy: req.userId,
       statusHistory: [
         {
@@ -376,11 +388,11 @@ export async function analyzeTicket(req: AuthenticatedRequest, res: Response): P
       workPerformed: h.workPerformed,
     }));
 
-    // Run AI analysis through AIFactory with fallback
+    // Run AI analysis through AIFactory with fallback (passing raw customer complaint)
     const analysisResult = await AIFactory.analyzeWithFallback({
       ticketNumber: ticket.ticketNumber,
       serviceType: ticket.serviceType,
-      complaint: ticket.complaint,
+      complaint: ticket.rawComplaint || ticket.complaint,
       symptoms: ticket.symptoms,
       errorCode: ticket.errorCode,
       priority: ticket.priority,
@@ -403,16 +415,31 @@ export async function analyzeTicket(req: AuthenticatedRequest, res: Response): P
       reasoning: analysisResult.reasoning,
       knowledgeSources: analysisResult.knowledgeSources,
       promptVersion: analysisResult.promptVersion || 'v0.1',
+      rawComplaint: analysisResult.rawComplaint || ticket.rawComplaint || ticket.complaint,
+      normalizedComplaint: analysisResult.normalizedComplaint || ticket.normalizedComplaint || ticket.complaint,
+      isUnknownTriage: analysisResult.isUnknownTriage || false,
+      knownFacts: analysisResult.knownFacts || [],
+      unknownFacts: analysisResult.unknownFacts || [],
+      missingInformation: analysisResult.missingInformation || [],
+      statusMessage: analysisResult.statusMessage || '',
+      requiredEvidence: analysisResult.requiredEvidence || [],
     });
 
     ticket.aiAnalysisId = savedAnalysis._id as mongoose.Types.ObjectId;
+    if (analysisResult.rawComplaint) ticket.rawComplaint = analysisResult.rawComplaint;
+    if (analysisResult.normalizedComplaint) ticket.normalizedComplaint = analysisResult.normalizedComplaint;
+    ticket.isUnknownTriage = analysisResult.isUnknownTriage || false;
+    if (analysisResult.isUnknownTriage) {
+      ticket.triageClassification = 'UNKNOWN_TRIAGE';
+    }
+
     if (ticket.status === 'NEW') {
       ticket.status = 'AI_ANALYZED';
       ticket.statusHistory.push({
         status: 'AI_ANALYZED',
         changedBy: req.userId!,
         timestamp: new Date(),
-        note: `AI analysis completed using ${savedAnalysis.provider}`,
+        note: `AI analysis completed using ${savedAnalysis.provider}${analysisResult.isUnknownTriage ? ' (UNKNOWN / NEEDS TRIAGE)' : ''}`,
       });
     }
     await ticket.save();

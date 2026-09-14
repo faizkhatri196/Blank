@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
     { to: '/manager/technicians', label: 'Technicians', icon: Users },
     { to: '/manager/customers', label: 'Customers & Assets', icon: Building2 },
     { to: '/manager/pilot-insights', label: 'Pilot Insights', icon: BarChart3 },
-    { to: '/manager/evaluation', label: 'Web Validation (CRT)', icon: FileCheck2, badge: 'WEB' },
+    { to: '/manager/crt-validation', label: 'CRT Validation', icon: FileCheck2, badge: 'CRT' },
     { to: '/manager/settings', label: 'System Settings', icon: Settings },
   ];
 

@@ -8,6 +8,11 @@ export interface IPilotFeedback extends Document {
   role: UserRole;
   serviceType: ServiceType;
   aiUtilityRating: number; // 1-5
+  wasAiSuggestionUseful?: 'YES' | 'PARTIALLY' | 'NO';
+  didTechnicianHaveRequiredTools?: 'YES' | 'NO';
+  wasSecondVisitRequired?: 'YES' | 'NO';
+  secondVisitReason?: string;
+  additionalFeedback?: string;
   diagnosisHelpfulness?: number; // 1-5
   toolHelpfulness?: number; // 1-5
   partsHelpfulness?: number; // 1-5
@@ -25,6 +30,11 @@ const PilotFeedbackSchema = new Schema<IPilotFeedback>(
     role: { type: String, enum: ['SERVICE_MANAGER', 'TECHNICIAN'], required: true },
     serviceType: { type: String, enum: ['SOLAR', 'AC'], required: true, index: true },
     aiUtilityRating: { type: Number, required: true, min: 1, max: 5 },
+    wasAiSuggestionUseful: { type: String, enum: ['YES', 'PARTIALLY', 'NO'] },
+    didTechnicianHaveRequiredTools: { type: String, enum: ['YES', 'NO'] },
+    wasSecondVisitRequired: { type: String, enum: ['YES', 'NO'] },
+    secondVisitReason: { type: String, default: '' },
+    additionalFeedback: { type: String, default: '' },
     diagnosisHelpfulness: { type: Number, min: 1, max: 5 },
     toolHelpfulness: { type: Number, min: 1, max: 5 },
     partsHelpfulness: { type: Number, min: 1, max: 5 },

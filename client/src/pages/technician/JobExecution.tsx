@@ -51,6 +51,11 @@ export const JobExecution: React.FC = () => {
   const [afterPhoto, setAfterPhoto] = useState('');
   const [technicianNotes, setTechnicianNotes] = useState('');
   const [aiAccuracyRating, setAiAccuracyRating] = useState(5);
+  const [wasAiSuggestionUseful, setWasAiSuggestionUseful] = useState<'YES' | 'PARTIALLY' | 'NO'>('YES');
+  const [didTechnicianHaveRequiredTools, setDidTechnicianHaveRequiredTools] = useState<'YES' | 'NO'>('YES');
+  const [wasSecondVisitRequired, setWasSecondVisitRequired] = useState<'YES' | 'NO'>('NO');
+  const [secondVisitReason, setSecondVisitReason] = useState('');
+  const [additionalFeedback, setAdditionalFeedback] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -121,8 +126,14 @@ export const JobExecution: React.FC = () => {
         technicianNotes,
         aiHelpful: aiAccuracyRating >= 3,
         aiAccuracyRating,
-        toolsHelpful: true,
+        aiUtilityRating: aiAccuracyRating,
+        wasAiSuggestionUseful,
+        didTechnicianHaveRequiredTools,
+        wasSecondVisitRequired,
+        secondVisitReason: wasSecondVisitRequired === 'YES' ? secondVisitReason : undefined,
+        toolsHelpful: didTechnicianHaveRequiredTools === 'YES',
         partsHelpful: partsUsed.length > 0,
+        additionalFeedback,
       });
 
       alert('Job completed successfully! Field report recorded.');
@@ -527,25 +538,129 @@ export const JobExecution: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-800 mb-1">
-              How useful was the AI Diagnostic Checklist for this job?
-            </label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setAiAccuracyRating(star)}
-                  className={`flex-1 py-2 rounded-xl font-black text-xs transition-all ${
-                    aiAccuracyRating === star
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {star} ★
-                </button>
-              ))}
+          {/* Pilot Feedback Section */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <span className="text-xs font-black text-slate-900 uppercase tracking-wider block">
+              Pilot Quality Feedback
+            </span>
+
+            <div>
+              <label className="block font-bold text-slate-800 text-xs mb-1">
+                AI Diagnostic Usefulness (1 to 5)
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setAiAccuracyRating(star)}
+                    className={`flex-1 py-1.5 rounded-lg font-black text-xs transition-all ${
+                      aiAccuracyRating === star
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {star} ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-800 text-xs mb-1">
+                Was the AI triage suggestion useful?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['YES', 'PARTIALLY', 'NO'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setWasAiSuggestionUseful(opt)}
+                    className={`py-1.5 rounded-lg font-bold text-xs transition-all ${
+                      wasAiSuggestionUseful === opt
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-800 text-xs mb-1">
+                Did you have all required tools on first dispatch?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['YES', 'NO'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setDidTechnicianHaveRequiredTools(opt)}
+                    className={`py-1.5 rounded-lg font-bold text-xs transition-all ${
+                      didTechnicianHaveRequiredTools === opt
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-800 text-xs mb-1">
+                Was a second visit required to resolve?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['YES', 'NO'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setWasSecondVisitRequired(opt)}
+                    className={`py-1.5 rounded-lg font-bold text-xs transition-all ${
+                      wasSecondVisitRequired === opt
+                        ? opt === 'YES'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {wasSecondVisitRequired === 'YES' && (
+              <div>
+                <label className="block font-bold text-slate-800 text-xs mb-1">
+                  Reason second visit was required *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Inverter main board needed replacement; part not on truck"
+                  value={secondVisitReason}
+                  onChange={(e) => setSecondVisitReason(e.target.value)}
+                  className="w-full border border-amber-300 rounded-lg p-2 text-xs bg-amber-50 focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block font-bold text-slate-800 text-xs mb-1">
+                Additional Field / Pilot Feedback
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Notes on tool readiness, site access, customer clarity, etc."
+                value={additionalFeedback}
+                onChange={(e) => setAdditionalFeedback(e.target.value)}
+                className="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
             </div>
           </div>
 

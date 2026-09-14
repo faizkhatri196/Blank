@@ -27,6 +27,8 @@ export interface User {
   role: UserRole;
   companyId: string;
   companyName: string;
+  isPilotCompany?: boolean;
+  environmentContext?: 'DEMO' | 'PILOT';
   servicesSupported: ServiceType[];
 }
 
@@ -102,6 +104,11 @@ export interface AIAnalysis {
   safetyWarnings: string[];
   confidence: 'LOW' | 'MEDIUM' | 'HIGH';
   reasoning: string;
+  isUnknownTriage?: boolean;
+  knownFacts?: string[];
+  unknownFacts?: string[];
+  missingInformation?: string[];
+  statusMessage?: string;
   knowledgeSources: string[];
   promptVersion: string;
   createdAt: string;
@@ -115,6 +122,9 @@ export interface ServiceTicket {
   assetId: string;
   assetType: 'SolarSystem' | 'ACUnit';
   complaint: string;
+  rawComplaint?: string;
+  normalizedComplaint?: string;
+  isUnknownTriage?: boolean;
   symptoms: string[];
   errorCode?: string;
   priority: TicketPriority;
@@ -125,6 +135,7 @@ export interface ServiceTicket {
   repeatVisit: boolean;
   repeatVisitReason?: string;
   isDemoData: boolean;
+  environmentContext?: 'DEMO' | 'PILOT';
   createdBy?: any;
   statusHistory: Array<{
     status: TicketStatus;

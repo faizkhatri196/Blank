@@ -17,6 +17,7 @@ import {
   Users,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   Wrench,
   Package,
   ShieldAlert,
@@ -206,11 +207,89 @@ export const TicketDetail: React.FC = () => {
               <StatusBadge status={ticket.status} />
             </div>
 
-            <div>
-              <p className="text-sm text-slate-800 font-medium leading-relaxed">
-                "{ticket.complaint}"
-              </p>
+            <div className="space-y-3">
+              {ticket.rawComplaint && (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Raw Customer Input (Unmodified)
+                    </span>
+                    <span className="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-mono">
+                      ORIGINAL
+                    </span>
+                  </div>
+                  <p className="text-sm font-mono text-slate-800">
+                    "{ticket.rawComplaint}"
+                  </p>
+                </div>
+              )}
+
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                    AI Normalized Operational Understanding
+                  </span>
+                  <span className="text-[9px] bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded font-mono font-bold">
+                    NORMALIZED
+                  </span>
+                </div>
+                <p className="text-sm text-slate-900 font-medium leading-relaxed">
+                  {ticket.normalizedComplaint || ticket.complaint}
+                </p>
+              </div>
             </div>
+
+            {/* UNKNOWN / NEEDS TRIAGE ALERT BANNER */}
+            {(ticket.isUnknownTriage || aiAnalysis?.isUnknownTriage) && (
+              <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 space-y-3 mt-3">
+                <div className="flex items-center gap-2 text-amber-900 font-extrabold text-sm">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>UNKNOWN / NEEDS TRIAGE — DIAGNOSIS NOT CONFIRMED</span>
+                </div>
+                <p className="text-xs text-amber-800">
+                  Customer provided a vague or non-technical symptom. Servora strictly avoids inventing a confirmed root cause without physical evidence.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-amber-200">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      What Is Known
+                    </span>
+                    <ul className="text-xs text-slate-700 list-disc list-inside space-y-0.5">
+                      {(aiAnalysis?.knownFacts?.length ? aiAnalysis.knownFacts : ["Customer reports solar system is not working or needs checking."]).map((f: string, i: number) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-lg border border-amber-200">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      What Is Unknown
+                    </span>
+                    <ul className="text-xs text-slate-700 list-disc list-inside space-y-0.5">
+                      {(aiAnalysis?.unknownFacts?.length ? aiAnalysis.unknownFacts : ["Exact equipment fault cannot be determined remotely."]).map((u: string, i: number) => (
+                        <li key={i}>{u}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {aiAnalysis?.missingInformation && aiAnalysis.missingInformation.length > 0 && (
+                  <div className="bg-white p-2.5 rounded-lg border border-amber-200">
+                    <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block mb-1">
+                      Missing Information / Questions to Ask Customer
+                    </span>
+                    <ul className="text-xs text-slate-700 list-disc list-inside space-y-0.5">
+                      {aiAnalysis.missingInformation.map((q: string, i: number) => (
+                        <li key={i}>{q}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="text-[11px] font-bold text-amber-900 bg-amber-100/70 p-2 rounded text-center tracking-wide uppercase border border-amber-200">
+                  STATUS: DIAGNOSIS NOT CONFIRMED • TECHNICIAN VERIFICATION REQUIRED (VERIFY ON SITE)
+                </div>
+              </div>
+            )}
 
             {ticket.symptoms && ticket.symptoms.length > 0 && (
               <div>

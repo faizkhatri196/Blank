@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { PilotMetrics } from '../../types';
 import { MetricCard } from '../../components/common/MetricCard';
@@ -14,16 +15,23 @@ import {
   Wind,
   Layers,
   FileSpreadsheet,
+  FileText,
   Loader2,
   Info,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 
 export const PilotInsights: React.FC = () => {
-  const [metrics, setMetrics] = useState<PilotMetrics | null>(null);
+  const { user } = useAuth();
+  const isPilot = user?.isPilotCompany || false;
+
+  const [metrics, setMetrics] = useState<any | null>(null);
   const [serviceFilter, setServiceFilter] = useState<'ALL' | 'SOLAR' | 'AC'>('ALL');
-  const [includeDemoData, setIncludeDemoData] = useState(true);
+  const [includeDemoData, setIncludeDemoData] = useState(!isPilot);
   const [isLoading, setIsLoading] = useState(true);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
+  const [isExportingMD, setIsExportingMD] = useState(false);
 
   useEffect(() => {
     async function fetchMetrics() {
@@ -43,7 +51,7 @@ export const PilotInsights: React.FC = () => {
   }, [serviceFilter, includeDemoData]);
 
   const handleDownloadCSV = async () => {
-    setIsExporting(true);
+    setIsExportingCSV(true);
     try {
       const response = await apiClient.get('/pilot/export.csv', {
         responseType: 'blob',
@@ -58,231 +66,230 @@ export const PilotInsights: React.FC = () => {
     } catch (err: any) {
       alert(`Export failed: ${err.message}`);
     } finally {
-      setIsExporting(false);
+      setIsExportingCSV(false);
     }
   };
 
+  const handleDownloadMD = async () => {
+    setIsExportingMD(true);
+    try {
+      const response = await apiClient.get('/pilot/export.md', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `REAL_PILOT_REPORT-${new Date().toISOString().split('T')[0]}.md`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (err: any) {
+      alert(`Export failed: ${err.message}`);
+    } finally {
+      setIsExportingMD(false);
+    }
+  };
+
+  const hasData = metrics && metrics.overview && metrics.overview.completedTickets > 0;
+
   return (
     <div className="space-y-6">
-      {/* Top Header with CSV Export */}
+      {/* Top Header with Exports */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Pilot Validation Insights
+              {isPilot ? 'Real Pilot Operational Analytics' : 'Pilot Validation Insights'}
             </h2>
-            <span className="bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-              DEMO DATA
-            </span>
+            {isPilot ? (
+              <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                REAL PILOT ENVIRONMENT
+              </span>
+            ) : (
+              <span className="bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                DEMO DATA
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Simulated baseline evaluation metrics for system demonstration. Not live commercial customer results.
+            {isPilot
+              ? 'Empirical field analytics derived solely from active Gujarat Solar client pilot operations.'
+              : 'Simulated baseline evaluation metrics for system demonstration. Not live commercial customer results.'}
           </p>
         </div>
 
-        <button
-          onClick={handleDownloadCSV}
-          disabled={isExporting}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
-        >
-          {isExporting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Generating CSV...
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" />
-              Export Pilot Data (CSV)
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDownloadMD}
+            disabled={isExportingMD}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+          >
+            {isExportingMD ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Generating MD...
+              </>
+            ) : (
+              <>
+                <FileText className="w-3.5 h-3.5" />
+                Export REAL_PILOT_REPORT.md
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleDownloadCSV}
+            disabled={isExportingCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+          >
+            {isExportingCSV ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Methodology Banner with DEMO DATA notice */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-xs text-amber-950 flex items-start gap-3">
-        <Info className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+      {/* Methodology Banner */}
+      <div className={`p-4 rounded-2xl border text-xs flex items-start gap-3 ${
+        isPilot ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-200 text-amber-950'
+      }`}>
+        <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isPilot ? 'text-emerald-700' : 'text-amber-700'}`} />
         <div className="space-y-1">
           <div className="font-bold flex items-center gap-2">
             <span>Empirical AI vs Groundwork Methodology</span>
-            <span className="bg-amber-200 text-amber-900 font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">DEMO BENCHMARK</span>
+            <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded font-bold ${
+              isPilot ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'
+            }`}>
+              {isPilot ? 'REAL_PILOT DATASET' : 'DEMO BENCHMARK'}
+            </span>
           </div>
-          <p className="text-amber-900 leading-relaxed text-[11px]">
-            Every metric below displays the exact <strong>raw count and denominator</strong> alongside percentages (e.g. 14 / 20).
-            The AI diagnostic match is calculated by cross-referencing pre-visit AI hypotheses against verified technician groundwork recorded on-site.
-            All current figures are <strong>DEMO DATA</strong> populated during initialization.
+          <p className="leading-relaxed text-[11px]">
+            {isPilot ? (
+              <>
+                Metrics in this tenant reflect <strong>100% genuine operational tickets</strong> created by your team.
+                Servora never fabricates artificial accuracy, ROI, or technician success rates. All statistics are verified against physical technician fieldwork reports.
+              </>
+            ) : (
+              <>
+                Every metric below displays the exact <strong>raw count and denominator</strong> alongside percentages (e.g. 14 / 20).
+                All current figures are <strong>DEMO DATA</strong> populated during initialization.
+              </>
+            )}
           </p>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setServiceFilter('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              serviceFilter === 'ALL'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            All Verticals
-          </button>
-          <button
-            onClick={() => setServiceFilter('SOLAR')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              serviceFilter === 'SOLAR'
-                ? 'bg-amber-500 text-white shadow-sm'
-                : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-            }`}
-          >
-            <Sun className="w-3.5 h-3.5" />
-            Solar Only
-          </button>
-          <button
-            onClick={() => setServiceFilter('AC')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-              serviceFilter === 'AC'
-                ? 'bg-sky-500 text-white shadow-sm'
-                : 'bg-sky-50 text-sky-800 hover:bg-sky-100'
-            }`}
-          >
-            <Wind className="w-3.5 h-3.5" />
-            AC / HVAC Only
-          </button>
+      {/* When in Pilot and no jobs completed: Clean Honest Empty State */}
+      {isPilot && !hasData && !isLoading && (
+        <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm text-center max-w-xl mx-auto space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+            NO REAL PILOT DATA RECORDED YET
+          </h3>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Your client pilot environment is active and 100% isolated. No simulated cases or demo customers are shown here. Real operational metrics (AI match accuracy, first-time fix rate, tool readiness) will calculate dynamically as technicians execute service tickets on site.
+          </p>
+          <div className="pt-2">
+            <span className="inline-block bg-slate-100 text-slate-600 font-mono font-bold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider border border-slate-200">
+              STATUS: INSUFFICIENT PILOT DATA (0 COMPLETED JOBS)
+            </span>
+          </div>
         </div>
+      )}
 
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={includeDemoData}
-            onChange={(e) => setIncludeDemoData(e.target.checked)}
-            className="rounded text-emerald-600 focus:ring-emerald-500"
-          />
-          <span>Include Historical Seed Baseline Data</span>
-        </label>
-      </div>
-
-      {/* Metrics Cards */}
-      {isLoading ? (
-        <div className="py-20 flex justify-center text-slate-500">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Metrics Content (Visible if Demo or Pilot has completed jobs) */}
+      {(!isPilot || hasData) && (
+        <>
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
-              title="Diagnosis Match Rate"
-              value={`${metrics?.rates.diagnosisMatch.percentage ?? 0}%`}
-              fraction={metrics?.rates.diagnosisMatch.display}
-              subtitle="Technician diagnosis matched AI hypothesis"
-              icon={<RotateCcw className="w-4 h-4 text-emerald-600" />}
+              title="Total Jobs"
+              value={metrics?.overview?.totalTickets ?? 0}
+              subtitle={`${metrics?.overview?.completedTickets ?? 0} completed • ${metrics?.overview?.openTickets ?? 0} active`}
+              icon={<BarChart3 className="w-5 h-5 text-slate-400" />}
+              tone="default"
+            />
+            <MetricCard
+              title="AI / Actual Match"
+              value={metrics?.rates?.diagnosisMatch?.display || '0%'}
+              subtitle="Aligned preliminary hypotheses"
+              icon={<ThumbsUp className="w-5 h-5 text-emerald-600" />}
               tone="success"
             />
-
             <MetricCard
-              title="Tool Recommendation Match"
-              value={`${metrics?.rates.toolMatch.percentage ?? 0}%`}
-              fraction={metrics?.rates.toolMatch.display}
-              subtitle="Recommended tools used on-site"
-              icon={<Wrench className="w-4 h-4 text-blue-600" />}
-              tone="info"
+              title="First-Time Fix Rate"
+              value={`${100 - (metrics?.rates?.repeatVisitRate?.percentage ?? 0)}%`}
+              subtitle="Zero repeat visits required"
+              icon={<RotateCcw className="w-5 h-5 text-emerald-600" />}
+              tone="success"
             />
-
             <MetricCard
-              title="Part Prediction Match"
-              value={`${metrics?.rates.partMatch.percentage ?? 0}%`}
-              fraction={metrics?.rates.partMatch.display}
-              subtitle="Accurate spare part triage"
-              icon={<Package className="w-4 h-4 text-purple-600" />}
-            />
-
-            <MetricCard
-              title="Repeat Visit Rate"
-              value={`${metrics?.rates.repeatVisitRate.percentage ?? 0}%`}
-              fraction={metrics?.rates.repeatVisitRate.display}
-              subtitle="Lower is better (1st-visit resolution)"
-              icon={<Clock className="w-4 h-4 text-amber-600" />}
-              tone="warning"
+              title="Tool Readiness"
+              value={metrics?.rates?.toolMatch?.display || '0%'}
+              subtitle="Technician had required tools"
+              icon={<Wrench className="w-5 h-5 text-emerald-600" />}
+              tone="success"
             />
           </div>
 
-          {/* Qualitative Satisfaction & Efficiency Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Technician AI Prep Rating
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900">
-                  {metrics?.averages.aiHelpfulRating ?? 4.5}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">/ 5.0</span>
+          {/* Breakdown Tables */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Operational Alignment Breakdown
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Diagnostic Alignment Rate</span>
+                  <span className="font-bold text-slate-900">{metrics?.rates?.diagnosisMatch?.display || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Tool Inventory Match</span>
+                  <span className="font-bold text-slate-900">{metrics?.rates?.toolMatch?.display || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Spare Parts Accuracy</span>
+                  <span className="font-bold text-slate-900">{metrics?.rates?.partMatch?.display || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Repeat Visit Incidence</span>
+                  <span className="font-bold text-slate-900">{metrics?.rates?.repeatVisitRate?.display || '0'}</span>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Technicians reported AI diagnostic checklists improved pre-departure readiness and tool selection.
-              </p>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Avg Job Resolution Time
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900">
-                  {metrics?.averages.avgCompletionTimeMinutes ?? 65}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">minutes</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                From on-site arrival to diagnosis, repair, and evidence capture.
-              </p>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Manager Ops Satisfaction
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900">
-                  {metrics?.averages.managerSatisfactionRating ?? 4.6}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">/ 5.0</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Service managers reported significant time saved during complaint intake and technician dispatch.
-              </p>
-            </div>
-          </div>
-
-          {/* Dataset Composition */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
-              Pilot Telemetry Sample Composition
-            </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-slate-500 block">Total Tickets</span>
-                <span className="text-lg font-bold text-slate-900">{metrics?.overview.totalTickets}</span>
-              </div>
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <span className="text-amber-800 block">Solar Cases</span>
-                <span className="text-lg font-bold text-amber-900">{metrics?.breakdown.solarCount}</span>
-              </div>
-              <div className="p-3 bg-sky-50 rounded-xl">
-                <span className="text-sky-800 block">AC / HVAC Cases</span>
-                <span className="text-lg font-bold text-sky-900">{metrics?.breakdown.acCount}</span>
-              </div>
-              <div className="p-3 bg-emerald-50 rounded-xl">
-                <span className="text-emerald-800 block">Completed & Verified</span>
-                <span className="text-lg font-bold text-emerald-900">
-                  {metrics?.overview.completedTickets}
-                </span>
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Field Feedback & Satisfaction
+              </h4>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Average AI Utility Rating</span>
+                  <span className="font-bold text-slate-900">{metrics?.averages?.aiHelpfulRating ? `${metrics.averages.aiHelpfulRating} / 5.0` : 'Not rated yet'}</span>
+                </div>
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Available Technicians</span>
+                  <span className="font-bold text-slate-900">{metrics?.overview?.availableTechnicians ?? 0} of {metrics?.overview?.totalTechnicians ?? 0}</span>
+                </div>
+                <div className="flex justify-between p-2.5 bg-slate-50 rounded-xl">
+                  <span className="text-slate-600 font-medium">Economic ROI Impact</span>
+                  <span className="font-bold text-slate-900">Not measured yet (requires client cost inputs)</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

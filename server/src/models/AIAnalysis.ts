@@ -15,6 +15,14 @@ export interface IAIAnalysis {
   reasoning: string;
   knowledgeSources: string[];
   promptVersion: string;
+  rawComplaint?: string;
+  normalizedComplaint?: string;
+  isUnknownTriage?: boolean;
+  knownFacts?: string[];
+  unknownFacts?: string[];
+  missingInformation?: string[];
+  statusMessage?: string;
+  requiredEvidence?: string[];
   createdAt: Date;
 }
 
@@ -51,6 +59,14 @@ const AIAnalysisSchema = new Schema<IAIAnalysis>(
     reasoning: { type: String, default: '' },
     knowledgeSources: { type: [String], default: [] },
     promptVersion: { type: String, default: 'v0.1' },
+    rawComplaint: { type: String },
+    normalizedComplaint: { type: String },
+    isUnknownTriage: { type: Boolean, default: false },
+    knownFacts: { type: [String], default: [] },
+    unknownFacts: { type: [String], default: [] },
+    missingInformation: { type: [String], default: [] },
+    statusMessage: { type: String },
+    requiredEvidence: { type: [String], default: [] },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

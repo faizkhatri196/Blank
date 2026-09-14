@@ -3,7 +3,7 @@
     "system": "Servora — AI-Powered Field Service Operations",
     "benchmarkName": "Real-World Solar Technical Validation (Ahmedabad / Gujarat)",
     "dataType": "PUBLIC_WEB",
-    "generatedAt": "2026-09-14T11:13:21.467Z",
+    "generatedAt": "2026-09-14T19:32:46.109Z",
     "totalCases": 10,
     "evaluatedCases": 10
   },
@@ -36,20 +36,20 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:20.854Z",
+      "timestamp": "2026-09-14T19:32:45.558Z",
       "servoraInput": "Inverter is showing Grid Lost Fault.",
       "servoraOutput": {
         "possibleCauses": [
           "Inverter Grid Lost Fault / Utility Disconnect (Solaryaan Support Benchmark) (HIGH)",
           "High neutral-to-earth floating voltage (> 3V AC) caused by degraded utility transformer or loose neutral (MEDIUM)",
-          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+          "Inverter Grid Voltage / Frequency Disconnect or Fault (Error 04 / F04) (LOW)"
         ],
         "diagnosticSteps": [
           "Measure Phase-to-Neutral AC voltage at inverter AC terminals with calibrated true-RMS multimeter",
           "Measure Neutral-to-Earth floating voltage (must strictly be < 3V AC for stable inverter grid sync)",
           "Measure Phase-to-Earth voltage to verify symmetrical utility power supply",
-          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
-          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Measure AC voltage between Phase and Neutral at inverter terminals with calibrated multimeter",
+          "Check AC voltage between Neutral and Earth (should normally be < 3V AC)",
           "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
         ],
         "requiredEvidence": [
@@ -68,7 +68,7 @@
           "AC Surge Protection Device (SPD)",
           "AC MCB / MCCB (32A/63A)",
           "Heavy-duty Copper Lugs",
-          "1000V DC MC4 Connectors (Male/Female pair)"
+          "AC MCB (32A/63A)"
         ],
         "safetyInstructions": [
           "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
@@ -80,7 +80,7 @@
           "Always test de-energization with a calibrated two-pole voltage detector before touching electrical terminals."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 94,
           "reasons": [
@@ -108,7 +108,7 @@
         "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
         "Assigned certified solar specialist: Demo Technician (94%)",
         "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, SCREWDRIVER_SET, VOLTAGE_DETECTOR",
-        "Recommended candidate spare parts: AC Surge Protection Device (SPD), AC MCB / MCCB (32A/63A), Heavy-duty Copper Lugs, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Recommended candidate spare parts: AC Surge Protection Device (SPD), AC MCB / MCCB (32A/63A), Heavy-duty Copper Lugs, AC MCB (32A/63A)",
         "Correctly identified AC grid voltage / frequency fluctuations as prime candidate",
         "Identified Neutral-to-Earth floating voltage diagnostic check",
         "Recommended ACDB / DCDB breaker and Surge Protection Device (SPD) inspection",
@@ -127,7 +127,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:20.907Z",
+      "timestamp": "2026-09-14T19:32:45.609Z",
       "servoraInput": "Solar generation has dropped but the inverter shows no fault.",
       "servoraOutput": {
         "possibleCauses": [
@@ -171,7 +171,7 @@
           "Always verify circuit de-energization with a proven two-pole voltage detector."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 94,
           "reasons": [
@@ -219,20 +219,20 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:20.964Z",
+      "timestamp": "2026-09-14T19:32:45.669Z",
       "servoraInput": "Solar generation is down and a technician suspects a connector problem.",
       "servoraOutput": {
         "possibleCauses": [
           "MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark) (HIGH)",
           "Thermal degradation / melting of connector plastic casing from resistive I^2R heating (MEDIUM)",
-          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+          "Solar Inverter Output Thermal Derating during Hot Periods (Solar Panel Ahmedabad Benchmark) (LOW)"
         ],
         "diagnosticSteps": [
           "Perform string isolation and visual inspection for scorch marks or heat deformation",
           "Check connector temperatures under sunlight using thermal imaging / infrared probe",
           "Measure string Voc open-circuit voltage and continuity before and after connection",
-          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
-          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Inspect inverter ambient installation location for direct sunlight exposure during peak afternoon hours",
+          "Check clearance around inverter heatsink (minimum 300mm top/bottom and 200mm sides required)",
           "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
         ],
         "requiredEvidence": [
@@ -251,7 +251,7 @@
         "potentialParts": [
           "1000V/1500V MC4 Connectors (Male/Female pair)",
           "Solar DC Cable 4/6 sq mm",
-          "1000V DC MC4 Connectors (Male/Female pair)"
+          "Inverter External Fan Kit"
         ],
         "safetyInstructions": [
           "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
@@ -263,7 +263,7 @@
           "Isolate DC disconnect switch and verify zero current with clamp meter before opening connections."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 95,
           "reasons": [
@@ -291,7 +291,7 @@
         "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
         "Assigned certified solar specialist: Demo Technician (95%)",
         "Provided required diagnostic tool list: MC4_TOOL, CRIMPING_TOOL, MULTIMETER, CLAMP_METER, THERMAL_IMAGER",
-        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, Inverter External Fan Kit",
         "Recommended visual and thermal check for contact resistance scorch marks",
         "Specified specialized MC4 unlocking tool and ratcheting crimper",
         "Explicitly warned against opening energized DC connectors under current",
@@ -310,7 +310,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.028Z",
+      "timestamp": "2026-09-14T19:32:45.735Z",
       "servoraInput": "Solar inverter output falls during hot periods and the inverter reports a derating/fault.",
       "servoraOutput": {
         "possibleCauses": [
@@ -353,7 +353,7 @@
           "Inverter heatsink can exceed 70°C during peak operation; allow unit to cool before touching. VERIFY ON SITE."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 88,
           "reasons": [
@@ -400,7 +400,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.085Z",
+      "timestamp": "2026-09-14T19:32:45.791Z",
       "servoraInput": "Electricity bill increased even though the solar system is working.",
       "servoraOutput": {
         "possibleCauses": [
@@ -441,7 +441,7 @@
           "Do not dismantle utility revenue net-meter; meter seal tampering is a legal and electrical violation. VERIFY ON SITE."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -488,7 +488,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.144Z",
+      "timestamp": "2026-09-14T19:32:45.854Z",
       "servoraInput": "Remote monitoring detected a solar plant fault and a technician needs to be dispatched.",
       "servoraOutput": {
         "possibleCauses": [
@@ -532,7 +532,7 @@
           "Do not dispatch technicians without identifying plant single-line diagram and safety hazards. VERIFY ON SITE."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 99,
           "reasons": [
@@ -578,20 +578,20 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.208Z",
+      "timestamp": "2026-09-14T19:32:45.899Z",
       "servoraInput": "MC4 connector fault detected.",
       "servoraOutput": {
         "possibleCauses": [
           "MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark) (HIGH)",
           "Thermal degradation / melting of connector plastic casing from resistive I^2R heating (MEDIUM)",
-          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+          "Solar Inverter Output Thermal Derating during Hot Periods (Solar Panel Ahmedabad Benchmark) (LOW)"
         ],
         "diagnosticSteps": [
           "Perform string isolation and visual inspection for scorch marks or heat deformation",
           "Check connector temperatures under sunlight using thermal imaging / infrared probe",
           "Measure string Voc open-circuit voltage and continuity before and after connection",
-          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
-          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Inspect inverter ambient installation location for direct sunlight exposure during peak afternoon hours",
+          "Check clearance around inverter heatsink (minimum 300mm top/bottom and 200mm sides required)",
           "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
         ],
         "requiredEvidence": [
@@ -610,7 +610,7 @@
         "potentialParts": [
           "1000V/1500V MC4 Connectors (Male/Female pair)",
           "Solar DC Cable 4/6 sq mm",
-          "1000V DC MC4 Connectors (Male/Female pair)"
+          "Inverter External Fan Kit"
         ],
         "safetyInstructions": [
           "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
@@ -622,7 +622,7 @@
           "Isolate DC disconnect switch and verify zero current with clamp meter before opening connections."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 95,
           "reasons": [
@@ -650,7 +650,7 @@
         "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
         "Assigned certified solar specialist: Demo Technician (95%)",
         "Provided required diagnostic tool list: MC4_TOOL, CRIMPING_TOOL, MULTIMETER, CLAMP_METER, THERMAL_IMAGER",
-        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, Inverter External Fan Kit",
         "Recognized strict operational SLA (Gujarat Government 4-hour resolution target)",
         "Equipped technician with ratcheting MC4 crimper, disconnect tool, and spare connectors",
         "Required string continuity and insulation resistance test following connector repair"
@@ -668,7 +668,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.269Z",
+      "timestamp": "2026-09-14T19:32:45.959Z",
       "servoraInput": "String fault detected.",
       "servoraOutput": {
         "possibleCauses": [
@@ -712,7 +712,7 @@
           "Wear arc-rated gloves and eye protection when testing DC combiner boxes."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 99,
           "reasons": [
@@ -759,7 +759,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.346Z",
+      "timestamp": "2026-09-14T19:32:46.009Z",
       "servoraInput": "Earthing fault detected.",
       "servoraOutput": {
         "possibleCauses": [
@@ -804,7 +804,7 @@
           "Do not touch metallic solar structures with bare hands. Work must be performed by certified electrical wireman."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 92,
           "reasons": [
@@ -851,7 +851,7 @@
       "version": "v2",
       "provider": "DemoAIProvider",
       "model": "Deterministic-Solar-Engine-v0.2",
-      "timestamp": "2026-09-14T11:13:21.404Z",
+      "timestamp": "2026-09-14T19:32:46.059Z",
       "servoraInput": "Plant monitoring reports a performance deviation.",
       "servoraOutput": {
         "possibleCauses": [
@@ -893,7 +893,7 @@
           "Perform data-driven triage remotely before rolling service trucks. VERIFY ON SITE when inspecting array."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 93,
           "reasons": [
@@ -941,7 +941,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.492Z",
+      "timestamp": "2026-09-14T19:32:44.412Z",
       "servoraInput": "Inverter is showing Grid Lost Fault.",
       "servoraOutput": {
         "possibleCauses": [
@@ -966,7 +966,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1013,7 +1013,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.565Z",
+      "timestamp": "2026-09-14T19:32:44.511Z",
       "servoraInput": "Solar generation has dropped but the inverter shows no fault.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1038,7 +1038,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1086,7 +1086,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.623Z",
+      "timestamp": "2026-09-14T19:32:44.569Z",
       "servoraInput": "Solar generation is down and a technician suspects a connector problem.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1107,7 +1107,7 @@
           "Turn off isolators before opening panels."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1155,7 +1155,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.694Z",
+      "timestamp": "2026-09-14T19:32:44.626Z",
       "servoraInput": "Solar inverter output falls during hot periods and the inverter reports a derating/fault.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1180,7 +1180,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1228,7 +1228,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.755Z",
+      "timestamp": "2026-09-14T19:32:44.679Z",
       "servoraInput": "Electricity bill increased even though the solar system is working.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1253,7 +1253,7 @@
           "Do not touch solar panels during sunlight."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 99,
           "reasons": [
@@ -1301,7 +1301,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.814Z",
+      "timestamp": "2026-09-14T19:32:44.730Z",
       "servoraInput": "Remote monitoring detected a solar plant fault and a technician needs to be dispatched.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1326,7 +1326,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1371,7 +1371,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.872Z",
+      "timestamp": "2026-09-14T19:32:44.780Z",
       "servoraInput": "MC4 connector fault detected.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1396,7 +1396,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 99,
           "reasons": [
@@ -1442,7 +1442,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:19.941Z",
+      "timestamp": "2026-09-14T19:32:44.832Z",
       "servoraInput": "String fault detected.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1467,7 +1467,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a60924e",
+          "id": "6aa84ba084f0c630c69f4a29",
           "name": "Demo Technician",
           "score": 99,
           "reasons": [
@@ -1514,7 +1514,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:20.024Z",
+      "timestamp": "2026-09-14T19:32:44.892Z",
       "servoraInput": "Earthing fault detected.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1539,7 +1539,7 @@
           "Turn off AC isolator before inspecting terminal block."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [
@@ -1585,7 +1585,7 @@
       "version": "v1",
       "provider": "DemoAIProvider (Baseline v1)",
       "model": "Deterministic-Solar-Engine-v0.1",
-      "timestamp": "2026-09-14T11:13:20.074Z",
+      "timestamp": "2026-09-14T19:32:44.940Z",
       "servoraInput": "Plant monitoring reports a performance deviation.",
       "servoraOutput": {
         "possibleCauses": [
@@ -1606,7 +1606,7 @@
           "Follow standard site safety."
         ],
         "recommendedTechnician": {
-          "id": "6aa79297f970f6122a609242",
+          "id": "6aa84b9f84f0c630c69f4a1b",
           "name": "Jay Dave",
           "score": 100,
           "reasons": [

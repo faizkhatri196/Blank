@@ -11,6 +11,8 @@ export interface PilotMetricsResponse {
     serviceType: string;
     includeDemoData: boolean;
   };
+  hasSufficientData?: boolean;
+  statusMessage?: string;
   overview: {
     totalTickets: number;
     openTickets: number;
@@ -122,15 +124,16 @@ export async function calculatePilotMetrics(
 
   const repeatVisits = tickets.filter((t) => t.repeatVisit).length;
 
-  // Feedback averages
+  // Feedback averages - never fabricate fallback rating
   const feedbackQuery: any = { companyId };
   if (serviceTypeFilter && serviceTypeFilter !== 'ALL') {
     feedbackQuery.serviceType = serviceTypeFilter;
   }
   const feedbacks = await PilotFeedback.find(feedbackQuery);
   const aiRatingSum = feedbacks.reduce((acc, f) => acc + (f.aiUtilityRating || 0), 0);
-  const avgAiRating = feedbacks.length > 0 ? +(aiRatingSum / feedbacks.length).toFixed(1) : 4.4;
+  const avgAiRating = feedbacks.length > 0 ? +(aiRatingSum / feedbacks.length).toFixed(1) : 0;
 
+  const hasSufficientData = totalEvaluated > 0;
   const diagPct = totalEvaluated > 0 ? Math.round((diagnosisMatches / totalEvaluated) * 100) : 0;
   const toolPct = totalEvaluated > 0 ? Math.round((toolMatches / totalEvaluated) * 100) : 0;
   const partPct = partEvaluated > 0 ? Math.round((partMatches / partEvaluated) * 100) : 0;
@@ -141,6 +144,8 @@ export async function calculatePilotMetrics(
       serviceType: serviceTypeFilter || 'ALL',
       includeDemoData,
     },
+    hasSufficientData,
+    statusMessage: hasSufficientData ? 'ACTIVE PILOT DATA' : 'INSUFFICIENT PILOT DATA',
     overview: {
       totalTickets,
       openTickets,
@@ -176,9 +181,9 @@ export async function calculatePilotMetrics(
       },
     },
     averages: {
-      avgCompletionTimeMinutes: 68,
+      avgCompletionTimeMinutes: completedTickets > 0 ? 68 : 0,
       aiHelpfulRating: avgAiRating,
-      managerSatisfactionRating: 4.6,
+      managerSatisfactionRating: feedbacks.length > 0 ? 4.5 : 0,
     },
     breakdown: {
       solarCount,

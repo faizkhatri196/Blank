@@ -45,6 +45,8 @@ export async function seedDatabase() {
     phone: '+91 98765 00000',
     address: 'B-402, Titanium City Centre, Prahlad Nagar, Ahmedabad, Gujarat 380015',
     servicesSupported: ['SOLAR', 'AC'],
+    isPilot: false,
+    environmentContext: 'DEMO',
     settings: {
       allowBlindEvaluation: true,
       defaultCurrency: 'INR',
@@ -793,15 +795,90 @@ export async function seedDatabase() {
     });
   }
 
+  // ---------------------------------------------------------
+  // REAL CLIENT PILOT TENANT INITIALIZATION
+  // Dedicated, isolated company for real-world solar client
+  // Starts 100% clean: 0 demo customers, 0 demo tickets, 0 fake history
+  // ---------------------------------------------------------
+  console.log('[Seed] Initializing Real Client Pilot Tenant...');
+  let pilotCompany = await Company.findOne({ email: 'pilot@gujaratsolar.com' });
+  if (!pilotCompany) {
+    pilotCompany = await Company.create({
+      name: 'Gujarat Solar O&M Pilot',
+      email: 'pilot@gujaratsolar.com',
+      phone: '+91 79 2650 0000',
+      address: 'GIDC Electronic Estate, Sector 25, Gandhinagar, Gujarat 382024',
+      servicesSupported: ['SOLAR'],
+      isPilot: true,
+      environmentContext: 'PILOT',
+      settings: {
+        allowBlindEvaluation: false,
+        defaultCurrency: 'INR',
+      },
+      active: true,
+    });
+  }
+
+  const pilotPasswordHash = await bcrypt.hash('Pilot@2026', 10);
+
+  // Pilot Manager
+  const pilotManagerEmail = process.env.PILOT_MANAGER_EMAIL || 'manager@pilot.com';
+  let pilotManager = await User.findOne({ email: pilotManagerEmail });
+  if (!pilotManager) {
+    pilotManager = await User.create({
+      companyId: pilotCompany._id,
+      name: 'Kirit Patel (Pilot Manager)',
+      email: pilotManagerEmail,
+      phone: '+91 98765 99991',
+      passwordHash: pilotPasswordHash,
+      role: 'SERVICE_MANAGER',
+      active: true,
+    });
+  }
+
+  // Pilot Solar Technician
+  const pilotTechEmail = process.env.PILOT_TECH_EMAIL || 'tech@pilot.com';
+  let pilotTechUser = await User.findOne({ email: pilotTechEmail });
+  if (!pilotTechUser) {
+    pilotTechUser = await User.create({
+      companyId: pilotCompany._id,
+      name: 'Dhaval Shah (Solar Specialist)',
+      email: pilotTechEmail,
+      phone: '+91 98765 99992',
+      passwordHash: pilotPasswordHash,
+      role: 'TECHNICIAN',
+      active: true,
+    });
+
+    await Technician.create({
+      companyId: pilotCompany._id,
+      userId: pilotTechUser._id,
+      name: 'Dhaval Shah',
+      email: pilotTechEmail,
+      phone: '+91 98765 99992',
+      experienceYears: 6,
+      serviceTypes: ['SOLAR'],
+      skills: ['SOLAR_INSTALLATION', 'INVERTER_REPAIR', 'ELECTRICAL_TROUBLESHOOTING', 'DC_WIRING'],
+      tools: ['MULTIMETER', 'CLAMP_METER', 'MC4_TOOL', 'CRIMPING_TOOL', 'SCREWDRIVER_SET', 'INSULATION_TESTER'],
+      serviceAreas: ['Ahmedabad', 'Gandhinagar', 'Sanand'],
+      availability: 'AVAILABLE',
+      rating: 4.9,
+      totalJobsCompleted: 0,
+      active: true,
+    });
+  }
+
   console.log('[Seed] Database seeded successfully!');
   console.log('================================================================');
-  console.log('DEMO CREDENTIALS:');
+  console.log('1. PUBLIC DEMO CREDENTIALS:');
   console.log('  Manager:    manager@demo.com  / Demo@12345');
   console.log('  Technician: rahul@demo.com    / Demo@12345 (Solar Specialist)');
-  console.log('  Technician: amit@demo.com     / Demo@12345 (Solar Specialist)');
   console.log('  Technician: jay@demo.com      / Demo@12345 (Solar + AC Specialist)');
-  console.log('  Technician: vikram@demo.com   / Demo@12345 (AC Specialist)');
-  console.log('  Technician: sneha@demo.com    / Demo@12345 (AC Specialist)');
+  console.log('----------------------------------------------------------------');
+  console.log('2. REAL CLIENT PILOT CREDENTIALS (Clean Isolated Environment):');
+  console.log('  Pilot Co:   Gujarat Solar O&M Pilot (isPilot: true)');
+  console.log('  Manager:    manager@pilot.com / Pilot@2026');
+  console.log('  Technician: tech@pilot.com    / Pilot@2026 (Solar Specialist)');
   console.log('================================================================');
 }
 

@@ -5,6 +5,8 @@ import { acKnowledgeBase } from './acKnowledge';
 import { solarConfig } from '../config/serviceConfigs/solarConfig';
 import { acConfig } from '../config/serviceConfigs/acConfig';
 
+import { normalizeComplaint } from './complaintNormalizer';
+
 export class DemoAIProvider implements AIProvider {
   name = 'DemoAIProvider';
 
@@ -17,8 +19,74 @@ export class DemoAIProvider implements AIProvider {
   }
 
   async analyzeServiceTicket(input: AITicketContext): Promise<AIAnalysisResult> {
+    const normalized = normalizeComplaint(input.complaint, input.serviceType);
+
+    // If customer report is vague / unknown, trigger UNKNOWN / NEEDS TRIAGE workflow
+    if (normalized.isUnknownTriage && input.serviceType === 'SOLAR') {
+      return {
+        serviceType: 'SOLAR',
+        rawComplaint: normalized.rawComplaint,
+        normalizedComplaint: normalized.normalizedComplaint,
+        isUnknownTriage: true,
+        knownFacts: normalized.knownFacts,
+        unknownFacts: normalized.unknownFacts,
+        missingInformation: normalized.missingInformation,
+        statusMessage: normalized.statusMessage,
+        possibleIssues: [
+          {
+            issue: 'Inverter operational sync or internal protective trip',
+            probabilityLevel: 'MEDIUM',
+            explanation: 'Inverter may be disconnected or in protective standby. Visual and multimeter verification required on site.',
+          },
+          {
+            issue: 'Utility grid supply anomaly or tripped AC isolator',
+            probabilityLevel: 'MEDIUM',
+            explanation: 'Phase voltage fluctuation or blown AC fuse preventing inverter grid tie-in.',
+          },
+          {
+            issue: 'Rooftop string open circuit or blown DC fuse',
+            probabilityLevel: 'LOW',
+            explanation: 'One or more DC strings may be de-energized due to loose wiring or blown combiner fuse.',
+          },
+          {
+            issue: 'Loose MC4 connector or contact resistance heating',
+            probabilityLevel: 'LOW',
+            explanation: 'Rooftop connection degradation requiring physical inspection with MC4 disconnect tool.',
+          },
+          {
+            issue: 'Generation loss due to heavy surface soiling or shading',
+            probabilityLevel: 'LOW',
+            explanation: 'Environmental dust or shading obstructing array output.',
+          },
+        ],
+        diagnosticSteps: [
+          'Inspect inverter LCD display: record whether screen is illuminated, in standby, or completely dark',
+          'Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at ACDB with calibrated multimeter',
+          'Measure open-circuit string voltage (Voc) at DC isolator test points using high-voltage DC multimeter',
+          'Record error codes, LED light status, and physical meter readings in technician fieldwork report before attempting repairs',
+        ],
+        requiredEvidence: normalized.missingInformation,
+        recommendedTools: ['MULTIMETER', 'CLAMP_METER', 'SCREWDRIVER_SET', 'VOLTAGE_DETECTOR'],
+        possibleParts: ['AC MCB', 'DC String Fuses', 'MC4 Connectors'],
+        safetyWarnings: [
+          'VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.',
+          'Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.',
+          'High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.',
+          'Qualified technician must verify zero voltage before touching exposed conductors.',
+        ],
+        confidence: 'LOW',
+        reasoning: 'UNKNOWN / NEEDS TRIAGE — Customer provided an unspecified complaint without error code or technical symptoms. Servora does not invent a confirmed physical diagnosis without evidence. On-site technician verification required.',
+        knowledgeSources: ['Solar Field Service Triage Protocol (Grounded in CEA Regulations)'],
+        promptVersion: 'solar-triage-v0.2',
+        provider: 'DemoAIProvider',
+        model: 'Deterministic-Solar-Engine-v0.2',
+      };
+    }
+
     const textCorpus = [
       input.complaint,
+      normalized.normalizedComplaint,
+      normalized.inferredKeywords.join(' '),
       ...(input.symptoms || []),
       input.errorCode || '',
       input.assetDetails.inverterMake || '',
@@ -30,9 +98,25 @@ export class DemoAIProvider implements AIProvider {
       .toLowerCase();
 
     if (input.serviceType === 'SOLAR') {
-      return this.analyzeSolar(input, textCorpus);
+      const res = this.analyzeSolar(input, textCorpus);
+      res.rawComplaint = normalized.rawComplaint;
+      res.normalizedComplaint = normalized.normalizedComplaint;
+      res.isUnknownTriage = false;
+      res.knownFacts = normalized.knownFacts;
+      res.unknownFacts = normalized.unknownFacts;
+      res.missingInformation = normalized.missingInformation;
+      res.statusMessage = normalized.statusMessage;
+      return res;
     } else {
-      return this.analyzeAC(input, textCorpus);
+      const res = this.analyzeAC(input, textCorpus);
+      res.rawComplaint = normalized.rawComplaint;
+      res.normalizedComplaint = normalized.normalizedComplaint;
+      res.isUnknownTriage = false;
+      res.knownFacts = normalized.knownFacts;
+      res.unknownFacts = normalized.unknownFacts;
+      res.missingInformation = normalized.missingInformation;
+      res.statusMessage = normalized.statusMessage;
+      return res;
     }
   }
 

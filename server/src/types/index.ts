@@ -33,6 +33,8 @@ export interface PossibleIssue {
 
 export type DataType = 'PUBLIC_WEB' | 'REAL_PILOT' | 'LIVE_API' | 'SYNTHETIC';
 
+export type EnvironmentContext = 'DEMO' | 'PILOT';
+
 export interface AIAnalysisResult {
   serviceType: ServiceType;
   possibleIssues: PossibleIssue[];
@@ -47,6 +49,13 @@ export interface AIAnalysisResult {
   promptVersion?: string;
   provider?: string;
   model?: string;
+  rawComplaint?: string;
+  normalizedComplaint?: string;
+  isUnknownTriage?: boolean;
+  knownFacts?: string[];
+  unknownFacts?: string[];
+  missingInformation?: string[];
+  statusMessage?: string;
 }
 
 export interface EvaluationCaseData {
