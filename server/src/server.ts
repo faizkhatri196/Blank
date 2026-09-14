@@ -64,20 +64,39 @@ app.get('/health', (_req: Request, res: Response) => {
 // API router (includes /api/health with detailed DB/AI telemetry)
 app.use('/api', apiRoutes);
 
-// Root greeting
-app.get('/', (_req: Request, res: Response) => {
-  res.json({
-    name: 'Servora API',
-    tagline: 'AI-powered field service operations',
-    status: 'online',
-    version: '0.1.0',
-    mode: ENV.NODE_ENV,
-    health: '/health',
-    telemetry: '/api/health',
-  });
-});
+// Serve client static build if available (unified full-stack deployment)
+const potentialDistPaths = [
+  path.resolve(process.cwd(), '../client/dist'),
+  path.resolve(process.cwd(), 'client/dist'),
+  path.resolve(__dirname, '../../client/dist'),
+];
+const clientDist = potentialDistPaths.find((p) => fs.existsSync(path.join(p, 'index.html')));
 
-// 404 Handler
+if (clientDist) {
+  console.log(`[Static] Serving frontend SPA from: ${clientDist}`);
+  app.use(express.static(clientDist));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/health')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else {
+  // Fallback API root greeting if client not built into dist
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      name: 'Servora API',
+      tagline: 'AI-powered field service operations',
+      status: 'online',
+      version: '0.1.0',
+      mode: ENV.NODE_ENV,
+      health: '/health',
+      telemetry: '/api/health',
+    });
+  });
+}
+
+// 404 Handler for unhandled API routes
 app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
