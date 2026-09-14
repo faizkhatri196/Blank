@@ -10,6 +10,7 @@
     "build": "npm --prefix server run build && npm --prefix client run build",
     "seed": "npm --prefix server run seed",
     "test": "npm --prefix server test",
+    "generate:pdf": "node scripts/generate_investor_pdf.js",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install"
   },
   "devDependencies": {
