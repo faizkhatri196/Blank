@@ -81,7 +81,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Primary KPI Grid (Directly from MongoDB Atlas) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         <MetricCard
           title="Open Service Jobs"
           value={metrics?.overview.openTickets ?? 0}

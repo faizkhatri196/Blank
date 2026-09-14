@@ -180,7 +180,7 @@ export const NewTicket: React.FC = () => {
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
             1. Select Service Vertical
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => handleServiceTypeChange('SOLAR')}

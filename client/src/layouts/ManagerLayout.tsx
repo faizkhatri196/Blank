@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sidebar } from '../components/common/Sidebar';
@@ -7,6 +7,7 @@ import { DemoModeBanner } from '../components/common/DemoModeBanner';
 
 export const ManagerLayout: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -28,10 +29,10 @@ export const ManagerLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <DemoModeBanner />
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar />
+        <Sidebar isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <Navbar />
-          <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+          <Navbar onOpenMobileNav={() => setMobileNavOpen(true)} />
+          <main className="flex-1 p-3.5 sm:p-6 max-w-7xl w-full mx-auto">
             <Outlet />
           </main>
         </div>
@@ -39,3 +40,4 @@ export const ManagerLayout: React.FC = () => {
     </div>
   );
 };
+
