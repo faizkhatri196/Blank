@@ -11,3 +11,5 @@ export * from './ServiceReport';
 export * from './ServiceHistory';
 export * from './PilotFeedback';
 export * from './AuditLog';
+export * from './EvaluationCase';
+export * from './ServoraEvaluationRun';

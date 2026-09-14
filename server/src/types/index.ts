@@ -31,10 +31,13 @@ export interface PossibleIssue {
   explanation: string;
 }
 
+export type DataType = 'PUBLIC_WEB' | 'REAL_PILOT' | 'LIVE_API' | 'SYNTHETIC';
+
 export interface AIAnalysisResult {
   serviceType: ServiceType;
   possibleIssues: PossibleIssue[];
   diagnosticSteps: string[];
+  requiredEvidence?: string[];
   recommendedTools: string[];
   possibleParts: string[];
   safetyWarnings: string[];
@@ -44,6 +47,63 @@ export interface AIAnalysisResult {
   promptVersion?: string;
   provider?: string;
   model?: string;
+}
+
+export interface EvaluationCaseData {
+  caseId: string;
+  dataType: DataType;
+  sourceOrganization: string;
+  sourceUrl: string;
+  sourceDate?: string;
+  locationContext: string;
+  problem: string;
+  observedInput: string;
+  publishedSolution: string;
+  groundTruth: string;
+  evaluationNotes?: string;
+  serviceType: ServiceType;
+}
+
+export interface ServoraEvaluationRunResult {
+  caseId: string;
+  version: 'v1' | 'v2';
+  provider: string;
+  model: string;
+  timestamp: string;
+  servoraInput: string;
+  servoraOutput: {
+    possibleCauses: string[];
+    diagnosticSteps: string[];
+    requiredEvidence: string[];
+    requiredTools: string[];
+    potentialParts: string[];
+    safetyInstructions: string[];
+    recommendedTechnician?: {
+      id: string;
+      name: string;
+      score: number;
+      reasons: string[];
+    };
+    priority: TicketPriority;
+    confidence: string;
+    humanReviewRequired: boolean;
+    finalRecommendation: string;
+  };
+  diagnosisScore: number;
+  evidenceScore: number;
+  safetyScore: number;
+  operationalScore: number;
+  technicianScore: number;
+  traceabilityScore: number;
+  totalScore: number;
+  matchedItems: string[];
+  missedItems: string[];
+  unsupportedClaims: string[];
+  safetyIssues: string[];
+  safetyPass: boolean;
+  repeatVisitOpportunity: boolean;
+  repeatVisitReason: string;
+  productImprovement: string;
 }
 
 export interface TechnicianMatchResult {

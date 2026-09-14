@@ -101,25 +101,51 @@ export class DemoAIProvider implements AIProvider {
       ])
     );
 
-    let reasoning = `Analyzed ${input.assetDetails.capacityKW || 5} kW ${input.assetDetails.inverterMake || 'Solar'} system complaint. Primary hypothesis points towards ${primary.title.toLowerCase()}. Technician should verify open-circuit voltages and connection tightness on site.`;
+    // Formulate evidence required before confirming root cause
+    const requiredEvidence = [
+      'Retrieve inverter historical event logs and exact alarm code timestamp',
+      'Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals',
+      'Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight',
+      'Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections',
+    ];
+
+    if (textCorpus.includes('bill') || textCorpus.includes('tariff') || textCorpus.includes('consumption')) {
+      requiredEvidence.push(
+        'Collect last 6 months DISCOM utility bills to compare monthly total kWh consumption and tariff changes',
+        'Verify bi-directional net-meter cumulative export and import unit registers'
+      );
+    }
+
+    if (textCorpus.includes('deviation') || textCorpus.includes('monitoring') || textCorpus.includes('scada')) {
+      requiredEvidence.push(
+        'Correlate generation profile with solar irradiance (W/m2) from pyranometer or satellite weather data'
+      );
+    }
+
+    let reasoning = `AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: ${primary.title}. Verification required before any component replacement.`;
 
     if (input.previousHistory && input.previousHistory.length > 0) {
-      reasoning += ` Note: Asset has ${input.previousHistory.length} prior service visits on record. Past issue on ${input.previousHistory[0].date}: "${input.previousHistory[0].actualDiagnosis}".`;
+      reasoning += ` Asset has ${input.previousHistory.length} prior service visits on record (Past: "${input.previousHistory[0].actualDiagnosis}").`;
     }
 
     return {
       serviceType: 'SOLAR',
       possibleIssues,
       diagnosticSteps,
+      requiredEvidence,
       recommendedTools,
       possibleParts,
-      safetyWarnings,
+      safetyWarnings: [
+        'VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.',
+        'Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.',
+        ...safetyWarnings,
+      ],
       confidence: topMatches.length > 0 ? 'HIGH' : 'MEDIUM',
       reasoning,
-      knowledgeSources: ['Solar Field Service Knowledge Base v0.1', primary.id],
-      promptVersion: 'solar-rules-v0.1',
+      knowledgeSources: ['Solar Field Service Knowledge Base v0.2 (Grounded in Gujarat O&M Standards)', primary.id],
+      promptVersion: 'solar-rules-v0.2',
       provider: 'DemoAIProvider',
-      model: 'Deterministic-Solar-Engine-v0.1',
+      model: 'Deterministic-Solar-Engine-v0.2',
     };
   }
 

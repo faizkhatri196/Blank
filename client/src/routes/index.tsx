@@ -12,6 +12,7 @@ import { TicketDetail } from '../pages/manager/TicketDetail';
 import { Technicians } from '../pages/manager/Technicians';
 import { Customers } from '../pages/manager/Customers';
 import { PilotInsights } from '../pages/manager/PilotInsights';
+import { RealWebEvaluation } from '../pages/manager/RealWebEvaluation';
 import { Settings } from '../pages/manager/Settings';
 
 // Technician Pages
@@ -35,6 +36,8 @@ export const AppRoutes: React.FC = () => {
         <Route path="customers" element={<Customers />} />
         <Route path="pilot-insights" element={<PilotInsights />} />
         <Route path="insights" element={<Navigate to="/manager/pilot-insights" replace />} />
+        <Route path="evaluation" element={<RealWebEvaluation />} />
+        <Route path="validation" element={<Navigate to="/manager/evaluation" replace />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

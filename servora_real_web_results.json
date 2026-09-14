@@ -1,0 +1,1653 @@
+{
+  "metadata": {
+    "system": "Servora — AI-Powered Field Service Operations",
+    "benchmarkName": "Real-World Solar Technical Validation (Ahmedabad / Gujarat)",
+    "dataType": "PUBLIC_WEB",
+    "generatedAt": "2026-09-14T11:13:21.467Z",
+    "totalCases": 10,
+    "evaluatedCases": 10
+  },
+  "summary": {
+    "v1_baseline": {
+      "averageScore": 68.3,
+      "safetyViolations": 4,
+      "unsupportedClaims": 4,
+      "evidenceAwarenessPercent": 71,
+      "technicianMatchPercent": 100,
+      "repeatVisitOpportunities": 10
+    },
+    "v2_improved": {
+      "averageScore": 95.8,
+      "safetyViolations": 4,
+      "unsupportedClaims": 0,
+      "evidenceAwarenessPercent": 100,
+      "technicianMatchPercent": 100,
+      "repeatVisitOpportunities": 10
+    },
+    "improvementDelta": {
+      "scoreGain": 27.5,
+      "unsupportedClaimsReduction": 4,
+      "evidenceAwarenessGain": 29
+    }
+  },
+  "v2_detailed_cases": [
+    {
+      "caseId": "WEB-AHM-001",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:20.854Z",
+      "servoraInput": "Inverter is showing Grid Lost Fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Lost Fault / Utility Disconnect (Solaryaan Support Benchmark) (HIGH)",
+          "High neutral-to-earth floating voltage (> 3V AC) caused by degraded utility transformer or loose neutral (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Measure Phase-to-Neutral AC voltage at inverter AC terminals with calibrated true-RMS multimeter",
+          "Measure Neutral-to-Earth floating voltage (must strictly be < 3V AC for stable inverter grid sync)",
+          "Measure Phase-to-Earth voltage to verify symmetrical utility power supply",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER",
+          "SCREWDRIVER_SET",
+          "VOLTAGE_DETECTOR"
+        ],
+        "potentialParts": [
+          "AC Surge Protection Device (SPD)",
+          "AC MCB / MCCB (32A/63A)",
+          "Heavy-duty Copper Lugs",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Turn OFF both AC isolator and DC disconnect switch before inspecting internal terminal blocks. VERIFY ON SITE.",
+          "Always test de-energization with a calibrated two-pole voltage detector before touching electrical terminals."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 94,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Equipped with screwdriver set"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Inverter Grid Lost Fault / Utility Disconnect (Solaryaan Support Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 100,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (94%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, SCREWDRIVER_SET, VOLTAGE_DETECTOR",
+        "Recommended candidate spare parts: AC Surge Protection Device (SPD), AC MCB / MCCB (32A/63A), Heavy-duty Copper Lugs, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Correctly identified AC grid voltage / frequency fluctuations as prime candidate",
+        "Identified Neutral-to-Earth floating voltage diagnostic check",
+        "Recommended ACDB / DCDB breaker and Surge Protection Device (SPD) inspection",
+        "Requested physical AC terminal multimeter readings and historical inverter error logs"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Pre-dispatch advice to bring calibrated true-RMS multimeter and spare AC SPD prevents technician returning to base if SPD is blown.",
+      "productImprovement": "Ensure Grid Lost diagnostics explicitly differentiate external discom grid outage from local AC breaker/SPD trips."
+    },
+    {
+      "caseId": "WEB-AHM-002",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:20.907Z",
+      "servoraInput": "Solar generation has dropped but the inverter shows no fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Voltage / Frequency Disconnect or Fault (Error 04 / F04) (MEDIUM)",
+          "Loose AC wiring connection at bidirectional meter or main distribution board (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral at inverter terminals with calibrated multimeter",
+          "Check AC voltage between Neutral and Earth (should normally be < 3V AC)",
+          "Inspect AC distribution box (ACDB) breakers and surge protectors for trip indicators",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER",
+          "SCREWDRIVER_SET",
+          "TORQUE_WRENCH"
+        ],
+        "potentialParts": [
+          "AC MCB (32A/63A)",
+          "AC Surge Protection Device (SPD)",
+          "Heavy-duty Copper Lugs",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Turn OFF both AC isolator and DC disconnect switch before inspecting internal terminal blocks.",
+          "Always verify circuit de-energization with a proven two-pole voltage detector."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 94,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Equipped with screwdriver set"
+          ]
+        },
+        "priority": "MEDIUM",
+        "confidence": "MEDIUM",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Inverter Grid Voltage / Frequency Disconnect or Fault (Error 04 / F04). Verification required before any component replacement."
+      },
+      "diagnosisScore": 20,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 90,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (94%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, SCREWDRIVER_SET, TORQUE_WRENCH",
+        "Recommended candidate spare parts: AC MCB (32A/63A), AC Surge Protection Device (SPD), Heavy-duty Copper Lugs, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Identified single string disconnect / blown DC fuse as reason for partial output",
+        "Recommended generation log review against historical seasonal yield",
+        "Requested daily generation kWh logs before asserting equipment failure"
+      ],
+      "missedItems": [
+        "Missed dust/soiling accumulation check for dropped generation"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Requesting generation logs and DC clamp meter prevents dispatching a technician with wrong tools when the issue is simply dirty panels.",
+      "productImprovement": "Add weather and soiling assessment prompt prior to recommending inverter hardware replacement."
+    },
+    {
+      "caseId": "WEB-AHM-003",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:20.964Z",
+      "servoraInput": "Solar generation is down and a technician suspects a connector problem.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark) (HIGH)",
+          "Thermal degradation / melting of connector plastic casing from resistive I^2R heating (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Perform string isolation and visual inspection for scorch marks or heat deformation",
+          "Check connector temperatures under sunlight using thermal imaging / infrared probe",
+          "Measure string Voc open-circuit voltage and continuity before and after connection",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "MC4_TOOL",
+          "CRIMPING_TOOL",
+          "MULTIMETER",
+          "CLAMP_METER",
+          "THERMAL_IMAGER"
+        ],
+        "potentialParts": [
+          "1000V/1500V MC4 Connectors (Male/Female pair)",
+          "Solar DC Cable 4/6 sq mm",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "NEVER disconnect MC4 connectors while DC string current is flowing. DC arcs cause severe flash burns. VERIFY ON SITE.",
+          "Isolate DC disconnect switch and verify zero current with clamp meter before opening connections."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 95,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with mc4 tool",
+            "Equipped with crimping tool",
+            "Equipped with multimeter",
+            "Equipped with clamp meter"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 100,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (95%)",
+        "Provided required diagnostic tool list: MC4_TOOL, CRIMPING_TOOL, MULTIMETER, CLAMP_METER, THERMAL_IMAGER",
+        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Recommended visual and thermal check for contact resistance scorch marks",
+        "Specified specialized MC4 unlocking tool and ratcheting crimper",
+        "Explicitly warned against opening energized DC connectors under current",
+        "Required Voc and contact continuity measurements prior to connector replacement"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Ensuring technician carries specialized MC4 disconnect tool, spare 1000V/1500V connectors, and crimper avoids second visit.",
+      "productImprovement": "Enforce strict DC arc-flash warnings in all connector-related diagnostic workflows."
+    },
+    {
+      "caseId": "WEB-AHM-004",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.028Z",
+      "servoraInput": "Solar inverter output falls during hot periods and the inverter reports a derating/fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Solar Inverter Output Thermal Derating during Hot Periods (Solar Panel Ahmedabad Benchmark) (HIGH)",
+          "Inadequate heatsink clearance, direct unshaded sunlight on inverter enclosure, or poor ambient ventilation (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Inspect inverter ambient installation location for direct sunlight exposure during peak afternoon hours",
+          "Check clearance around inverter heatsink (minimum 300mm top/bottom and 200mm sides required)",
+          "Clean heatsink aluminum fins and inspect cooling fan rotation under full operational load",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "THERMOMETER",
+          "MULTIMETER",
+          "CLEANING_BRUSH",
+          "AIR_BLOWER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "Inverter External Fan Kit",
+          "Solar Inverter Canopy / Sunshield",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Inverter heatsink can exceed 70°C during peak operation; allow unit to cool before touching. VERIFY ON SITE."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 88,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Solar Inverter Output Thermal Derating during Hot Periods (Solar Panel Ahmedabad Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 12,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 92,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Assigned certified solar specialist: Jay Dave (88%)",
+        "Provided required diagnostic tool list: THERMOMETER, MULTIMETER, CLEANING_BRUSH, AIR_BLOWER, CLAMP_METER",
+        "Recommended candidate spare parts: Inverter External Fan Kit, Solar Inverter Canopy / Sunshield, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Identified temperature-dependent thermal derating protective mechanism",
+        "Recommended heatsink clearance, fan filter cleaning, and canopy shade inspection",
+        "Requested internal inverter temperature logs and peak afternoon generation patterns"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Knowing issue is thermal derating prevents technician bringing unnecessary inverter replacement boards.",
+      "productImprovement": "Incorporate Ahmedabad ambient summer temperature profiles into inverter derating diagnostics."
+    },
+    {
+      "caseId": "WEB-AHM-005",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.085Z",
+      "servoraInput": "Electricity bill increased even though the solar system is working.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Electricity Bill Increase Audit vs Solar Generation (Solar Panel Ahmedabad Benchmark) (HIGH)",
+          "Discom utility tariff slab changes, delayed net-meter credit rollover, or peak-hour billing adjustment (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Collect previous 6 months electricity bills and compare monthly total kWh consumption history",
+          "Audit inverter total cumulative kWh generation against bi-directional net-meter export reading",
+          "Verify DISCOM tariff bill calculation, fixed charges, and solar adjustment credit line",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections",
+          "Collect last 6 months DISCOM utility bills to compare monthly total kWh consumption and tariff changes",
+          "Verify bi-directional net-meter cumulative export and import unit registers"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "Bi-directional Net Meter (Discom replacement request)",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Do not dismantle utility revenue net-meter; meter seal tampering is a legal and electrical violation. VERIFY ON SITE."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Electricity Bill Increase Audit vs Solar Generation (Solar Panel Ahmedabad Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 12,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 92,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: Bi-directional Net Meter (Discom replacement request), 1000V DC MC4 Connectors (Male/Female pair)",
+        "Differentiated solar equipment health from utility billing, tariff slabs, and net-metering credits",
+        "Checked for increased consumer appliance load (e.g. air conditioning)",
+        "Requested previous utility bills, current bill, and bi-directional meter export logs"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Requesting utility bills and net-meter logs remotely avoids rolling an expensive field truck when the solar system is operating 100% normally.",
+      "productImprovement": "Add a triage rule: if complaint is \"higher electricity bill\", request bills and net-meter data before scheduling a physical truck roll."
+    },
+    {
+      "caseId": "WEB-AHM-006",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.144Z",
+      "servoraInput": "Remote monitoring detected a solar plant fault and a technician needs to be dispatched.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Industrial Solar Breakdown Maintenance & Structured Dispatch (Dr. Etech Benchmark) (HIGH)",
+          "Inverter tripped on internal or external electrical anomaly (MEDIUM)",
+          "Monitoring Portal Offline / Communication Stick Disconnected (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Execute Stage 1 Remote Assessment: retrieve exact inverter error code, alarm timestamp, and generation log",
+          "Stage 2 Dispatch Preparation: identify required certified technician, tools, and anticipated spares",
+          "Stage 3 On-Site Execution: follow Lockout-Tagout (LOTO), measure DC/AC voltages, perform repair",
+          "Verify status LEDs on Wi-Fi data stick (Power, Net, Inverter link)",
+          "Reseat Wi-Fi datalogger into inverter RS485/USB port and tighten locking ring",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections",
+          "Correlate generation profile with solar irradiance (W/m2) from pyranometer or satellite weather data"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER",
+          "SCREWDRIVER_SET",
+          "MC4_TOOL"
+        ],
+        "potentialParts": [
+          "AC MCB",
+          "DC String Fuses",
+          "MC4 Connectors",
+          "Wi-Fi Datalogger Stick"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Do not dispatch technicians without identifying plant single-line diagram and safety hazards. VERIFY ON SITE."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 99,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Equipped with screwdriver set",
+            "Equipped with mc4 tool"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Industrial Solar Breakdown Maintenance & Structured Dispatch (Dr. Etech Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 100,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (99%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, SCREWDRIVER_SET, MC4_TOOL",
+        "Recommended candidate spare parts: AC MCB, DC String Fuses, MC4 Connectors, Wi-Fi Datalogger Stick",
+        "Followed structured remote initial assessment prior to dispatching field team",
+        "Mandated post-repair root cause documentation and prevention follow-up",
+        "Requested specific inverter error code and plant single-line diagram before dispatch"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Standardized pre-dispatch assessment and root cause logging prevents chronic repeated breakdowns.",
+      "productImprovement": "Institutionalize Dr. Etech 7-stage breakdown maintenance workflow into Servora dispatch lifecycle."
+    },
+    {
+      "caseId": "WEB-AHM-007",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.208Z",
+      "servoraInput": "MC4 connector fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark) (HIGH)",
+          "Thermal degradation / melting of connector plastic casing from resistive I^2R heating (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Perform string isolation and visual inspection for scorch marks or heat deformation",
+          "Check connector temperatures under sunlight using thermal imaging / infrared probe",
+          "Measure string Voc open-circuit voltage and continuity before and after connection",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "MC4_TOOL",
+          "CRIMPING_TOOL",
+          "MULTIMETER",
+          "CLAMP_METER",
+          "THERMAL_IMAGER"
+        ],
+        "potentialParts": [
+          "1000V/1500V MC4 Connectors (Male/Female pair)",
+          "Solar DC Cable 4/6 sq mm",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "NEVER disconnect MC4 connectors while DC string current is flowing. DC arcs cause severe flash burns. VERIFY ON SITE.",
+          "Isolate DC disconnect switch and verify zero current with clamp meter before opening connections."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 95,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: dc wiring",
+            "Equipped with mc4 tool",
+            "Equipped with crimping tool",
+            "Equipped with multimeter"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: MC4 Connector Fault / Heating Degradation (GPCL Tender 4-Hour SLA Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 100,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (95%)",
+        "Provided required diagnostic tool list: MC4_TOOL, CRIMPING_TOOL, MULTIMETER, CLAMP_METER, THERMAL_IMAGER",
+        "Recommended candidate spare parts: 1000V/1500V MC4 Connectors (Male/Female pair), Solar DC Cable 4/6 sq mm, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Recognized strict operational SLA (Gujarat Government 4-hour resolution target)",
+        "Equipped technician with ratcheting MC4 crimper, disconnect tool, and spare connectors",
+        "Required string continuity and insulation resistance test following connector repair"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Enforcing 4-hour SLA and carrying spare MC4 connectors ensures single-visit compliance with government contract.",
+      "productImprovement": "Add tender SLA awareness to prioritize government utility contracts automatically."
+    },
+    {
+      "caseId": "WEB-AHM-008",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.269Z",
+      "servoraInput": "String fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "String Fault / Low String Output (GPCL Tender 4-Hour SLA Benchmark) (HIGH)",
+          "Open circuit in solar string caused by cable abrasion, rodent cut, or loose MC4 joint (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Measure open-circuit voltage (Voc) of affected string at DCDB test terminals",
+          "Compare measured Voc against theoretical string formula (Voc_module * number_of_modules)",
+          "Test continuity of DC string fuses with multimeter in continuity mode",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER",
+          "MC4_TOOL",
+          "SCREWDRIVER_SET"
+        ],
+        "potentialParts": [
+          "1000V/1500V 15A/20A gPV Solar DC Fuses",
+          "MC4 Connectors",
+          "4 sq mm DC Solar Cable",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "High DC string voltages (up to 1000V/1500V DC) are present even under cloudy skies. VERIFY ON SITE.",
+          "Wear arc-rated gloves and eye protection when testing DC combiner boxes."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 99,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: dc wiring",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Equipped with mc4 tool"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: String Fault / Low String Output (GPCL Tender 4-Hour SLA Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 12,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 92,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Assigned certified solar specialist: Demo Technician (99%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, MC4_TOOL, SCREWDRIVER_SET",
+        "Recommended candidate spare parts: 1000V/1500V 15A/20A gPV Solar DC Fuses, MC4 Connectors, 4 sq mm DC Solar Cable, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Specified string Voc voltage and Isc operating current measurement sequence",
+        "Mandated checking 1000V/1500V DC string fuses inside combiner box / DCDB",
+        "Requested string-level Voc/Isc readings in fieldwork report"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Bringing 1000V DC fuses and DC clamp meter ensures string fault is resolved within 4-hour SLA on the first visit.",
+      "productImprovement": "Add automated string Voc theoretical calculation check to field technician app."
+    },
+    {
+      "caseId": "WEB-AHM-009",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.346Z",
+      "servoraInput": "Earthing fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Solar Earthing Fault / Ground Electrode Degradation (GPCL Tender 1-Day SLA Benchmark) (HIGH)",
+          "Loose or severed GI/copper earthing strip connection to solar structure or inverter frame (MEDIUM)",
+          "Zero Generation / Inverter Display Dark or Low DC Input (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Measure earth pit electrode resistance using 3-point or 4-point Earth Resistance Tester / Megger",
+          "Verify earth pit resistance is strictly < 5 ohms (as required by Gujarat O&M tenders and CEA regulations)",
+          "Inspect physical bonding of copper/GI earthing strips from inverter, ACDB, DCDB, and module frames",
+          "Measure open-circuit string voltage (Voc) at DCDB test points using high-voltage DC multimeter",
+          "Compare measured string Voc with theoretical panel calculation (Voc_per_panel * panels_in_series)",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections"
+        ],
+        "requiredTools": [
+          "EARTH_TESTER",
+          "INSULATION_TESTER",
+          "MULTIMETER",
+          "WRENCH_SET",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "Chemical Earthing Compound / Bentonite",
+          "Copper Earthing Lugs & Fasteners",
+          "GI Earthing Strip",
+          "1000V DC MC4 Connectors (Male/Female pair)"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "HIGH RISK ELECTRICAL HAZARD. Faulty earthing can energize metallic mounting structures. VERIFY ON SITE.",
+          "Do not touch metallic solar structures with bare hands. Work must be performed by certified electrical wireman."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 92,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with insulation tester",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Solar Earthing Fault / Ground Electrode Degradation (GPCL Tender 1-Day SLA Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 12,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 92,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Assigned certified solar specialist: Jay Dave (92%)",
+        "Provided required diagnostic tool list: EARTH_TESTER, INSULATION_TESTER, MULTIMETER, WRENCH_SET, CLAMP_METER",
+        "Recommended candidate spare parts: Chemical Earthing Compound / Bentonite, Copper Earthing Lugs & Fasteners, GI Earthing Strip, 1000V DC MC4 Connectors (Male/Female pair)",
+        "Mandated earth pit resistance testing with specialized earth resistance tester / Megger",
+        "Inspected chemical earthing pit, copper strip bonding, and lightning arrester integrity",
+        "Required recording earth pit resistance value (ohms) in compliance with safety standards"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Dispatching certified electrician with calibrated earth tester avoids repeated safety inspections.",
+      "productImprovement": "Enforce strict touch-potential warnings and requirement for certified electrical wireman license on earthing faults."
+    },
+    {
+      "caseId": "WEB-AHM-010",
+      "version": "v2",
+      "provider": "DemoAIProvider",
+      "model": "Deterministic-Solar-Engine-v0.2",
+      "timestamp": "2026-09-14T11:13:21.404Z",
+      "servoraInput": "Plant monitoring reports a performance deviation.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Solar Plant Performance Deviation / Irradiance Loss Analysis (Dr. Etech Benchmark) (HIGH)",
+          "Heavy surface soiling / dust accumulation across solar array (MEDIUM)",
+          "Monitoring Portal Offline / Communication Stick Disconnected (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Correlate real-time solar generation against local solar irradiance (W/m2) from pyranometer or satellite",
+          "Calculate Performance Ratio (PR) and Specific Yield (kWh/kWp) for current operational window",
+          "Compare inverter string-level currents to detect whether deviation is plant-wide or localized",
+          "Verify status LEDs on Wi-Fi data stick (Power, Net, Inverter link)",
+          "Reseat Wi-Fi datalogger into inverter RS485/USB port and tighten locking ring",
+          "Record DC and AC voltage and operating current readings in the field report before and after rectifying fault."
+        ],
+        "requiredEvidence": [
+          "Retrieve inverter historical event logs and exact alarm code timestamp",
+          "Measure Phase-to-Neutral AC voltage and Neutral-to-Earth floating voltage (< 3V AC) at inverter AC terminals",
+          "Record DC string open-circuit voltage (Voc) and operating current (Isc) under unshaded sunlight",
+          "Capture clear photographs of inverter display, ACDB/DCDB breaker positions, and rooftop connections",
+          "Correlate generation profile with solar irradiance (W/m2) from pyranometer or satellite weather data"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER",
+          "PYRANOMETER"
+        ],
+        "potentialParts": [
+          "SCADA Communication Module",
+          "Pyranometer Sensor",
+          "Wi-Fi Datalogger Stick"
+        ],
+        "safetyInstructions": [
+          "VERIFY ON SITE: Lockout-Tagout (LOTO) both DC disconnect and AC isolator prior to physical inspection.",
+          "Solar panels generate lethal DC voltages whenever light is present; circuits cannot be switched off at the panel.",
+          "High-voltage DC array remains energized under sunlight even when main AC breaker is OFF.",
+          "Qualified technician must verify zero voltage before touching exposed conductors.",
+          "Always use properly rated insulated tools (1000V DC rated) and appropriate personal protective equipment (PPE).",
+          "Perform data-driven triage remotely before rolling service trucks. VERIFY ON SITE when inspecting array."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 93,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "AI PRELIMINARY HYPOTHESIS — Insufficient remote evidence to confirm physical root cause. Technician must collect diagnostic evidence on site. Primary candidate issue: Solar Plant Performance Deviation / Irradiance Loss Analysis (Dr. Etech Benchmark). Verification required before any component replacement."
+      },
+      "diagnosisScore": 30,
+      "evidenceScore": 20,
+      "safetyScore": 20,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 100,
+      "matchedItems": [
+        "Prominently mandated on-site verification (VERIFY ON SITE)",
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (93%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER, PYRANOMETER",
+        "Recommended candidate spare parts: SCADA Communication Module, Pyranometer Sensor, Wi-Fi Datalogger Stick",
+        "Correlated plant output against solar irradiance data before dispatching physical crew",
+        "Evaluated SCADA string-level telemetry and inverter operational efficiency",
+        "Requested SCADA generation baseline and irradiance comparison"
+      ],
+      "missedItems": [],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Checking weather/irradiance telemetry remotely prevents dispatching technicians for overcast weather days.",
+      "productImprovement": "Integrate pyranometer / satellite solar insolation data into performance deviation analytics."
+    }
+  ],
+  "v1_detailed_cases": [
+    {
+      "caseId": "WEB-AHM-001",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.492Z",
+      "servoraInput": "Inverter is showing Grid Lost Fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 22,
+      "evidenceScore": 10,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 77,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Correctly identified AC grid voltage / frequency fluctuations as prime candidate",
+        "Identified Neutral-to-Earth floating voltage diagnostic check"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Missed checking for blown AC surge protection device (SPD) in ACDB"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Pre-dispatch advice to bring calibrated true-RMS multimeter and spare AC SPD prevents technician returning to base if SPD is blown.",
+      "productImprovement": "Ensure Grid Lost diagnostics explicitly differentiate external discom grid outage from local AC breaker/SPD trips."
+    },
+    {
+      "caseId": "WEB-AHM-002",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.565Z",
+      "servoraInput": "Solar generation has dropped but the inverter shows no fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 12,
+      "evidenceScore": 8,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 65,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Identified single string disconnect / blown DC fuse as reason for partial output"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Missed dust/soiling accumulation check for dropped generation"
+      ],
+      "unsupportedClaims": [
+        "Assumed internal inverter component failure without checking generation logs"
+      ],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Requesting generation logs and DC clamp meter prevents dispatching a technician with wrong tools when the issue is simply dirty panels.",
+      "productImprovement": "Add weather and soiling assessment prompt prior to recommending inverter hardware replacement."
+    },
+    {
+      "caseId": "WEB-AHM-003",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.623Z",
+      "servoraInput": "Solar generation is down and a technician suspects a connector problem.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "General Solar Plant Fault (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Inspect inverter and measure DC/AC voltages"
+        ],
+        "requiredEvidence": [
+          "Measure voltages on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [],
+        "safetyInstructions": [
+          "Turn off isolators before opening panels."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "MEDIUM",
+        "confidence": "MEDIUM",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Generic solar complaint received."
+      },
+      "diagnosisScore": 4,
+      "evidenceScore": 20,
+      "safetyScore": 0,
+      "operationalScore": 12,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 51,
+      "matchedItems": [
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Required Voc and contact continuity measurements prior to connector replacement"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Missed thermal inspection for high resistance connector hot spots",
+        "Missed recommending specialized MC4 disconnect tool"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact",
+        "Failed to emphasize that opening live DC connectors produces lethal DC arc flash"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Ensuring technician carries specialized MC4 disconnect tool, spare 1000V/1500V connectors, and crimper avoids second visit.",
+      "productImprovement": "Enforce strict DC arc-flash warnings in all connector-related diagnostic workflows."
+    },
+    {
+      "caseId": "WEB-AHM-004",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.694Z",
+      "servoraInput": "Solar inverter output falls during hot periods and the inverter reports a derating/fault.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: inverter repair",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 0,
+      "evidenceScore": 10,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 55,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Failed to identify inverter thermal derating during high ambient temperatures",
+        "Missed checking cooling fan and heatsink airflow clearance"
+      ],
+      "unsupportedClaims": [
+        "Diagnosed electrical component breakdown instead of protective thermal derating"
+      ],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Knowing issue is thermal derating prevents technician bringing unnecessary inverter replacement boards.",
+      "productImprovement": "Incorporate Ahmedabad ambient summer temperature profiles into inverter derating diagnostics."
+    },
+    {
+      "caseId": "WEB-AHM-005",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.755Z",
+      "servoraInput": "Electricity bill increased even though the solar system is working.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Zero Generation / DC Input Broken (HIGH)",
+          "Inverter internal failure (LOW)"
+        ],
+        "diagnosticSteps": [
+          "Measure open-circuit string voltage Voc at DCDB",
+          "Inspect roof MC4 connectors for damage"
+        ],
+        "requiredEvidence": [
+          "Measure Voc at DCDB"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "MC4_TOOL"
+        ],
+        "potentialParts": [
+          "MC4 Connectors"
+        ],
+        "safetyInstructions": [
+          "Do not touch solar panels during sunlight."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 99,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with mc4 tool",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "MEDIUM",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Customer says bill increased, so solar must have stopped generating."
+      },
+      "diagnosisScore": 10,
+      "evidenceScore": 6,
+      "safetyScore": 7,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 53,
+      "matchedItems": [
+        "Assigned certified solar specialist: Demo Technician (99%)",
+        "Provided required diagnostic tool list: MULTIMETER, MC4_TOOL",
+        "Recommended candidate spare parts: MC4 Connectors"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Failed to distinguish utility billing/consumption problem from solar hardware failure"
+      ],
+      "unsupportedClaims": [
+        "Suggested hardware troubleshooting when physical solar generation was functioning"
+      ],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Requesting utility bills and net-meter logs remotely avoids rolling an expensive field truck when the solar system is operating 100% normally.",
+      "productImprovement": "Add a triage rule: if complaint is \"higher electricity bill\", request bills and net-meter data before scheduling a physical truck roll."
+    },
+    {
+      "caseId": "WEB-AHM-006",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.814Z",
+      "servoraInput": "Remote monitoring detected a solar plant fault and a technician needs to be dispatched.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 8,
+      "evidenceScore": 20,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 73,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Requested specific inverter error code and plant single-line diagram before dispatch"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Standardized pre-dispatch assessment and root cause logging prevents chronic repeated breakdowns.",
+      "productImprovement": "Institutionalize Dr. Etech 7-stage breakdown maintenance workflow into Servora dispatch lifecycle."
+    },
+    {
+      "caseId": "WEB-AHM-007",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.872Z",
+      "servoraInput": "MC4 connector fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 99,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: dc wiring",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 21,
+      "evidenceScore": 20,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 86,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (99%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Recognized strict operational SLA (Gujarat Government 4-hour resolution target)",
+        "Required string continuity and insulation resistance test following connector repair"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Enforcing 4-hour SLA and carrying spare MC4 connectors ensures single-visit compliance with government contract.",
+      "productImprovement": "Add tender SLA awareness to prioritize government utility contracts automatically."
+    },
+    {
+      "caseId": "WEB-AHM-008",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:19.941Z",
+      "servoraInput": "String fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a60924e",
+          "name": "Demo Technician",
+          "score": 99,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Has skill: dc wiring",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 14,
+      "evidenceScore": 20,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 79,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Demo Technician (99%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Requested string-level Voc/Isc readings in fieldwork report"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Missed systematic string Voc vs theoretical calculation comparison",
+        "Missed DC string fuse continuity inspection in DCDB"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Bringing 1000V DC fuses and DC clamp meter ensures string fault is resolved within 4-hour SLA on the first visit.",
+      "productImprovement": "Add automated string Voc theoretical calculation check to field technician app."
+    },
+    {
+      "caseId": "WEB-AHM-009",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:20.024Z",
+      "servoraInput": "Earthing fault detected.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Inverter Grid Disconnect or Voltage Trip (F04) (HIGH)",
+          "Loose AC wiring (MEDIUM)"
+        ],
+        "diagnosticSteps": [
+          "Measure AC voltage between Phase and Neutral",
+          "Inspect AC distribution box MCB"
+        ],
+        "requiredEvidence": [
+          "Measure AC voltage on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [
+          "AC MCB"
+        ],
+        "safetyInstructions": [
+          "Turn off AC isolator before inspecting terminal block."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "HIGH",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Analyzed complaint. Primary hypothesis is grid voltage fluctuation."
+      },
+      "diagnosisScore": 16,
+      "evidenceScore": 20,
+      "safetyScore": 15,
+      "operationalScore": 15,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 81,
+      "matchedItems": [
+        "Enforced Lockout-Tagout (LOTO) / electrical isolation protocol",
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Recommended candidate spare parts: AC MCB",
+        "Required recording earth pit resistance value (ohms) in compliance with safety standards"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Missed specifying specialized earth pit resistance tester (< 5 ohm)"
+      ],
+      "unsupportedClaims": [],
+      "safetyIssues": [],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Dispatching certified electrician with calibrated earth tester avoids repeated safety inspections.",
+      "productImprovement": "Enforce strict touch-potential warnings and requirement for certified electrical wireman license on earthing faults."
+    },
+    {
+      "caseId": "WEB-AHM-010",
+      "version": "v1",
+      "provider": "DemoAIProvider (Baseline v1)",
+      "model": "Deterministic-Solar-Engine-v0.1",
+      "timestamp": "2026-09-14T11:13:20.074Z",
+      "servoraInput": "Plant monitoring reports a performance deviation.",
+      "servoraOutput": {
+        "possibleCauses": [
+          "Plant output loss (HIGH)"
+        ],
+        "diagnosticSteps": [
+          "Dispatch technician to check all inverters and strings on site"
+        ],
+        "requiredEvidence": [
+          "Check system on site"
+        ],
+        "requiredTools": [
+          "MULTIMETER",
+          "CLAMP_METER"
+        ],
+        "potentialParts": [],
+        "safetyInstructions": [
+          "Follow standard site safety."
+        ],
+        "recommendedTechnician": {
+          "id": "6aa79297f970f6122a609242",
+          "name": "Jay Dave",
+          "score": 100,
+          "reasons": [
+            "Has skill: electrical troubleshooting",
+            "Equipped with multimeter",
+            "Equipped with clamp meter",
+            "Currently available for immediate dispatch",
+            "Covers customer city (Ahmedabad)"
+          ]
+        },
+        "priority": "HIGH",
+        "confidence": "LOW",
+        "humanReviewRequired": true,
+        "finalRecommendation": "Monitoring reports deviation, physical site visit required immediately."
+      },
+      "diagnosisScore": 21,
+      "evidenceScore": 8,
+      "safetyScore": 7,
+      "operationalScore": 12,
+      "technicianScore": 10,
+      "traceabilityScore": 5,
+      "totalScore": 63,
+      "matchedItems": [
+        "Assigned certified solar specialist: Jay Dave (100%)",
+        "Provided required diagnostic tool list: MULTIMETER, CLAMP_METER",
+        "Evaluated SCADA string-level telemetry and inverter operational efficiency"
+      ],
+      "missedItems": [
+        "Missing explicit \"VERIFY ON SITE\" verification caveat",
+        "Failed to correlate performance deviation with local solar irradiance / cloud cover"
+      ],
+      "unsupportedClaims": [
+        "Assumed hardware defect without verifying ambient solar insolation"
+      ],
+      "safetyIssues": [
+        "Did not emphasize circuit de-energization before physical contact"
+      ],
+      "safetyPass": true,
+      "repeatVisitOpportunity": true,
+      "repeatVisitReason": "Checking weather/irradiance telemetry remotely prevents dispatching technicians for overcast weather days.",
+      "productImprovement": "Integrate pyranometer / satellite solar insolation data into performance deviation analytics."
+    }
+  ]
+}

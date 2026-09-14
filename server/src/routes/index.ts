@@ -7,6 +7,7 @@ import ticketRoutes from './ticketRoutes';
 import reportRoutes from './reportRoutes';
 import pilotRoutes from './pilotRoutes';
 import uploadRoutes from './uploadRoutes';
+import evaluationRoutes from './evaluationRoutes';
 import { getSystemHealth } from '../controllers/pilotController';
 
 const router = Router();
@@ -22,5 +23,6 @@ router.use('/tickets', ticketRoutes);
 router.use('/service-reports', reportRoutes);
 router.use('/pilot', pilotRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/evaluation', evaluationRoutes);
 
 export default router;

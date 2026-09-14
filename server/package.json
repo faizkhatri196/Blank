@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "ts-node src/seed/seed.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:real-web": "ts-node src/scripts/runRealWebValidation.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

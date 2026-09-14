@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   UserCheck,
   X,
+  FileCheck2,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
     { to: '/manager/technicians', label: 'Technicians', icon: Users },
     { to: '/manager/customers', label: 'Customers & Assets', icon: Building2 },
     { to: '/manager/pilot-insights', label: 'Pilot Insights', icon: BarChart3 },
+    { to: '/manager/evaluation', label: 'Web Validation (CRT)', icon: FileCheck2, badge: 'WEB' },
     { to: '/manager/settings', label: 'System Settings', icon: Settings },
   ];
 
@@ -91,7 +93,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               }
             >
               <Icon className="w-4 h-4 shrink-0" />
-              <span className="truncate">{link.label}</span>
+              <span className="truncate flex-1">{link.label}</span>
+              {(link as any).badge && (
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 font-mono">
+                  {(link as any).badge}
+                </span>
+              )}
             </NavLink>
           );
         })}
