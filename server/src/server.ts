@@ -17,28 +17,15 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-const allowedOrigins = ENV.CLIENT_URL ? ENV.CLIENT_URL.split(',').map((u) => u.trim()) : [];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman)
-      if (!origin) return callback(null, true);
-      // Allow localhost in development
-      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-        return callback(null, true);
-      }
-      // Check configured CLIENT_URL
-      if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      // If no specific client origin is set or in non-production, permit for testing
-      if (ENV.NODE_ENV !== 'production' || allowedOrigins.length === 0) {
-        return callback(null, true);
-      }
-      return callback(new Error('Not allowed by CORS policy'));
+    origin: (_origin, callback) => {
+      // Allow all origins (Vercel, Render, custom domains, localhost) with credentials
+      callback(null, true);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 

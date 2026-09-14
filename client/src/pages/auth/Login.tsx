@@ -12,9 +12,21 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [customApiUrl, setCustomApiUrl] = useState(localStorage.getItem('servora_api_url') || '');
+  const [apiSavedNotice, setApiSavedNotice] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleSaveApiUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customApiUrl.trim()) {
+      localStorage.setItem('servora_api_url', customApiUrl.trim());
+      setApiSavedNotice(true);
+      setError(null);
+      setTimeout(() => setApiSavedNotice(false), 3000);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +76,41 @@ export const Login: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+
+              {/* Seamless self-healing connect box when backend is waking up or on a new URL */}
+              {error.includes('Unable to reach Servora backend') && (
+                <div className="mt-2 pt-2 border-t border-red-200/80">
+                  <span className="font-bold block text-red-900 mb-1">
+                    Backend Service Connection:
+                  </span>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="url"
+                      placeholder="https://servora-api.onrender.com"
+                      value={customApiUrl}
+                      onChange={(e) => setCustomApiUrl(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 border border-red-300 rounded-lg text-xs bg-white text-slate-900 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveApiUrl}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                  {apiSavedNotice && (
+                    <span className="text-[11px] text-emerald-700 font-semibold block mt-1">
+                      ✓ Backend connected! Please click "Sign In" again.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

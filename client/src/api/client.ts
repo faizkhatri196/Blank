@@ -1,12 +1,21 @@
 import axios from 'axios';
 
-// Resolve API base URL from VITE_API_URL or default to relative /api for local dev proxy
-const apiBase = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`
-  : '/api';
+// Resolve API base URL dynamically from localStorage override, VITE_API_URL, or relative /api
+export const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const customUrl = localStorage.getItem('servora_api_url');
+    if (customUrl) return `${customUrl.replace(/\/$/, '')}/api`;
+  }
+
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`;
+  }
+
+  return '/api';
+};
 
 export const apiClient = axios.create({
-  baseURL: apiBase,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,12 +25,14 @@ export const apiClient = axios.create({
 export const getAssetUrl = (assetPath?: string): string => {
   if (!assetPath) return '';
   if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) return assetPath;
-  const serverBase = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
+  const customUrl = typeof window !== 'undefined' ? localStorage.getItem('servora_api_url') : null;
+  const serverBase = customUrl || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '');
   return `${serverBase}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
 };
 
-// Attach JWT token to requests automatically
+// Attach JWT token & dynamic baseURL to requests automatically
 apiClient.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = localStorage.getItem('copilot_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
