@@ -9,7 +9,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-Passing_100%25-green?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](#-license--intellectual-property)
 
 ---
 
@@ -296,6 +296,11 @@ npm test
 
 ---
 
-## 📄 License
+## 🔒 License & Intellectual Property
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+Copyright © 2026 Servora Technologies. All rights reserved.
+
+This software, source code, system architecture, operational workflows, scoring algorithms, and associated documentation are **confidential and proprietary**.
+
+- **Proprietary & Confidential**: Unauthorized copying, distribution, reproduction, reverse engineering, sublicensing, or public dissemination of this codebase or any portion thereof is strictly prohibited without explicit prior written authorization from Servora Technologies.
+- **Pilot & Evaluation Grant**: Access is granted solely for authorized demonstration, operational pilot testing, and evaluation purposes under direct agreement with Servora Technologies.
