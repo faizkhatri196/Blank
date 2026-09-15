@@ -37,10 +37,9 @@ export async function generateTicketNumber(
   const prefix = serviceType === 'SOLAR' ? 'SOL' : 'AC';
   const year = new Date().getFullYear();
 
-  // Find highest existing sequence for this company and serviceType this year
+  // Find highest existing sequence globally for this serviceType this year
   const regex = new RegExp(`^${prefix}-${year}-(\\d{4})$`);
   const tickets = await ServiceTicket.find({
-    companyId,
     ticketNumber: { $regex: regex },
   })
     .select('ticketNumber')
@@ -55,6 +54,12 @@ export async function generateTicketNumber(
     }
   }
 
-  const paddedSeq = String(nextSeq).padStart(4, '0');
-  return `${prefix}-${year}-${paddedSeq}`;
+  let candidate = `${prefix}-${year}-${String(nextSeq).padStart(4, '0')}`;
+  // Ensure no collision exists
+  while (await ServiceTicket.exists({ ticketNumber: candidate })) {
+    nextSeq++;
+    candidate = `${prefix}-${year}-${String(nextSeq).padStart(4, '0')}`;
+  }
+
+  return candidate;
 }
