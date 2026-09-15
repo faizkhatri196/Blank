@@ -11,6 +11,11 @@ export const getApiBaseUrl = (): string => {
     return `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api`;
   }
 
+  // Automatic production fallback for Vercel deployments when env var is not explicitly provided
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return 'https://servora-1-o7dc.onrender.com/api';
+  }
+
   return '/api';
 };
 
@@ -26,7 +31,10 @@ export const getAssetUrl = (assetPath?: string): string => {
   if (!assetPath) return '';
   if (assetPath.startsWith('http://') || assetPath.startsWith('https://')) return assetPath;
   const customUrl = typeof window !== 'undefined' ? localStorage.getItem('servora_api_url') : null;
-  const serverBase = customUrl || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '');
+  const fallback = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+    ? 'https://servora-1-o7dc.onrender.com'
+    : '';
+  const serverBase = customUrl || (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : fallback);
   return `${serverBase}${assetPath.startsWith('/') ? '' : '/'}${assetPath}`;
 };
 

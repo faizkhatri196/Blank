@@ -24,13 +24,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   const { user } = useAuth();
   const isManager = user?.role === 'SERVICE_MANAGER';
 
+  const showTestModules = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('test') === 'true' ||
+    new URLSearchParams(window.location.search).get('demo') === 'true'
+  );
+
   const managerLinks = [
     { to: '/manager/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/manager/tickets', label: 'Service Tickets', icon: ClipboardList },
     { to: '/manager/technicians', label: 'Technicians', icon: Users },
     { to: '/manager/customers', label: 'Customers & Assets', icon: Building2 },
     { to: '/manager/pilot-insights', label: 'Pilot Insights', icon: BarChart3 },
-    { to: '/manager/crt-validation', label: 'CRT Validation', icon: FileCheck2, badge: 'CRT' },
+    ...(showTestModules ? [{ to: '/manager/crt-validation', label: 'CRT Validation', icon: FileCheck2, badge: 'CRT' }] : []),
     { to: '/manager/settings', label: 'System Settings', icon: Settings },
   ];
 
