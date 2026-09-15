@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Info, Key, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const DemoModeBanner: React.FC = () => {
+  const { user } = useAuth();
   const [showCreds, setShowCreds] = useState(false);
+
+  // If user is logged into the Pilot workspace, do not show any simulated demo environment banner
+  if (user?.isPilotCompany || user?.environmentContext === 'PILOT' || user?.companyName?.toLowerCase().includes('pilot')) {
+    return null;
+  }
 
   return (
     <div className="bg-amber-950/90 text-amber-200 text-xs px-4 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-amber-800/60">
