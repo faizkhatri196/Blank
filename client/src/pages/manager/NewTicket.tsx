@@ -53,12 +53,20 @@ export const NewTicket: React.FC = () => {
     async function fetchCustomers() {
       try {
         const res = await apiClient.get('/customers');
-        setCustomers(res.data.data);
-        if (res.data.data.length > 0) {
-          setSelectedCustomerId(res.data.data[0]._id);
+        const custs = res.data.data || [];
+        setCustomers(custs);
+        if (custs.length > 0) {
+          setSelectedCustomerId(custs[0]._id);
+        } else {
+          setIsCreatingCustomer(true);
+          setNewCustomerName('Shreeji Solar Facility');
+          setNewCustomerPhone('+91 98765 10001');
+          setNewCustomerAddress('Plot 24, GIDC Sanand');
+          setNewCustomerCity('Sanand');
         }
       } catch (err) {
         console.error('Failed to load customers:', err);
+        setIsCreatingCustomer(true);
       }
     }
     fetchCustomers();
@@ -87,40 +95,66 @@ export const NewTicket: React.FC = () => {
 
       // 1. Create customer if new
       if (isCreatingCustomer) {
+        if (!newCustomerName.trim()) {
+          setError('Please enter the customer name.');
+          setIsLoading(false);
+          return;
+        }
+        if (!newCustomerPhone.trim()) {
+          setError('Please enter the customer phone number.');
+          setIsLoading(false);
+          return;
+        }
         const custRes = await apiClient.post('/customers', {
-          name: newCustomerName,
-          phone: newCustomerPhone,
-          address: newCustomerAddress,
-          city: newCustomerCity,
+          name: newCustomerName.trim(),
+          phone: newCustomerPhone.trim(),
+          address: newCustomerAddress.trim() || 'GIDC Industrial Estate, Sanand',
+          city: newCustomerCity.trim() || 'Ahmedabad',
         });
         customerId = custRes.data.data._id;
+      } else {
+        if (!customerId) {
+          setError('Please select an existing customer or click "+ New Customer"');
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // 2. Create Asset
+      // 2. Lookup existing asset or create
       let assetId = '';
       if (serviceType === 'SOLAR') {
-        const assetRes = await apiClient.post('/assets/solar-systems', {
-          customerId,
-          capacityKW: Number(capacityKW),
-          panelMake,
-          inverterMake,
-          inverterModel,
-          inverterSerial,
-          systemType,
-          batteryPresent,
-        });
-        assetId = assetRes.data.data._id;
+        const existingAssetsRes = await apiClient.get(`/assets/solar-systems?customerId=${customerId}`);
+        if (existingAssetsRes.data.data && existingAssetsRes.data.data.length > 0) {
+          assetId = existingAssetsRes.data.data[0]._id;
+        } else {
+          const assetRes = await apiClient.post('/assets/solar-systems', {
+            customerId,
+            capacityKW: Number(capacityKW) || 5.0,
+            panelMake: panelMake || 'Adani Solar',
+            inverterMake: inverterMake || 'Sungrow',
+            inverterModel: inverterModel || 'SG5.0RS',
+            inverterSerial: inverterSerial || 'INV-2024-99123',
+            systemType: systemType || 'ON_GRID',
+            batteryPresent: Boolean(batteryPresent),
+          });
+          assetId = assetRes.data.data._id;
+        }
       } else {
-        const assetRes = await apiClient.post('/assets/ac-units', {
-          customerId,
-          brand: acBrand,
-          model: acModel,
-          serialNumber: acSerial,
-          acType,
-          capacityTR: Number(capacityTR),
-          refrigerantType,
-        });
-        assetId = assetRes.data.data._id;
+        const existingAssetsRes = await apiClient.get(`/assets/ac-units?customerId=${customerId}`);
+        if (existingAssetsRes.data.data && existingAssetsRes.data.data.length > 0) {
+          assetId = existingAssetsRes.data.data[0]._id;
+        } else {
+          const assetRes = await apiClient.post('/assets/ac-units', {
+            customerId,
+            brand: acBrand || 'Daikin',
+            model: acModel || 'FTKF50TV',
+            serialNumber: acSerial || 'AC-SR-44512',
+            acType: acType || 'SPLIT',
+            capacityTR: Number(capacityTR) || 1.5,
+            refrigerantType: refrigerantType || 'R32',
+          });
+          assetId = assetRes.data.data._id;
+        }
       }
 
       // 3. Create Service Ticket
@@ -133,7 +167,7 @@ export const NewTicket: React.FC = () => {
         serviceType,
         customerId,
         assetId,
-        complaint,
+        complaint: complaint.trim(),
         symptoms,
         errorCode: errorCode.trim() || undefined,
         priority,

@@ -868,6 +868,54 @@ export async function seedDatabase() {
     });
   }
 
+  // Seed initial solar client facilities for Pilot Company (if none exist)
+  const existingPilotCust = await Customer.findOne({ companyId: pilotCompany._id });
+  if (!existingPilotCust) {
+    const cust1 = await Customer.create({
+      companyId: pilotCompany._id,
+      name: 'Shreeji Textiles (Sanand Rooftop)',
+      phone: '+91 98765 10001',
+      address: 'Plot 24, GIDC Sanand Industrial Estate',
+      city: 'Sanand',
+      email: 'sanand.solar@shreejitextiles.in',
+    });
+
+    await SolarSystem.create({
+      companyId: pilotCompany._id,
+      customerId: cust1._id,
+      capacityKW: 50,
+      panelMake: 'Tata Power Solar 545W Mono PERC',
+      panelModel: 'TP-545-PERC',
+      inverterMake: 'Sungrow',
+      inverterModel: 'SG50CX',
+      inverterSerial: 'SG-2024-55410',
+      systemType: 'ON_GRID',
+      batteryPresent: false,
+    });
+
+    const cust2 = await Customer.create({
+      companyId: pilotCompany._id,
+      name: 'Patel Cold Storage Solar Facility',
+      phone: '+91 98765 10002',
+      address: 'National Highway 8, Dholka Road',
+      city: 'Ahmedabad',
+      email: 'operations@patelcoldstorage.com',
+    });
+
+    await SolarSystem.create({
+      companyId: pilotCompany._id,
+      customerId: cust2._id,
+      capacityKW: 33,
+      panelMake: 'Adani Solar 540W',
+      panelModel: 'AS-540-PERC',
+      inverterMake: 'Growatt',
+      inverterModel: 'MAX 33KTL3-X',
+      inverterSerial: 'GW-2024-11892',
+      systemType: 'ON_GRID',
+      batteryPresent: false,
+    });
+  }
+
   console.log('[Seed] Database seeded successfully!');
   console.log('================================================================');
   console.log('1. PUBLIC DEMO CREDENTIALS:');
