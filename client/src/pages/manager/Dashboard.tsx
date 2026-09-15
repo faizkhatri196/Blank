@@ -229,9 +229,17 @@ export const Dashboard: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
             <h3 className="text-sm font-bold text-slate-900">Technician Roster</h3>
-            <span className="text-xs font-semibold text-slate-500">
-              {technicians.filter((tc) => tc.availability === 'AVAILABLE').length} Available
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-500">
+                {technicians.filter((tc) => tc.availability === 'AVAILABLE').length} Available
+              </span>
+              <Link
+                to="/manager/technicians"
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+              >
+                + Add Tech
+              </Link>
+            </div>
           </div>
 
           <div className="space-y-3 flex-1 overflow-y-auto max-h-[400px]">

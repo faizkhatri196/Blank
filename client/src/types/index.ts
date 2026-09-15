@@ -28,7 +28,7 @@ export interface User {
   companyId: string;
   companyName: string;
   isPilotCompany?: boolean;
-  environmentContext?: 'DEMO' | 'PILOT';
+  environmentContext?: 'DEMO' | 'PILOT' | 'CLIENT';
   servicesSupported: ServiceType[];
 }
 
@@ -135,7 +135,7 @@ export interface ServiceTicket {
   repeatVisit: boolean;
   repeatVisitReason?: string;
   isDemoData: boolean;
-  environmentContext?: 'DEMO' | 'PILOT';
+  environmentContext?: 'DEMO' | 'PILOT' | 'CLIENT';
   createdBy?: any;
   statusHistory: Array<{
     status: TicketStatus;

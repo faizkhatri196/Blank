@@ -6,8 +6,8 @@ export const DemoModeBanner: React.FC = () => {
   const { user } = useAuth();
   const [showCreds, setShowCreds] = useState(false);
 
-  // If user is logged into the Pilot workspace, do not show any simulated demo environment banner
-  if (user?.isPilotCompany || user?.environmentContext === 'PILOT' || user?.companyName?.toLowerCase().includes('pilot')) {
+  // If user is logged into the Pilot or Client workspace, do not show any simulated demo environment banner
+  if (user?.isPilotCompany || user?.environmentContext === 'PILOT' || user?.environmentContext === 'CLIENT' || user?.companyName?.toLowerCase().includes('pilot')) {
     return null;
   }
 

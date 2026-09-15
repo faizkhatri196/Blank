@@ -13,7 +13,7 @@ export interface IServiceTicket extends Document {
   normalizedComplaint?: string;
   isUnknownTriage?: boolean;
   triageClassification?: 'KNOWN_PROBLEM' | 'UNKNOWN_TRIAGE' | 'PERFORMANCE_ISSUE' | 'SAFETY_CRITICAL';
-  environmentContext?: 'DEMO' | 'PILOT';
+  environmentContext?: 'DEMO' | 'PILOT' | 'CLIENT';
   symptoms: string[];
   errorCode?: string;
   priority: TicketPriority;
@@ -66,7 +66,7 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
     },
     environmentContext: {
       type: String,
-      enum: ['DEMO', 'PILOT'],
+      enum: ['DEMO', 'PILOT', 'CLIENT'],
       default: 'DEMO',
       index: true,
     },

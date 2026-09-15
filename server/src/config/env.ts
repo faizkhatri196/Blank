@@ -11,6 +11,7 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   UPLOAD_DIR: process.env.UPLOAD_DIR || path.resolve(process.cwd(), 'uploads'),
   MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_field_service_copilot',
+  TEST_MONGODB_URI: process.env.TEST_MONGODB_URI || '',
   JWT_SECRET: process.env.JWT_SECRET || 'fallback-dev-secret-change-in-production-min-32-chars',
   AI_PROVIDER: (process.env.AI_PROVIDER || 'demo').toLowerCase(),
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',

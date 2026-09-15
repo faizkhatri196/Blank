@@ -86,22 +86,25 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
 
     const data = parseResult.data;
 
+    const normalizedEmail = data.email.toLowerCase().trim();
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email: data.email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       res.status(400).json({
         success: false,
-        error: { code: 'EMAIL_EXISTS', message: 'User with this email already exists' },
+        error: { code: 'EMAIL_EXISTS', message: 'An account with this email already exists.' },
       });
       return;
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const rawPassword = (data.temporaryPassword || data.password)!;
+    const passwordHash = await bcrypt.hash(rawPassword, 10);
     const user = await User.create({
       companyId: req.companyId,
-      name: data.name,
-      email: data.email.toLowerCase(),
-      phone: data.phone,
+      name: data.name.trim(),
+      email: normalizedEmail,
+      phone: data.phone.trim(),
       passwordHash,
       role: 'TECHNICIAN',
       active: true,

@@ -215,7 +215,7 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       normalizedComplaint: normalizedResult.normalizedComplaint,
       isUnknownTriage: normalizedResult.isUnknownTriage,
       triageClassification: normalizedResult.triageClassification,
-      environmentContext: company?.isPilot ? 'PILOT' : 'DEMO',
+      environmentContext: company?.environmentContext || (company?.isPilot ? 'PILOT' : 'DEMO'),
       symptoms: data.symptoms,
       errorCode: data.errorCode,
       priority: data.priority,
@@ -224,7 +224,7 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
       repeatVisit: data.repeatVisit || false,
       previousTicketId: data.previousTicketId,
       repeatVisitReason: data.repeatVisitReason,
-      isDemoData: company?.isPilot ? false : (data.isDemoData || false),
+      isDemoData: (company?.isPilot || company?.environmentContext === 'CLIENT') ? false : (data.isDemoData || false),
       createdBy: req.userId,
       statusHistory: [
         {

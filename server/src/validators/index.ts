@@ -5,21 +5,67 @@ export const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-export const createTechnicianSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  phone: z.string().min(10, 'Valid phone number is required'),
-  email: z.string().email('Valid email address is required'),
-  password: z.string().min(6, 'Temporary password must be at least 6 characters'),
-  experienceYears: z.number().min(0, 'Experience years must be positive').default(1),
-  serviceTypes: z.array(z.enum(['SOLAR', 'AC'])).min(1, 'At least one service type must be selected'),
-  skills: z.array(z.string()).min(1, 'At least one skill is required'),
-  tools: z.array(z.string()).default([]),
-  certifications: z.array(z.string()).default([]),
-  serviceAreas: z.array(z.string()).min(1, 'At least one service area is required'),
-  availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).default('AVAILABLE'),
-});
+export const companySignupSchema = z
+  .object({
+    companyName: z.string().min(2, 'Company name must be at least 2 characters'),
+    managerName: z.string().min(2, 'Manager name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(6, 'Password confirmation is required'),
+    phone: z.string().min(8, 'Valid phone number is required'),
+    serviceType: z.enum(['SOLAR', 'AC', 'BOTH', 'AC/HVAC']).default('SOLAR'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
-export const updateTechnicianSchema = createTechnicianSchema.partial().omit({ password: true });
+export const createTechnicianSchema = z
+  .object({
+    name: z.string().min(2, 'Name is required'),
+    phone: z.string().min(10, 'Valid phone number is required'),
+    email: z.string().email('Valid email address is required'),
+    password: z.string().min(6, 'Temporary password must be at least 6 characters').optional(),
+    temporaryPassword: z.string().min(6, 'Temporary password must be at least 6 characters').optional(),
+    confirmPassword: z.string().optional(),
+    experienceYears: z.number().min(0, 'Experience years must be positive').default(1),
+    serviceTypes: z.array(z.enum(['SOLAR', 'AC'])).min(1, 'At least one service type must be selected'),
+    skills: z.array(z.string()).min(1, 'At least one skill is required'),
+    tools: z.array(z.string()).default([]),
+    certifications: z.array(z.string()).default([]),
+    serviceAreas: z.array(z.string()).min(1, 'At least one service area is required'),
+    availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).default('AVAILABLE'),
+  })
+  .refine((data) => !!(data.password || data.temporaryPassword), {
+    message: 'Temporary password must be at least 6 characters',
+    path: ['password'],
+  })
+  .refine(
+    (data) => {
+      const pwd = data.password || data.temporaryPassword;
+      if (data.confirmPassword && pwd !== data.confirmPassword) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Passwords don't match",
+      path: ['confirmPassword'],
+    }
+  );
+
+export const updateTechnicianSchema = z.object({
+  name: z.string().min(2).optional(),
+  phone: z.string().min(10).optional(),
+  email: z.string().email().optional(),
+  experienceYears: z.number().min(0).optional(),
+  serviceTypes: z.array(z.enum(['SOLAR', 'AC'])).min(1).optional(),
+  skills: z.array(z.string()).min(1).optional(),
+  tools: z.array(z.string()).optional(),
+  certifications: z.array(z.string()).optional(),
+  serviceAreas: z.array(z.string()).min(1).optional(),
+  availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).optional(),
+});
 
 export const updateTechnicianStatusSchema = z.object({
   availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']),
@@ -160,3 +206,19 @@ export const aiOutputSchema = z.object({
   reasoning: z.string(),
   knowledgeSources: z.array(z.string()),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(10, 'Reset token is missing or invalid'),
+    password: z.string().min(6, 'New password must be at least 6 characters'),
+    confirmPassword: z.string().min(6, 'Confirm password must be at least 6 characters'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+

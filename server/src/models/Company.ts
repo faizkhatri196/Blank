@@ -12,7 +12,7 @@ export interface ICompany extends Document {
     defaultCurrency?: string;
   };
   isPilot: boolean;
-  environmentContext: 'DEMO' | 'PILOT';
+  environmentContext: 'DEMO' | 'PILOT' | 'CLIENT';
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -36,7 +36,7 @@ const CompanySchema = new Schema<ICompany>(
     isPilot: { type: Boolean, default: false, index: true },
     environmentContext: {
       type: String,
-      enum: ['DEMO', 'PILOT'],
+      enum: ['DEMO', 'PILOT', 'CLIENT'],
       default: 'DEMO',
       index: true,
     },

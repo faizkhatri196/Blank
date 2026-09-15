@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { Shield, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
@@ -8,8 +8,21 @@ export const Login: React.FC = () => {
   // Only show demo helper if explicit URL query param ?demo=true is present (for internal tests)
   const isDemoDevMode = new URLSearchParams(window.location.search).get('demo') === 'true';
 
+  const [mode, setMode] = useState<'LOGIN' | 'SIGNUP'>('LOGIN');
+
+  // Login form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Signup form state
+  const [companyName, setCompanyName] = useState('');
+  const [managerName, setManagerName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [serviceType, setServiceType] = useState<'SOLAR' | 'AC/HVAC' | 'BOTH'>('SOLAR');
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customApiUrl, setCustomApiUrl] = useState(localStorage.getItem('servora_api_url') || '');
@@ -28,7 +41,7 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -45,6 +58,44 @@ export const Login: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'Invalid email or password. Please verify your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (signupPassword !== confirmPassword) {
+      setError("Passwords don't match. Please check and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await apiClient.post('/auth/signup', {
+        companyName: companyName.trim(),
+        managerName: managerName.trim(),
+        email: signupEmail.trim(),
+        password: signupPassword,
+        confirmPassword,
+        phone: phone.trim(),
+        serviceType,
+      });
+
+      const { token, user } = res.data.data;
+      login(token, user);
+      navigate('/manager/dashboard');
+    } catch (err: any) {
+      if (err.message && err.message.includes('already exists')) {
+        setError('An account with this email already exists.');
+      } else if (err.message && err.message.includes('Unable to reach Servora backend')) {
+        setError('Unable to create account. Please check the backend connection and try again.');
+      } else {
+        setError(err.message || 'Unable to create account. Please check the backend connection and try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -68,10 +119,12 @@ export const Login: React.FC = () => {
         <div className="bg-white py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-slate-100">
           <div className="mb-6">
             <h2 className="text-lg font-black text-slate-900 tracking-tight">
-              Sign In to Your Workspace
+              {mode === 'LOGIN' ? 'Sign In to Your Workspace' : 'Create Service Account'}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enter your authorized organization credentials to continue
+              {mode === 'LOGIN'
+                ? 'Enter your authorized organization credentials to continue'
+                : 'Set up your company workspace and manager account'}
             </p>
           </div>
 
@@ -106,7 +159,7 @@ export const Login: React.FC = () => {
                   </div>
                   {apiSavedNotice && (
                     <span className="text-[11px] text-emerald-700 font-semibold block mt-1">
-                      ✓ Backend connected! Please click "Sign In" again.
+                      ✓ Backend connected! Please click {mode === 'LOGIN' ? '"Sign In"' : '"Create Account"'} again.
                     </span>
                   )}
                 </div>
@@ -114,59 +167,225 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Work Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          {mode === 'LOGIN' ? (
+            <form onSubmit={handleSubmitLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Work Email
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@company.com"
+                    className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Password
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-2 py-3 px-4 rounded-xl text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99]"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    Sign In to Servora
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('SIGNUP');
+                    setError(null);
+                  }}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                >
+                  New service company? Create an account
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmitSignup} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Company / Service Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="e.g. Apex Solar Solutions"
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Manager Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={managerName}
+                    onChange={(e) => setManagerName(e.target.value)}
+                    placeholder="e.g. Rahul Patel"
+                    className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 00000"
+                    className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Work Email *
+                </label>
                 <input
                   type="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  value={signupEmail}
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                  placeholder="manager@company.com"
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
-                />
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Primary Service Type *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['SOLAR', 'AC/HVAC', 'BOTH'] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setServiceType(type)}
+                      className={`py-2 px-2 text-xs font-bold rounded-xl border transition-all ${
+                        serviceType === type
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-3 px-4 rounded-xl text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                <>
-                  Sign In to Servora
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                    Confirm Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-2 py-3 px-4 rounded-xl text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99]"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating Company Workspace...
+                  </>
+                ) : (
+                  <>
+                    Create Service Account
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('LOGIN');
+                    setError(null);
+                  }}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-800 hover:underline"
+                >
+                  Already have an account? Sign In
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Internal Debug/Demo panel ONLY visible when URL explicitly has ?demo=true */}
           {isDemoDevMode && (

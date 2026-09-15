@@ -15,7 +15,13 @@ export const Technicians: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('Demo@12345');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [createdTechInfo, setCreatedTechInfo] = useState<{
+    name: string;
+    email: string;
+    temporaryPassword: string;
+  } | null>(null);
   const [experienceYears, setExperienceYears] = useState(3);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(['SOLAR']);
   const [skillsInput, setSkillsInput] = useState('SOLAR_INSTALLATION, INVERTER_REPAIR');
@@ -57,6 +63,12 @@ export const Technicians: React.FC = () => {
   const handleCreateTechnician = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
+
+    if (password !== confirmPassword) {
+      setModalError("Passwords don't match. Please verify and try again.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -76,9 +88,9 @@ export const Technicians: React.FC = () => {
         .filter(Boolean);
 
       await apiClient.post('/technicians', {
-        name,
-        email,
-        phone,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone.trim(),
         password,
         experienceYears: Number(experienceYears),
         serviceTypes,
@@ -88,11 +100,20 @@ export const Technicians: React.FC = () => {
         certifications: ['Certified Field Technician Level II'],
       });
 
+      // Provide one-time display of temporary login credentials for manager to share
+      setCreatedTechInfo({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        temporaryPassword: password,
+      });
+
       setIsAddModalOpen(false);
-      // Reset form
+      // Reset form fields
       setName('');
       setEmail('');
       setPhone('');
+      setPassword('');
+      setConfirmPassword('');
       await loadTechnicians();
     } catch (err: any) {
       setModalError(err.message || 'Failed to add technician');
@@ -130,6 +151,39 @@ export const Technicians: React.FC = () => {
           + Add Field Technician
         </button>
       </div>
+
+      {/* One-Time Temporary Password Display */}
+      {createdTechInfo && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-500 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="text-sm font-black text-emerald-950">
+                Technician Account Created Successfully!
+              </span>
+            </div>
+            <p className="text-xs text-emerald-900">
+              Share these credentials with <strong>{createdTechInfo.name}</strong> now. For security, passwords are never stored in plaintext or displayed again.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+              <span className="bg-white px-2.5 py-1 rounded-lg border border-emerald-200 font-mono font-bold text-slate-800">
+                Email: {createdTechInfo.email}
+              </span>
+              <span className="bg-white px-2.5 py-1 rounded-lg border border-emerald-200 font-mono font-bold text-emerald-700">
+                Temporary Password: {createdTechInfo.temporaryPassword}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setCreatedTechInfo(null)}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 shadow-sm"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
@@ -327,12 +381,24 @@ export const Technicians: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Initial Password *</label>
+              <label className="block font-bold text-slate-700 mb-1">Temporary Password *</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Confirm Password *</label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
                 className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
