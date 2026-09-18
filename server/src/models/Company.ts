@@ -6,10 +6,24 @@ export interface ICompany extends Document {
   email: string;
   phone: string;
   address: string;
+  approvedContactNumber?: string;
   servicesSupported: ServiceType[];
+  serviceAreas: Array<{
+    city: string;
+    state?: string;
+    country?: string;
+    areas?: string[];
+    pincodes?: string[];
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+    services: ServiceType[];
+  }>;
   settings: {
     allowBlindEvaluation?: boolean;
     defaultCurrency?: string;
+    showTechnicianNameToCustomer?: boolean;
+    showApprovedContactToCustomer?: boolean;
   };
   isPilot: boolean;
   environmentContext: 'DEMO' | 'PILOT' | 'CLIENT';
@@ -24,14 +38,29 @@ const CompanySchema = new Schema<ICompany>(
     email: { type: String, required: true, lowercase: true, trim: true },
     phone: { type: String, required: true, trim: true },
     address: { type: String, default: '' },
+    approvedContactNumber: { type: String, trim: true },
     servicesSupported: {
       type: [String],
-      enum: ['SOLAR', 'AC'],
       default: ['SOLAR', 'AC'],
     },
+    serviceAreas: [
+      {
+        city: { type: String, required: true, trim: true },
+        state: { type: String, trim: true },
+        country: { type: String, trim: true, default: 'India' },
+        areas: { type: [String], default: [] },
+        pincodes: { type: [String], default: [] },
+        latitude: { type: Number },
+        longitude: { type: Number },
+        radius: { type: Number },
+        services: { type: [String], default: ['SOLAR', 'AC'] },
+      },
+    ],
     settings: {
       allowBlindEvaluation: { type: Boolean, default: true },
       defaultCurrency: { type: String, default: 'INR' },
+      showTechnicianNameToCustomer: { type: Boolean, default: false },
+      showApprovedContactToCustomer: { type: Boolean, default: true },
     },
     isPilot: { type: Boolean, default: false, index: true },
     environmentContext: {

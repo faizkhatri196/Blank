@@ -19,6 +19,8 @@ export interface IPilotFeedback extends Document {
   technicianMatchingHelpfulness?: number; // 1-5
   timeSavedMinutes?: number;
   comments?: string;
+  onTime?: boolean;
+  resolved?: boolean;
   createdAt: Date;
 }
 
@@ -27,7 +29,7 @@ const PilotFeedbackSchema = new Schema<IPilotFeedback>(
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     ticketId: { type: Schema.Types.ObjectId, ref: 'ServiceTicket', required: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    role: { type: String, enum: ['SERVICE_MANAGER', 'TECHNICIAN'], required: true },
+    role: { type: String, enum: ['SERVICE_MANAGER', 'TECHNICIAN', 'CUSTOMER'], required: true },
     serviceType: { type: String, enum: ['SOLAR', 'AC'], required: true, index: true },
     aiUtilityRating: { type: Number, required: true, min: 1, max: 5 },
     wasAiSuggestionUseful: { type: String, enum: ['YES', 'PARTIALLY', 'NO'] },

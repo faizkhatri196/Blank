@@ -4,8 +4,8 @@ import { ServiceType } from '../types';
 export interface IServiceHistory extends Document {
   companyId: mongoose.Types.ObjectId;
   customerId: mongoose.Types.ObjectId;
-  assetId: mongoose.Types.ObjectId;
-  assetType: 'SolarSystem' | 'ACUnit';
+  assetId?: mongoose.Types.ObjectId;
+  assetType?: 'SolarSystem' | 'ACUnit';
   serviceType: ServiceType;
   ticketId: mongoose.Types.ObjectId;
   ticketNumber: string;
@@ -29,10 +29,10 @@ const ServiceHistorySchema = new Schema<IServiceHistory>(
   {
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
-    assetId: { type: Schema.Types.ObjectId, required: true, refPath: 'assetType', index: true },
+    assetId: { type: Schema.Types.ObjectId, required: false, refPath: 'assetType', index: true },
     assetType: {
       type: String,
-      required: true,
+      required: false,
       enum: ['SolarSystem', 'ACUnit'],
     },
     serviceType: {

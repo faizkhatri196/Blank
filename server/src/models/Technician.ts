@@ -19,6 +19,9 @@ export interface ITechnician extends Document {
     latitude?: number;
     longitude?: number;
     address?: string;
+    accuracy?: number;
+    timestamp?: Date;
+    lastActiveTicketId?: mongoose.Types.ObjectId;
   };
   active: boolean;
   createdAt: Date;
@@ -36,7 +39,6 @@ const TechnicianSchema = new Schema<ITechnician>(
     experienceYears: { type: Number, default: 1, min: 0 },
     serviceTypes: {
       type: [String],
-      enum: ['SOLAR', 'AC'],
       required: true,
       index: true,
     },
@@ -54,6 +56,9 @@ const TechnicianSchema = new Schema<ITechnician>(
       latitude: { type: Number },
       longitude: { type: Number },
       address: { type: String },
+      accuracy: { type: Number },
+      timestamp: { type: Date },
+      lastActiveTicketId: { type: Schema.Types.ObjectId, ref: 'ServiceTicket' },
     },
     active: { type: Boolean, default: true },
   },

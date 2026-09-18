@@ -21,6 +21,7 @@ import {
   Loader2,
   Check,
   Zap,
+  Radio,
 } from 'lucide-react';
 
 export const JobExecution: React.FC = () => {
@@ -31,6 +32,8 @@ export const JobExecution: React.FC = () => {
   const [asset, setAsset] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isBroadcastingLocation, setIsBroadcastingLocation] = useState(false);
+  const [lastBroadcastTime, setLastBroadcastTime] = useState<string | null>(null);
 
   // Field Completion Form state
   const [actualDiagnosis, setActualDiagnosis] = useState('');
@@ -75,11 +78,44 @@ export const JobExecution: React.FC = () => {
     loadTicket();
   }, [id]);
 
+  const broadcastLocation = async () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    setIsBroadcastingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await apiClient.patch('/technicians/me/location', {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            activeTicketId: ticket?._id,
+          });
+          setLastBroadcastTime(new Date().toLocaleTimeString());
+        } catch (err: any) {
+          console.error('Failed to broadcast location:', err);
+        } finally {
+          setIsBroadcastingLocation(false);
+        }
+      },
+      (err) => {
+        console.warn('Geolocation error or permission denied:', err.message);
+        setIsBroadcastingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  };
+
   const handleAdvanceStatus = async (nextStatus: string, note?: string) => {
     setIsUpdatingStatus(true);
     try {
       await apiClient.patch(`/tickets/${id}/status`, { status: nextStatus, note });
       await loadTicket();
+      if (['ON_THE_WAY', 'ON_SITE', 'DIAGNOSING', 'REPAIRING'].includes(nextStatus)) {
+        broadcastLocation();
+      }
     } catch (err: any) {
       alert(`Status update failed: ${err.message}`);
     } finally {
@@ -302,6 +338,47 @@ export const JobExecution: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* LIVE LOCATION TELEMETRY BROADCAST (Active jobs) */}
+      {['ON_THE_WAY', 'ON_SITE', 'DIAGNOSING', 'REPAIRING'].includes(ticket.status) && (
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <span>Field Location Sharing</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="text-[10px] text-slate-500">
+                {lastBroadcastTime
+                  ? `Last broadcast: ${lastBroadcastTime}`
+                  : 'Coordinates shared on phase changes'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={broadcastLocation}
+            disabled={isBroadcastingLocation}
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
+          >
+            {isBroadcastingLocation ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                Sync GPS
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* AI ASSISTANCE PREPARATION CARD (High contrast for outdoors) */}
       {aiAnalysis && (

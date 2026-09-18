@@ -18,7 +18,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
   {
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     actorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    actorRole: { type: String, enum: ['SERVICE_MANAGER', 'TECHNICIAN'], required: true },
+    actorRole: { type: String, enum: ['CUSTOMER', 'SERVICE_MANAGER', 'TECHNICIAN'], required: true },
     action: { type: String, required: true, index: true },
     entityType: { type: String, required: true },
     entityId: { type: String, required: true },

@@ -3,8 +3,17 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from '../pages/auth/Login';
 import { ForgotPassword } from '../pages/auth/ForgotPassword';
 import { ResetPassword } from '../pages/auth/ResetPassword';
+import { CompanyOnboarding } from '../pages/auth/CompanyOnboarding';
 import { ManagerLayout } from '../layouts/ManagerLayout';
 import { TechnicianLayout } from '../layouts/TechnicianLayout';
+import { CustomerLayout } from '../layouts/CustomerLayout';
+
+// Customer Pages
+import { CustomerHome } from '../pages/customer/CustomerHome';
+import { CustomerServiceRequest } from '../pages/customer/CustomerServiceRequest';
+import { CustomerRequestTracking } from '../pages/customer/CustomerRequestTracking';
+import { CustomerRequestList } from '../pages/customer/CustomerRequestList';
+import { CustomerProfile } from '../pages/customer/CustomerProfile';
 
 // Manager Pages
 import { Dashboard } from '../pages/manager/Dashboard';
@@ -25,9 +34,21 @@ import { TechnicianProfile } from '../pages/technician/TechnicianProfile';
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/customer" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/onboarding" element={<CompanyOnboarding />} />
+      <Route path="/register" element={<Navigate to="/onboarding" replace />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Customer Experience Section */}
+      <Route path="/customer" element={<CustomerLayout />}>
+        <Route index element={<CustomerHome />} />
+        <Route path="request" element={<CustomerServiceRequest />} />
+        <Route path="requests" element={<CustomerRequestList />} />
+        <Route path="requests/:id" element={<CustomerRequestTracking />} />
+        <Route path="profile" element={<CustomerProfile />} />
+      </Route>
 
       {/* Manager Section */}
       <Route path="/manager" element={<ManagerLayout />}>
@@ -57,7 +78,7 @@ export const AppRoutes: React.FC = () => {
       </Route>
 
       {/* Default Catch-all */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/customer" replace />} />
     </Routes>
   );
 };

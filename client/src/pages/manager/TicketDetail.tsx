@@ -615,10 +615,31 @@ export const TicketDetail: React.FC = () => {
               <div className="flex items-start gap-1.5 text-xs text-slate-500 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                 <span>
-                  {ticket.customerId?.address}, {ticket.customerId?.city}
+                  {(ticket as any).serviceLocation?.address || ticket.customerId?.address}, {(ticket as any).serviceLocation?.city || ticket.customerId?.city} {(ticket as any).serviceLocation?.pincode ? `(${(ticket as any).serviceLocation?.pincode})` : ''}
                 </span>
               </div>
             </div>
+
+            {/* Customer Feedback if provided */}
+            {(ticket as any).customerFeedback && (
+              <div className="pt-2 border-t border-slate-100 space-y-1 text-xs">
+                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
+                  Customer Feedback:
+                </span>
+                <div className="flex items-center gap-1 font-bold text-slate-800">
+                  <span className="text-amber-500">★ {(ticket as any).customerFeedback.rating}/5</span>
+                  {(ticket as any).customerFeedback.resolved && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">Resolved</span>
+                  )}
+                  {(ticket as any).customerFeedback.onTime && (
+                    <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded">On-Time</span>
+                  )}
+                </div>
+                {(ticket as any).customerFeedback.comment && (
+                  <p className="text-slate-600 italic">"{(ticket as any).customerFeedback.comment}"</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Asset Details */}

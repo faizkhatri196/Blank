@@ -5,6 +5,18 @@ export const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+export const serviceAreaSchema = z.object({
+  city: z.string().min(1, 'City is required'),
+  state: z.string().optional(),
+  country: z.string().optional().default('India'),
+  areas: z.array(z.string()).optional().default([]),
+  pincodes: z.array(z.string()).optional().default([]),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  radius: z.number().optional(),
+  services: z.array(z.string()).min(1, 'At least one service is required for this area'),
+});
+
 export const companySignupSchema = z
   .object({
     companyName: z.string().min(2, 'Company name must be at least 2 characters'),
@@ -13,7 +25,12 @@ export const companySignupSchema = z
     password: z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string().min(6, 'Password confirmation is required'),
     phone: z.string().min(8, 'Valid phone number is required'),
-    serviceType: z.enum(['SOLAR', 'AC', 'BOTH', 'AC/HVAC']).default('SOLAR'),
+    address: z.string().optional(),
+    website: z.string().optional(),
+    logo: z.string().optional(),
+    serviceType: z.string().optional().default('SOLAR'),
+    servicesSupported: z.array(z.string()).optional(),
+    serviceAreas: z.array(serviceAreaSchema).optional().default([]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -29,7 +46,7 @@ export const createTechnicianSchema = z
     temporaryPassword: z.string().min(6, 'Temporary password must be at least 6 characters').optional(),
     confirmPassword: z.string().optional(),
     experienceYears: z.number().min(0, 'Experience years must be positive').default(1),
-    serviceTypes: z.array(z.enum(['SOLAR', 'AC'])).min(1, 'At least one service type must be selected'),
+    serviceTypes: z.array(z.string()).min(1, 'At least one service type must be selected'),
     skills: z.array(z.string()).min(1, 'At least one skill is required'),
     tools: z.array(z.string()).default([]),
     certifications: z.array(z.string()).default([]),

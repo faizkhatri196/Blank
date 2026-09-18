@@ -8,6 +8,9 @@ import reportRoutes from './reportRoutes';
 import pilotRoutes from './pilotRoutes';
 import uploadRoutes from './uploadRoutes';
 import evaluationRoutes from './evaluationRoutes';
+import customerPortalRoutes from './customerPortalRoutes';
+import companyRoutes from './companyRoutes';
+import fieldOperationsRoutes from './fieldOperationsRoutes';
 import { getSystemHealth } from '../controllers/pilotController';
 
 const router = Router();
@@ -16,6 +19,8 @@ const router = Router();
 router.get('/health', getSystemHealth);
 
 router.use('/auth', authRoutes);
+router.use('/company', companyRoutes);
+router.use('/field-operations', fieldOperationsRoutes);
 router.use('/technicians', technicianRoutes);
 router.use('/customers', customerRoutes);
 router.use('/assets', assetRoutes);
@@ -24,5 +29,6 @@ router.use('/service-reports', reportRoutes);
 router.use('/pilot', pilotRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/evaluation', evaluationRoutes);
+router.use('/customer-portal', customerPortalRoutes);
 
 export default router;

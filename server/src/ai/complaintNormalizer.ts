@@ -20,7 +20,9 @@ export interface NormalizedComplaintResult {
   inferredKeywords: string[];
 }
 
-export function normalizeComplaint(rawInput: string, serviceType: 'SOLAR' | 'AC' = 'SOLAR'): NormalizedComplaintResult {
+import { ServiceType } from '../types';
+
+export function normalizeComplaint(rawInput: string, serviceType: ServiceType | string = 'SOLAR'): NormalizedComplaintResult {
   const trimmed = (rawInput || '').trim();
   const lower = trimmed.toLowerCase();
 
@@ -106,7 +108,88 @@ export function normalizeComplaint(rawInput: string, serviceType: 'SOLAR' | 'AC'
     normalized = normalized.replace(regex, replacement);
   }
 
-  // Construct structured professional statement
+  // If AC serviceType, handle AC specific domain logic
+  if (serviceType === 'AC') {
+    const hasCoolingIssue = lower.includes('cool') || lower.includes('thanda') || lower.includes('thando') || lower.includes('warm') || lower.includes('garam');
+    const hasWaterLeak = lower.includes('leak') || lower.includes('pani') || lower.includes('paani') || lower.includes('water') || lower.includes('drip') || lower.includes('pade che');
+    const hasNoise = lower.includes('noise') || lower.includes('sound') || lower.includes('awaj') || lower.includes('awaaz') || lower.includes('vibrat');
+    const hasPowerIssue = lower.includes('not turn') || lower.includes('chalu nathi') || lower.includes('start nahi') || lower.includes('dead') || lower.includes('power');
+    const hasOutdoorIssue = lower.includes('outdoor') || lower.includes('compressor') || lower.includes('fan');
+    const hasSmell = lower.includes('smell') || lower.includes('odor') || lower.includes('vas') || lower.includes('bad');
+
+    const hasNoSpecificACIssue = !hasCoolingIssue && !hasWaterLeak && !hasNoise && !hasPowerIssue && !hasOutdoorIssue && !hasSmell && !hasSafety;
+
+    if ((isVague && hasNoSpecificACIssue) || (lower.length < 25 && hasNoSpecificACIssue && (lower.includes('not working') || lower.includes('problem') || lower.includes('check')))) {
+      return {
+        rawComplaint: trimmed,
+        normalizedComplaint:
+          'Customer reports AC / HVAC system is not working or requires inspection. No specific symptoms reported. System classified for triage assessment.',
+        isUnknownTriage: true,
+        triageClassification: 'UNKNOWN_TRIAGE',
+        knownFacts: [
+          'Customer reports AC system is not working or requires on-site inspection.',
+          'No specific water leakage, smoke, or error code stated in initial report.',
+        ],
+        unknownFacts: [
+          'Exact AC equipment fault is not confirmed remotely.',
+          'Indoor blower fan and cooling operation status unverified.',
+          'Refrigerant operating pressure and electrical voltage unverified.',
+        ],
+        missingInformation: [
+          'Is the AC unit turning ON with the remote or power switch?',
+          'Is air blowing out from the indoor unit vents?',
+          'Is the airflow cold, or is it normal room temperature / warm?',
+          'Is there any water dripping or overflowing from the indoor unit?',
+          'Is there any unusual rattling, vibrating, or buzzing noise?',
+        ],
+        statusMessage: 'DIAGNOSIS NOT CONFIRMED. TECHNICIAN VERIFICATION REQUIRED (VERIFY ON SITE).',
+        inferredKeywords: ['ac', 'inspection', 'triage', 'cooling', 'hvac'],
+      };
+    }
+
+    let acNormalized = 'Customer reports AC operational issue.';
+    const acKeywords: string[] = ['ac'];
+
+    if (hasCoolingIssue && hasWaterLeak) {
+      acNormalized = 'AC is not cooling and water leakage has been reported from the unit.';
+      acKeywords.push('not cooling', 'water leak');
+    } else if (hasCoolingIssue) {
+      acNormalized = 'AC is running but not cooling (blowing normal or warm air).';
+      acKeywords.push('not cooling', 'compressor', 'refrigerant');
+    } else if (hasWaterLeak) {
+      acNormalized = 'Water leakage / dripping reported from indoor AC unit.';
+      acKeywords.push('water leak', 'drainage');
+    } else if (hasNoise) {
+      acNormalized = 'Abnormal noise or vibration reported from AC unit.';
+      acKeywords.push('noise', 'blower', 'motor');
+    } else if (hasPowerIssue) {
+      acNormalized = 'AC unit is not turning ON / power supply failure.';
+      acKeywords.push('power', 'electrical', 'pcb');
+    } else if (hasOutdoorIssue) {
+      acNormalized = 'Outdoor condenser unit or compressor issue reported.';
+      acKeywords.push('outdoor', 'compressor', 'fan');
+    } else {
+      acNormalized = `Reported AC operational issue: "${trimmed}". Remote diagnosis unconfirmed — requires physical inspection on site.`;
+    }
+
+    return {
+      rawComplaint: trimmed,
+      normalizedComplaint: acNormalized,
+      isUnknownTriage: false,
+      triageClassification: 'KNOWN_PROBLEM',
+      knownFacts: [`Customer reported: "${trimmed}"`],
+      unknownFacts: ['Refrigerant charge and electrical components require on-site measurement.'],
+      missingInformation: [
+        'Indoor grille return air and supply air temperature',
+        'Operating current (Amperes) clamp measurement',
+        'Suction and discharge line pressures',
+      ],
+      statusMessage: 'AI PRELIMINARY HYPOTHESIS. REQUIRES ON-SITE AC VERIFICATION.',
+      inferredKeywords: acKeywords,
+    };
+  }
+
+  // Construction of Solar structured statement (existing behavior preserved)
   let normalizedComplaint = normalized;
   const inferredKeywords: string[] = [];
 

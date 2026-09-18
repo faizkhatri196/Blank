@@ -8,7 +8,8 @@ export interface AuthenticatedRequest extends Request {
   user?: IUser;
   userId?: mongoose.Types.ObjectId;
   companyId?: mongoose.Types.ObjectId;
-  role?: 'SERVICE_MANAGER' | 'TECHNICIAN';
+  role?: 'SERVICE_MANAGER' | 'TECHNICIAN' | 'CUSTOMER';
+  customerId?: mongoose.Types.ObjectId;
 }
 
 export async function authenticate(
@@ -37,7 +38,7 @@ export async function authenticate(
     const decoded = jwt.verify(token, ENV.JWT_SECRET) as {
       userId: string;
       companyId: string;
-      role: 'SERVICE_MANAGER' | 'TECHNICIAN';
+      role: 'SERVICE_MANAGER' | 'TECHNICIAN' | 'CUSTOMER';
     };
 
     const user = await User.findById(decoded.userId);
@@ -92,3 +93,56 @@ export function requireTechnician(
   }
   next();
 }
+
+export function requireCustomer(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.role !== 'CUSTOMER') {
+    res.status(403).json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'Customer access privileges required.' },
+    });
+    return;
+  }
+  next();
+}
+
+export async function optionalAuthenticate(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, ENV.JWT_SECRET) as {
+      userId: string;
+      companyId: string;
+      role: 'SERVICE_MANAGER' | 'TECHNICIAN' | 'CUSTOMER';
+    };
+
+    const user = await User.findById(decoded.userId);
+    if (user && user.active) {
+      req.user = user;
+      req.userId = user._id as mongoose.Types.ObjectId;
+      req.companyId = user.companyId as mongoose.Types.ObjectId;
+      req.role = user.role;
+    }
+  } catch (_e) {
+    // If invalid token in optional auth, proceed as unauthenticated without failing
+  }
+  next();
+}
+

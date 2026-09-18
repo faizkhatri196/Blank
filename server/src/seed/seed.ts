@@ -17,6 +17,11 @@ import {
 } from '../models';
 
 export async function seedDatabase() {
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[Seed] Refusing to seed in production environment!');
+    return;
+  }
+
   console.log('[Seed] Connecting to database...');
   await connectDB();
 
@@ -42,14 +47,37 @@ export async function seedDatabase() {
   const company = await Company.create({
     name: 'Demo Field Services',
     email: 'contact@demofieldservices.com',
-    phone: '+91 98765 00000',
+    phone: '+91 79 4000 1234',
+    approvedContactNumber: '+91 79 4000 1234',
     address: 'B-402, Titanium City Centre, Prahlad Nagar, Ahmedabad, Gujarat 380015',
     servicesSupported: ['SOLAR', 'AC'],
+    serviceAreas: [
+      {
+        city: 'Ahmedabad',
+        areas: ['Prahlad Nagar', 'Bopal', 'Satellite', 'Bodakdev', 'Sanand', 'Navrangpura', 'Vastrapur'],
+        pincodes: ['380015', '380054', '380058', '380009', '382110'],
+        services: ['SOLAR', 'AC'],
+      },
+      {
+        city: 'Gandhinagar',
+        areas: ['Sector 21', 'Infocity', 'Kudasan'],
+        pincodes: ['382007', '382421'],
+        services: ['SOLAR', 'AC'],
+      },
+      {
+        city: 'Sanand',
+        areas: ['GIDC Phase 2', 'Sanand City'],
+        pincodes: ['382110'],
+        services: ['SOLAR', 'AC'],
+      },
+    ],
     isPilot: false,
     environmentContext: 'DEMO',
     settings: {
       allowBlindEvaluation: true,
       defaultCurrency: 'INR',
+      showTechnicianNameToCustomer: false,
+      showApprovedContactToCustomer: true,
     },
     active: true,
   });
@@ -66,6 +94,17 @@ export async function seedDatabase() {
     phone: '+91 98765 11111',
     passwordHash: demoPasswordHash,
     role: 'SERVICE_MANAGER',
+    active: true,
+  });
+
+  // 1b. Demo Customer
+  const customerUser = await User.create({
+    companyId,
+    name: 'Pooja Patel',
+    email: 'customer@demo.com',
+    phone: '+91 98765 99999',
+    passwordHash: demoPasswordHash,
+    role: 'CUSTOMER',
     active: true,
   });
 

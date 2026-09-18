@@ -6,14 +6,34 @@ export interface IServiceTicket extends Document {
   ticketNumber: string;
   serviceType: ServiceType;
   customerId: mongoose.Types.ObjectId;
-  assetId: mongoose.Types.ObjectId;
-  assetType: 'SolarSystem' | 'ACUnit';
+  assetId?: mongoose.Types.ObjectId;
+  assetType?: 'SolarSystem' | 'ACUnit';
   complaint: string;
   rawComplaint?: string;
   normalizedComplaint?: string;
   isUnknownTriage?: boolean;
   triageClassification?: 'KNOWN_PROBLEM' | 'UNKNOWN_TRIAGE' | 'PERFORMANCE_ISSUE' | 'SAFETY_CRITICAL';
   environmentContext?: 'DEMO' | 'PILOT' | 'CLIENT';
+  problemCategory?: string;
+  problemCode?: string;
+  serviceLocation?: {
+    address: string;
+    city: string;
+    area?: string;
+    pincode?: string;
+    coordinates?: {
+      latitude?: number;
+      longitude?: number;
+    };
+    locationSource?: string;
+  };
+  customerFeedback?: {
+    rating: number;
+    comment?: string;
+    onTime?: boolean;
+    resolved?: boolean;
+    submittedAt?: Date;
+  };
   symptoms: string[];
   errorCode?: string;
   priority: TicketPriority;
@@ -44,16 +64,34 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
     ticketNumber: { type: String, required: true, unique: true, index: true },
     serviceType: {
       type: String,
-      enum: ['SOLAR', 'AC'],
       required: true,
       index: true,
     },
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
-    assetId: { type: Schema.Types.ObjectId, required: true, refPath: 'assetType' },
+    assetId: { type: Schema.Types.ObjectId, refPath: 'assetType' },
     assetType: {
       type: String,
-      required: true,
       enum: ['SolarSystem', 'ACUnit'],
+    },
+    serviceLocation: {
+      address: { type: String, trim: true },
+      city: { type: String, trim: true, index: true },
+      area: { type: String, trim: true },
+      pincode: { type: String, trim: true },
+      coordinates: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+      },
+      locationSource: { type: String, default: 'MANUAL' },
+    },
+    problemCategory: { type: String, trim: true },
+    problemCode: { type: String, trim: true },
+    customerFeedback: {
+      rating: { type: Number, min: 1, max: 5 },
+      comment: { type: String, trim: true },
+      onTime: { type: Boolean },
+      resolved: { type: Boolean },
+      submittedAt: { type: Date },
     },
     complaint: { type: String, required: true, trim: true },
     rawComplaint: { type: String, trim: true },

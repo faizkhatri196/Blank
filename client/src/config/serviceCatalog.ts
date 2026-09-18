@@ -1,0 +1,406 @@
+import { CustomerProblemCard, ServiceType } from '../types';
+
+export interface ServiceDisplayMeta {
+  serviceType: ServiceType;
+  title: string;
+  badge: string;
+  shortDescription: string;
+  iconName: string;
+  themeColor: string;
+  heroGradient: string;
+  problemCards: CustomerProblemCard[];
+}
+
+export const SOLAR_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'SOLAR',
+  title: 'Solar Service',
+  badge: 'Clean Energy',
+  shortDescription: 'Solar panels, inverters, power generation & routine maintenance',
+  iconName: 'Sun',
+  themeColor: 'amber',
+  heroGradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'INVERTER_NOT_WORKING',
+      title: 'Inverter not working',
+      description: 'Inverter display is off, black, or not turning on at all.',
+      image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80',
+      alt: 'Solar inverter unit not turning on',
+      recommendedEvidence: ['Clear photo of the inverter display screen', 'Photo of the main AC/DC isolator switches'],
+    },
+    {
+      code: 'LOW_GENERATION',
+      title: 'Solar generation is low',
+      description: 'Daily units or generation are significantly below normal sunny levels.',
+      image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=600&q=80',
+      alt: 'Solar panels generating lower power output',
+      recommendedEvidence: ['Photo of inverter daily kWh generation reading', 'Rooftop view of solar panel array'],
+    },
+    {
+      code: 'GENERATION_STOPPED',
+      title: 'Solar generation stopped',
+      description: 'Generation has dropped completely to zero during daylight hours.',
+      image: 'https://images.unsplash.com/photo-1545208942-e1c9c916524b?auto=format&fit=crop&w=600&q=80',
+      alt: 'Zero solar energy generation during day',
+      recommendedEvidence: ['Inverter front LED lights and status screen'],
+    },
+    {
+      code: 'INVERTER_ERROR_CODE',
+      title: 'Inverter showing an error',
+      description: 'An error code (e.g. F04, Relay, ISO, Grid Lost) or red warning light is visible.',
+      image: 'https://images.unsplash.com/photo-1558441719-8b489c634a1b?auto=format&fit=crop&w=600&q=80',
+      alt: 'Inverter display showing fault error code',
+      recommendedEvidence: ['Close-up photo of the error code on the inverter screen'],
+    },
+    {
+      code: 'PANEL_DAMAGE_DIRT',
+      title: 'Panel problem or cleaning',
+      description: 'Heavy dust/bird droppings, physical glass crack, or hotspot on panels.',
+      image: 'https://images.unsplash.com/photo-1592833159155-c62df1b65634?auto=format&fit=crop&w=600&q=80',
+      alt: 'Rooftop solar panels requiring cleaning or showing damage',
+      recommendedEvidence: ['Photo showing the panel array condition and shading/dirt'],
+    },
+    {
+      code: 'WIRING_CONNECTOR_ISSUE',
+      title: 'Wiring / connector issue',
+      description: 'Loose wire, spark, burning smell, or damaged conduit.',
+      image: 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?auto=format&fit=crop&w=600&q=80',
+      alt: 'Solar DC cabling and connector setup',
+      recommendedEvidence: ['Safe photo of wiring area from a distance (Do not touch conductors)'],
+    },
+    {
+      code: 'HIGH_ELECTRICITY_BILL',
+      title: 'Electricity bill problem',
+      description: 'Unexpectedly high electricity bill despite operating solar system.',
+      image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
+      alt: 'Electricity utility bill and net meter',
+      recommendedEvidence: ['Photo of recent electricity utility bills and net meter display'],
+    },
+    {
+      code: 'ROUTINE_MAINTENANCE',
+      title: 'Routine maintenance & checkup',
+      description: 'General system inspection, DC string voltage test, and safety check.',
+      image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80',
+      alt: 'Solar installation routine maintenance inspection',
+      recommendedEvidence: ['General photo of the solar rooftop installation'],
+    },
+    {
+      code: 'SOMETHING_ELSE',
+      title: 'Something else',
+      description: 'Issue not listed above or custom service request.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'Custom service request',
+      recommendedEvidence: ['Photo of the equipment of concern'],
+    },
+    {
+      code: 'NOT_SURE_TRIAGE',
+      title: "I'm not sure what's wrong",
+      description: "Answer a few simple questions and we'll help triage the issue.",
+      image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80',
+      alt: 'Assisted diagnostic triage',
+      recommendedEvidence: ['General photo of the inverter and rooftop setup'],
+      triageQuestions: [
+        {
+          id: 'q_generation',
+          question: 'Is your solar system producing electricity normally?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_display',
+          question: 'Is the inverter display screen illuminated?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_error',
+          question: 'Do you see any warning code or red light on the inverter?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_sudden',
+          question: 'Did the problem start suddenly or after a weather/power cut event?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+      ],
+    },
+  ],
+};
+
+export const AC_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'AC',
+  title: 'AC & HVAC Service',
+  badge: 'Climate Control',
+  shortDescription: 'Cooling, water leakage, unusual noise & seasonal maintenance',
+  iconName: 'Wind',
+  themeColor: 'cyan',
+  heroGradient: 'from-cyan-500/10 via-blue-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'NOT_COOLING',
+      title: 'AC not cooling',
+      description: 'AC is running but blowing normal or warm air instead of cooling.',
+      image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
+      alt: 'Air conditioner running without cooling',
+      recommendedEvidence: ['Photo of indoor AC unit display showing temperature', 'Outdoor condenser unit photo if safe'],
+    },
+    {
+      code: 'WATER_LEAKING',
+      title: 'Water leaking',
+      description: 'Water is dripping or overflowing from the indoor AC unit.',
+      image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
+      alt: 'Indoor AC unit dripping or leaking water',
+      recommendedEvidence: ['Photo of indoor unit showing water dripping area and wall'],
+    },
+    {
+      code: 'UNUSUAL_NOISE',
+      title: 'AC making unusual noise',
+      description: 'Loud rattling, vibrating, humming, or screeching sound.',
+      image: 'https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=600&q=80',
+      alt: 'AC unit producing abnormal vibration or noise',
+      recommendedEvidence: ['Photo of indoor or outdoor unit where noise is originating'],
+    },
+    {
+      code: 'NOT_TURNING_ON',
+      title: 'AC not turning ON',
+      description: 'Total power failure; indoor unit does not turn on with switch or remote.',
+      image: 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=600&q=80',
+      alt: 'AC unit power failure',
+      recommendedEvidence: ['Photo of AC electrical switch/MCB and indoor display panel'],
+    },
+    {
+      code: 'OUTDOOR_UNIT_ISSUE',
+      title: 'Outdoor unit problem',
+      description: 'Outdoor compressor or fan is not spinning, tripping breaker, or hot.',
+      image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80',
+      alt: 'Outdoor split AC condenser unit',
+      recommendedEvidence: ['Safe photo of outdoor condenser unit if accessible without risk'],
+    },
+    {
+      code: 'WEAK_AIRFLOW',
+      title: 'Weak airflow / blower issue',
+      description: 'Air coming out is very slow or louvers are stuck.',
+      image: 'https://images.unsplash.com/photo-1631545806478-f103b41d0877?auto=format&fit=crop&w=600&q=80',
+      alt: 'Indoor AC unit front grille and blower',
+      recommendedEvidence: ['Photo of indoor AC front grille and louvers'],
+    },
+    {
+      code: 'BAD_SMELL',
+      title: 'Bad smell from AC',
+      description: 'Musty, foul, or burning odor coming from AC airflow.',
+      image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80',
+      alt: 'Indoor unit emitting unpleasant odor',
+      recommendedEvidence: ['Photo of indoor unit and surroundings'],
+    },
+    {
+      code: 'PERIODIC_SERVICE',
+      title: 'Deep cleaning & servicing',
+      description: 'Seasonal jet-pump wash, filter cleaning, and gas pressure check.',
+      image: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
+      alt: 'Routine AC seasonal jet servicing and maintenance',
+      recommendedEvidence: ['Photo of indoor and outdoor units'],
+    },
+    {
+      code: 'SOMETHING_ELSE',
+      title: 'Something else',
+      description: 'Other AC problem not listed above.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'Other AC operational issue',
+      recommendedEvidence: ['Photo of AC equipment showing issue'],
+    },
+    {
+      code: 'NOT_SURE_TRIAGE',
+      title: "I'm not sure what's wrong",
+      description: "Answer a few simple questions and we'll help triage the issue.",
+      image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80',
+      alt: 'Assisted AC diagnostic triage',
+      recommendedEvidence: ['Photo of the indoor AC unit'],
+      triageQuestions: [
+        {
+          id: 'q_power',
+          question: 'Is the AC turning on with the power switch or remote?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_air',
+          question: 'Is air blowing out of the indoor vents?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_cooling',
+          question: 'Is the airflow cool or warm/normal?',
+          options: ['COOL', 'WARM / NORMAL', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_leak',
+          question: 'Do you see any water dripping or leaking?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+        {
+          id: 'q_sound',
+          question: 'Is there an unusual sound or vibration?',
+          options: ['YES', 'NO', "I DON'T KNOW"],
+        },
+      ],
+    },
+  ],
+};
+
+export const ELECTRICAL_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'ELECTRICAL',
+  title: 'Electrical Service',
+  badge: 'Certified Electrician',
+  shortDescription: 'Wiring, MCB tripping, switchboard, short circuits & heavy appliances',
+  iconName: 'Zap',
+  themeColor: 'amber',
+  heroGradient: 'from-amber-500/10 via-yellow-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'MCB_TRIPPING',
+      title: 'MCB / Fuse frequently tripping',
+      description: 'The main circuit breaker or sub-MCB keeps tripping when power is turned on.',
+      image: 'https://images.unsplash.com/photo-1558441719-8b489c634a1b?auto=format&fit=crop&w=600&q=80',
+      alt: 'MCB tripping on distribution board',
+      recommendedEvidence: ['Photo of the tripped breaker in DB box'],
+    },
+    {
+      code: 'WIRING_SPARK_BURNT',
+      title: 'Sparking, burning smell or short circuit',
+      description: 'Visible sparks, burning odor from switchboard, socket or wiring.',
+      image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80',
+      alt: 'Switchboard sparking or burnt socket',
+      recommendedEvidence: ['Safe photo of switchboard showing burn marks'],
+    },
+    {
+      code: 'POWER_OUTAGE_PARTIAL',
+      title: 'Partial power loss in rooms',
+      description: 'Some rooms or phase lines have lost power while others are working.',
+      image: 'https://images.unsplash.com/photo-1545208942-e1c9c916524b?auto=format&fit=crop&w=600&q=80',
+      alt: 'Partial phase power outage',
+      recommendedEvidence: ['Photo of main phase indicator lamps'],
+    },
+    {
+      code: 'SOMETHING_ELSE',
+      title: 'Other electrical issue',
+      description: 'General electrical installation, wiring check, or fixture repair.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'General electrical repair',
+      recommendedEvidence: ['Photo of the electrical equipment'],
+    },
+  ],
+};
+
+export const PLUMBING_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'PLUMBING',
+  title: 'Plumbing Service',
+  badge: 'Expert Plumber',
+  shortDescription: 'Pipe leakage, tap repairs, blockage, water pressure & drainage issues',
+  iconName: 'Wrench',
+  themeColor: 'blue',
+  heroGradient: 'from-blue-500/10 via-cyan-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'PIPE_LEAKAGE',
+      title: 'Burst pipe or water leakage',
+      description: 'Water dripping, spraying, or seeping through wall/ceiling pipes.',
+      image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=600&q=80',
+      alt: 'Burst or leaking pipe line',
+      recommendedEvidence: ['Photo of leaking joint or seepage area'],
+    },
+    {
+      code: 'DRAIN_BLOCKED',
+      title: 'Clogged drain or sewer blockage',
+      description: 'Water backing up in sink, shower drain, or toilet.',
+      image: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=600&q=80',
+      alt: 'Blocked drain or slow water drainage',
+      recommendedEvidence: ['Photo of blocked fixture'],
+    },
+    {
+      code: 'LOW_WATER_PRESSURE',
+      title: 'Low water pressure from taps',
+      description: 'Very weak water flow from bathroom or kitchen taps.',
+      image: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=600&q=80',
+      alt: 'Low water pressure in tap',
+      recommendedEvidence: ['Photo of water flow from tap'],
+    },
+    {
+      code: 'SOMETHING_ELSE',
+      title: 'Other plumbing work',
+      description: 'Fixture installation, valve replacement, or pump repair.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'General plumbing fixture repair',
+      recommendedEvidence: ['Photo of the plumbing fixture'],
+    },
+  ],
+};
+
+export const RO_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'RO_PURIFIER',
+  title: 'Water Purifier / RO Service',
+  badge: 'Water Care Specialist',
+  shortDescription: 'Filter replacement, membrane cleaning, bad taste & motor leakage',
+  iconName: 'Droplet',
+  themeColor: 'teal',
+  heroGradient: 'from-teal-500/10 via-emerald-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'NO_WATER_DISPENSING',
+      title: 'No water dispensing or tank empty',
+      description: 'Water is not flowing from purifier tap or tank is not filling up.',
+      image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80',
+      alt: 'RO purifier not dispensing water',
+      recommendedEvidence: ['Photo of front panel LED indicators'],
+    },
+    {
+      code: 'WATER_LEAKAGE',
+      title: 'Purifier leaking water',
+      description: 'Water dripping from the purifier body, base, or connector pipe.',
+      image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=600&q=80',
+      alt: 'Water purifier leaking',
+      recommendedEvidence: ['Photo of leakage origin'],
+    },
+    {
+      code: 'ROUTINE_SERVICE',
+      title: 'Routine filter replacement / Service',
+      description: 'Periodic maintenance, pre-filter, carbon, or membrane replacement.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'Routine RO maintenance',
+      recommendedEvidence: ['Photo of complete purifier unit'],
+    },
+  ],
+};
+
+export const APPLIANCE_CATALOG: ServiceDisplayMeta = {
+  serviceType: 'APPLIANCE_REPAIR',
+  title: 'Appliance Repair',
+  badge: 'Appliance Technician',
+  shortDescription: 'Refrigerator, washing machine, microwave & home appliances',
+  iconName: 'Tv',
+  themeColor: 'purple',
+  heroGradient: 'from-purple-500/10 via-indigo-500/5 to-transparent',
+  problemCards: [
+    {
+      code: 'NOT_TURNING_ON',
+      title: 'Appliance not turning on',
+      description: 'Complete power loss, no display, or no reaction to power button.',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+      alt: 'Home appliance dead power',
+      recommendedEvidence: ['Photo of the appliance rating label & power cord'],
+    },
+    {
+      code: 'NOT_COOLING_HEATING',
+      title: 'Not cooling or not heating',
+      description: 'Appliance runs but does not achieve required temperature.',
+      image: 'https://images.unsplash.com/photo-1558441719-8b489c634a1b?auto=format&fit=crop&w=600&q=80',
+      alt: 'Appliance temperature failure',
+      recommendedEvidence: ['Photo of the appliance model number'],
+    },
+  ],
+};
+
+export const SERVICE_CATALOG_MAP: Record<string, ServiceDisplayMeta> = {
+  SOLAR: SOLAR_CATALOG,
+  AC: AC_CATALOG,
+  ELECTRICAL: ELECTRICAL_CATALOG,
+  PLUMBING: PLUMBING_CATALOG,
+  RO_PURIFIER: RO_CATALOG,
+  APPLIANCE_REPAIR: APPLIANCE_CATALOG,
+};

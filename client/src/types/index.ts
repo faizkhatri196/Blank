@@ -1,6 +1,80 @@
-export type ServiceType = 'SOLAR' | 'AC';
+export type ServiceType =
+  | 'SOLAR'
+  | 'AC'
+  | 'ELECTRICAL'
+  | 'PLUMBING'
+  | 'RO_PURIFIER'
+  | 'REFRIGERATOR'
+  | 'WASHING_MACHINE'
+  | 'APPLIANCE_REPAIR'
+  | string;
 
-export type UserRole = 'SERVICE_MANAGER' | 'TECHNICIAN';
+export interface ServiceAreaConfig {
+  city: string;
+  state?: string;
+  country?: string;
+  areas?: string[];
+  pincodes?: string[];
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+  services: ServiceType[];
+}
+
+export type LocationFreshnessLevel = 'FRESH' | 'WARM' | 'STALE' | 'UNAVAILABLE';
+
+export interface LocationFreshness {
+  level: LocationFreshnessLevel;
+  label: string;
+  color: string;
+  minutesAgo?: number;
+}
+
+export interface ActiveFieldOperation {
+  ticketId: string;
+  ticketNumber: string;
+  serviceType: ServiceType;
+  problemCategory: string;
+  customerName: string;
+  customerPhone?: string;
+  serviceLocation: {
+    address: string;
+    city: string;
+    area?: string;
+    pincode?: string;
+  };
+  technician: {
+    id: string;
+    name: string;
+    phone: string;
+    profilePhoto?: string;
+    currentLocation?: {
+      latitude?: number;
+      longitude?: number;
+      address?: string;
+      accuracy?: number;
+      timestamp?: string;
+    };
+    locationFreshness: LocationFreshness;
+  } | null;
+  status: TicketStatus;
+  statusLabel: string;
+  etaMinutes?: number;
+  startedAt?: string;
+  latestActivity: {
+    action: string;
+    timestamp: string;
+    note?: string;
+  };
+  progressSteps: Array<{
+    key: string;
+    label: string;
+    completed: boolean;
+    current: boolean;
+  }>;
+}
+
+export type UserRole = 'SERVICE_MANAGER' | 'TECHNICIAN' | 'CUSTOMER';
 
 export type TechnicianAvailability = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
@@ -255,3 +329,82 @@ export interface PilotMetrics {
     pilotCount: number;
   };
 }
+
+export interface CustomerLocation {
+  address: string;
+  city: string;
+  area?: string;
+  pincode?: string;
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  locationSource?: 'GEOLOCATION' | 'MANUAL' | string;
+}
+
+export interface CustomerProblemCard {
+  code: string;
+  title: string;
+  description: string;
+  image: string;
+  alt: string;
+  recommendedEvidence: string[];
+  triageQuestions?: Array<{
+    id: string;
+    question: string;
+    options: string[];
+  }>;
+}
+
+export interface CustomerTimelineStep {
+  key: string;
+  label: string;
+  status: 'COMPLETED' | 'CURRENT' | 'PENDING';
+  timestamp?: string;
+  description?: string;
+}
+
+export interface CustomerFeedbackInput {
+  rating: number;
+  comment?: string;
+  onTime?: boolean;
+  resolved?: boolean;
+}
+
+export interface CustomerSafeTicket {
+  _id: string;
+  ticketNumber: string;
+  serviceType: ServiceType;
+  problemCategory?: string;
+  problemCode?: string;
+  rawComplaint?: string;
+  normalizedComplaint: string;
+  serviceLocation: CustomerLocation;
+  photos: string[];
+  status: TicketStatus;
+  customerStatusLabel: string;
+  customerTimeline: CustomerTimelineStep[];
+  assignedProfessionalRole?: string;
+  assignedProfessionalName?: string;
+  approvedCompanyContact?: {
+    phone?: string;
+    companyName?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  feedback?: {
+    rating: number;
+    comment?: string;
+    submittedAt?: string;
+  };
+}
+
+export interface AvailableServiceItem {
+  serviceType: ServiceType;
+  displayName: string;
+  shortDescription: string;
+  icon: string;
+  heroImage: string;
+}
+

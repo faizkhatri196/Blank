@@ -208,3 +208,55 @@ export async function updateTechnicianStatus(req: AuthenticatedRequest, res: Res
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
   }
 }
+
+export async function updateTechnicianLocation(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { latitude, longitude, address, accuracy, ticketId } = req.body;
+
+    let technician;
+    if (req.role === 'TECHNICIAN') {
+      const myTech = await Technician.findOne({ userId: req.userId, companyId: req.companyId });
+      if (!myTech) {
+        res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Technician profile not found' } });
+        return;
+      }
+      // If updating via /:id and id does not match self, reject with 403
+      if (req.params.id && req.params.id !== 'me' && req.params.id !== myTech._id.toString()) {
+        res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Technicians can only update their own location' } });
+        return;
+      }
+      technician = myTech;
+    } else if (req.role === 'SERVICE_MANAGER' && req.params.id) {
+      technician = await Technician.findOne({ _id: req.params.id, companyId: req.companyId });
+    } else {
+      res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Not authorized to update technician location' } });
+      return;
+    }
+
+    if (!technician) {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Technician profile not found' } });
+      return;
+    }
+
+    technician.currentLocation = {
+      latitude: typeof latitude === 'number' ? latitude : undefined,
+      longitude: typeof longitude === 'number' ? longitude : undefined,
+      address: typeof address === 'string' ? address.trim() : undefined,
+      accuracy: typeof accuracy === 'number' ? accuracy : undefined,
+      timestamp: new Date(),
+      lastActiveTicketId: ticketId ? ticketId : technician.currentLocation?.lastActiveTicketId,
+    };
+
+    await technician.save();
+
+    res.json({
+      success: true,
+      data: {
+        technicianId: technician._id,
+        currentLocation: technician.currentLocation,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+}

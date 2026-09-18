@@ -53,6 +53,8 @@ export const Login: React.FC = () => {
 
       if (user.role === 'SERVICE_MANAGER') {
         navigate('/manager/dashboard');
+      } else if (user.role === 'CUSTOMER') {
+        navigate('/customer');
       } else {
         navigate('/technician/dashboard');
       }
@@ -230,16 +232,12 @@ export const Login: React.FC = () => {
               </button>
 
               <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('SIGNUP');
-                    setError(null);
-                  }}
+                <Link
+                  to="/onboarding"
                   className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
-                  New service company? Create an account
-                </button>
+                  New service company? Complete Guided Onboarding →
+                </Link>
               </div>
             </form>
           ) : (
@@ -393,26 +391,36 @@ export const Login: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                 Internal Quick-Fill (Test Mode Only)
               </span>
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => {
-                    setEmail('manager@pilot.com');
-                    setPassword('Pilot@2026');
+                    setEmail('manager@demo.com');
+                    setPassword('Demo@12345');
                   }}
                   className="p-2 text-left rounded-lg bg-slate-50 border border-slate-200 hover:border-emerald-500 text-slate-700 font-mono text-[11px]"
                 >
-                  Manager: manager@pilot.com
+                  Manager: manager@demo.com
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setEmail('tech@pilot.com');
-                    setPassword('Pilot@2026');
+                    setEmail('technician@demo.com');
+                    setPassword('Demo@12345');
                   }}
                   className="p-2 text-left rounded-lg bg-slate-50 border border-slate-200 hover:border-emerald-500 text-slate-700 font-mono text-[11px]"
                 >
-                  Tech: tech@pilot.com
+                  Tech: technician@demo.com
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('customer@demo.com');
+                    setPassword('Demo@12345');
+                  }}
+                  className="p-2 text-left rounded-lg bg-slate-50 border border-slate-200 hover:border-indigo-500 text-slate-700 font-mono text-[11px]"
+                >
+                  Customer: customer@demo.com
                 </button>
               </div>
             </div>

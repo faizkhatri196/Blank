@@ -38,20 +38,46 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
       return;
     }
 
-    // Determine supported service lines
-    let servicesSupported: ('SOLAR' | 'AC')[] = ['SOLAR'];
-    if (data.serviceType === 'AC' || data.serviceType === 'AC/HVAC') {
-      servicesSupported = ['AC'];
-    } else if (data.serviceType === 'BOTH') {
-      servicesSupported = ['SOLAR', 'AC'];
+    // Determine supported service lines and service areas
+    let servicesSupported: string[] = [];
+    if (data.servicesSupported && data.servicesSupported.length > 0) {
+      servicesSupported = data.servicesSupported;
+    } else if (data.serviceAreas && data.serviceAreas.length > 0) {
+      const allServices = new Set<string>();
+      data.serviceAreas.forEach((sa) => (sa.services || []).forEach((s) => allServices.add(s)));
+      servicesSupported = Array.from(allServices);
     }
 
-    // 1. Create client Company document
+    if (servicesSupported.length === 0) {
+      if (data.serviceType === 'AC' || data.serviceType === 'AC/HVAC') {
+        servicesSupported = ['AC'];
+      } else if (data.serviceType === 'BOTH') {
+        servicesSupported = ['SOLAR', 'AC'];
+      } else if (data.serviceType) {
+        servicesSupported = [data.serviceType];
+      } else {
+        servicesSupported = ['SOLAR'];
+      }
+    }
+
+    // 1. Create client Company document (No default Ahmedabad fallback!)
     const company = await Company.create({
       name: data.companyName.trim(),
       email: normalizedEmail,
       phone: data.phone.trim(),
+      address: data.address?.trim() || '',
       servicesSupported,
+      serviceAreas: (data.serviceAreas || []).map((sa) => ({
+        city: sa.city.trim(),
+        state: sa.state?.trim(),
+        country: sa.country?.trim() || 'India',
+        areas: sa.areas || [],
+        pincodes: sa.pincodes || [],
+        latitude: sa.latitude,
+        longitude: sa.longitude,
+        radius: sa.radius,
+        services: sa.services || servicesSupported,
+      })),
       isPilot: false,
       environmentContext: 'CLIENT',
       active: true,
