@@ -38,12 +38,12 @@ export const CustomerProfile: React.FC = () => {
         <div className="space-y-3 text-xs">
           <div className="flex items-center gap-2.5 text-slate-700">
             <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>{user?.email || 'customer@demo.com'}</span>
+            <span>{user?.email || '—'}</span>
           </div>
 
           <div className="flex items-center gap-2.5 text-slate-700">
             <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>{user?.phone || '+91 98765 99999'}</span>
+            <span>{user?.phone || '—'}</span>
           </div>
 
           <div className="flex items-center gap-2.5 text-slate-700">

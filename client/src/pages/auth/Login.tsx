@@ -69,21 +69,6 @@ export const Login: React.FC = () => {
     setSearchParams({ portal });
   };
 
-  // Pre-fill demo credentials for the selected portal
-  const handleFillDemo = (role: PortalRole) => {
-    setError(null);
-    if (role === 'customer') {
-      setEmail('customer@demo.com');
-      setPassword('Demo@12345');
-    } else if (role === 'technician') {
-      setEmail('jay@demo.com');
-      setPassword('Tech@12345');
-    } else {
-      setEmail('manager@demo.com');
-      setPassword('Demo@12345');
-    }
-  };
-
   const handleSaveApiUrl = (e: React.FormEvent) => {
     e.preventDefault();
     if (customApiUrl.trim()) {
@@ -212,10 +197,10 @@ export const Login: React.FC = () => {
           </Link>
           <span className="text-slate-600">•</span>
           <Link
-            to="/brand-film"
+            to="/walkthrough"
             className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300"
           >
-            Launch Film (4K)
+            Product Walkthrough
           </Link>
         </div>
       </div>
@@ -371,36 +356,6 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          {/* Quick Demo Access Bar */}
-          {mode === 'LOGIN' && (
-            <div className="mb-5 p-3 rounded-2xl bg-slate-50 border border-slate-200/90">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  Quick Access Demo
-                </span>
-                <span className="text-[10px] font-mono text-slate-400">Pre-filled credentials</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleFillDemo(activePortal)}
-                className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-between ${
-                  activePortal === 'customer'
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                    : activePortal === 'technician'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                    : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                }`}
-              >
-                <span>
-                  {activePortal === 'customer' && '👤 Sign In as Customer (customer@demo.com)'}
-                  {activePortal === 'technician' && '🔧 Sign In as Field Tech (jay@demo.com)'}
-                  {activePortal === 'manager' && '🏢 Sign In as Manager (manager@demo.com)'}
-                </span>
-                <span className="text-[10px] underline font-extrabold">Fill & Ready</span>
-              </button>
-            </div>
-          )}
-
           {/* Form Container */}
           {mode === 'LOGIN' ? (
             <form onSubmit={handleSubmitLogin} className="space-y-4">
@@ -417,10 +372,10 @@ export const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder={
                       activePortal === 'customer'
-                        ? 'customer@demo.com'
+                        ? 'name@example.com'
                         : activePortal === 'technician'
-                        ? 'jay@demo.com'
-                        : 'manager@demo.com'
+                        ? 'tech@service.com'
+                        : 'manager@company.com'
                     }
                     className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-slate-900 bg-white"
                   />

@@ -25,8 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   const isManager = user?.role === 'SERVICE_MANAGER';
 
   const showTestModules = typeof window !== 'undefined' && (
-    new URLSearchParams(window.location.search).get('test') === 'true' ||
-    new URLSearchParams(window.location.search).get('demo') === 'true'
+    new URLSearchParams(window.location.search).get('test') === 'true'
   );
 
   const managerLinks = [

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut } from 'lucide-react';
-import { DemoModeBanner } from '../components/common/DemoModeBanner';
+import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut, PlayCircle } from 'lucide-react';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
 import { getCustomerSavedLocation } from '../utils/customerLocation';
 
@@ -54,6 +53,15 @@ export const CustomerLayout: React.FC = () => {
 
           {/* Portal Switcher & User Auth */}
           <div className="flex items-center gap-2">
+            <NavLink
+              to="/walkthrough"
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
+              title="Watch Product Walkthrough"
+            >
+              <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Walkthrough</span>
+            </NavLink>
+
             <PortalSwitcher />
 
             {user ? (

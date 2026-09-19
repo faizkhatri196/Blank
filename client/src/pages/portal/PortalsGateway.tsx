@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, User, Wrench, Building2, Film, ArrowRight, CheckCircle2, Sparkles, LogIn } from 'lucide-react';
+import { Shield, User, Wrench, Building2, ArrowRight, CheckCircle2, Sparkles, LogIn, PlayCircle } from 'lucide-react';
 
 export const PortalsGateway: React.FC = () => {
   const navigate = useNavigate();
@@ -191,15 +191,15 @@ export const PortalsGateway: React.FC = () => {
         </div>
       </main>
 
-      {/* Footer & Launch Film Banner */}
+      {/* Footer */}
       <footer className="max-w-6xl mx-auto w-full pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
-            to="/brand-film"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 transition-colors"
+            to="/walkthrough"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition-colors font-medium shadow-xs"
           >
-            <Film className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Watch Launch Film (4K)</span>
+            <PlayCircle className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Product Walkthrough</span>
           </Link>
           <Link
             to="/onboarding"

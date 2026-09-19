@@ -3,7 +3,6 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sidebar } from '../components/common/Sidebar';
 import { Navbar } from '../components/common/Navbar';
-import { DemoModeBanner } from '../components/common/DemoModeBanner';
 
 export const ManagerLayout: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -31,7 +30,6 @@ export const ManagerLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <DemoModeBanner />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">

@@ -2,7 +2,6 @@ import React from 'react';
 import { Outlet, Navigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Wrench, CheckCircle2, UserCheck, LogOut } from 'lucide-react';
-import { DemoModeBanner } from '../components/common/DemoModeBanner';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
 
 export const TechnicianLayout: React.FC = () => {

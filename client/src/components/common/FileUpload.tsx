@@ -79,8 +79,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <CheckCircle className="w-3.5 h-3.5" />
               Uploaded successfully
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5 italic">
-              Temporary demo file. Retained for evaluation session.
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              Image attached to service ticket.
             </p>
           </div>
           <button
@@ -114,7 +114,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <span className="text-xs font-medium text-slate-700">
               {isUploading ? 'Uploading image...' : 'Click to upload site photo (Max 5MB)'}
             </span>
-            <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WebP • Temporary demo storage</span>
+            <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG, or WebP (Max 5MB)</span>
           </div>
         </div>
       )}

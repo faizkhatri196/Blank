@@ -496,30 +496,6 @@ export const CustomerHome: React.FC = () => {
               </button>
             </div>
           </form>
-
-          <div className="pt-4 border-t border-slate-100 max-w-md mx-auto">
-            <span className="text-[11px] text-slate-400 block mb-2">Supported Demonstration Cities:</span>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {[
-                { name: 'Rajkot', pin: '360001' },
-                { name: 'Ahmedabad', pin: '380015' },
-                { name: 'Gandhinagar', pin: '382007' },
-                { name: 'Surat', pin: '395001' },
-              ].map((c) => (
-                <button
-                  type="button"
-                  key={c.name}
-                  onClick={() => {
-                    setCityInput(c.name);
-                    setPincodeInput(c.pin);
-                  }}
-                  className="px-2.5 py-1 text-xs bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 font-medium"
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          </div>
         </section>
       ) : (
         /* STATE 2: LOCATION_KNOWN -> Check Coverage & Render Services */

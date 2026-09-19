@@ -376,7 +376,7 @@ export const Technicians: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="anand@demo.com"
+                placeholder="technician@company.com"
                 className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>

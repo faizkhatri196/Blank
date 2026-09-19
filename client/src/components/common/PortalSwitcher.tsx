@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Wrench, Building2, Film, ChevronDown, Check, ExternalLink } from 'lucide-react';
+import { User, Wrench, Building2, ChevronDown, Check, ExternalLink } from 'lucide-react';
 
 interface PortalOption {
-  id: 'customer' | 'technician' | 'manager' | 'film';
+  id: 'customer' | 'technician' | 'manager';
   title: string;
   subtitle: string;
   path: string;
@@ -40,15 +40,6 @@ const PORTALS: PortalOption[] = [
     icon: Building2,
     badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
   },
-  {
-    id: 'film',
-    title: 'Launch Film (4K)',
-    subtitle: 'Cinematic SaaS platform vision & architecture overview',
-    path: '/brand-film',
-    loginPath: '/brand-film',
-    icon: Film,
-    badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
-  },
 ];
 
 interface PortalSwitcherProps {
@@ -64,10 +55,9 @@ export const PortalSwitcher: React.FC<PortalSwitcherProps> = ({ className = '', 
 
   // Determine current active portal
   const currentPath = location.pathname;
-  let activePortalId: 'customer' | 'technician' | 'manager' | 'film' = 'customer';
+  let activePortalId: 'customer' | 'technician' | 'manager' = 'customer';
   if (currentPath.startsWith('/technician')) activePortalId = 'technician';
   else if (currentPath.startsWith('/manager')) activePortalId = 'manager';
-  else if (currentPath.startsWith('/brand-film') || currentPath.startsWith('/film')) activePortalId = 'film';
 
   const activePortal = PORTALS.find((p) => p.id === activePortalId) || PORTALS[0];
 
