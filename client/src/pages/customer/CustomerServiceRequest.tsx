@@ -4,7 +4,8 @@ import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
-import { getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
+import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
+import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import {
   Sun,
   Wind,
@@ -80,6 +81,25 @@ export const CustomerServiceRequest: React.FC = () => {
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Structured Autocomplete Location Select Handler
+  const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
+    setCity(selectedLoc.city);
+    setPincode(selectedLoc.pincode || '');
+    if (selectedLoc.area || selectedLoc.formattedAddress) {
+      setAddress((prev) => prev ? prev : (selectedLoc.formattedAddress || selectedLoc.area || ''));
+    }
+    setServiceType('');
+    setSelectedProblem(null);
+    setComplaint('');
+    setTriageAnswers({});
+    setTriageSummary(null);
+    setPhotos([]);
+    setAvailableServices([]);
+
+    saveCustomerLocation(selectedLoc, user?.id);
+    checkServiceAvailability(selectedLoc.city, selectedLoc.pincode || '');
+  };
 
   // Location Change Handler (Rule 8 & 9: Clear downstream state when location changes)
   const handleLocationChange = (newCity: string, newPincode: string) => {
@@ -313,76 +333,44 @@ export const CustomerServiceRequest: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            {/* Location Inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  City <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={city}
-                  onChange={(e) => {
-                    handleLocationChange(e.target.value, pincode);
-                  }}
-                  placeholder="Enter your city or area"
-                  className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  Pincode <span className="text-slate-400 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={pincode}
-                  onChange={(e) => {
-                    handleLocationChange(city, e.target.value);
-                  }}
-                  placeholder="e.g. 380015"
-                  className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                />
-              </div>
+            {/* Structured Location Autocomplete Search */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                Service Area / City Search <span className="text-rose-500">*</span>
+              </label>
+              <LocationAutocompleteInput
+                value={city ? (pincode ? `${city} (${pincode})` : city) : ''}
+                onSelect={handleStructuredLocationSelect}
+                placeholder="Search area or city (e.g. Bopal, Satellite, Kalavad Road, Maninagar)..."
+              />
+              <span className="text-[11px] text-slate-400 mt-1 block">
+                Select your verified locality to check exact service coverage.
+              </span>
             </div>
 
             {/* Street / Building Address */}
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                Street Address / Area / Landmark <span className="text-rose-500">*</span>
+                Complete Street Address / Building / Flat <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. Flat 402, Sunset Heights, Judges Bungalow Road, Bodakdev"
+                placeholder="e.g. Flat 402, Sunset Heights, Main Road"
                 className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 required
               />
             </div>
 
-            {/* Quick Location Presets & GPS detection */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-bold text-slate-400">Quick Locations:</span>
-                {['Ahmedabad', 'Rajkot', 'Gandhinagar', 'Surat'].map((c) => (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => {
-                      const pin = c === 'Ahmedabad' ? '380015' : c === 'Rajkot' ? '360001' : c === 'Gandhinagar' ? '382007' : '395001';
-                      handleLocationChange(c, pin);
-                    }}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all ${
-                      city.toLowerCase() === c.toLowerCase()
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
+            {/* Location detection / clear */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              <div className="text-xs text-slate-500">
+                {city ? (
+                  <span>Selected: <strong>{city}</strong> {pincode ? `(${pincode})` : ''}</span>
+                ) : (
+                  <span className="text-slate-400">No location selected yet</span>
+                )}
               </div>
 
               <button
@@ -392,7 +380,7 @@ export const CustomerServiceRequest: React.FC = () => {
                 className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 shrink-0"
               >
                 <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
-                <span>{isLocating ? 'Detecting...' : 'Current Location'}</span>
+                <span>{isLocating ? 'Detecting...' : 'Use Current Location'}</span>
               </button>
             </div>
 
@@ -647,15 +635,27 @@ export const CustomerServiceRequest: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
                       <h4 className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
                         {p.title}
                       </h4>
-                      {isUnsure && (
-                        <span className="text-[10px] uppercase font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full shrink-0">
-                          Guided
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {p.photoRequirement === 'REQUIRED' && (
+                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                            Photo required
+                          </span>
+                        )}
+                        {p.photoRequirement === 'RECOMMENDED' && (
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                            Photo recommended
+                          </span>
+                        )}
+                        {isUnsure && (
+                          <span className="text-[10px] uppercase font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded-full">
+                            Guided
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                       {p.description}
@@ -770,100 +770,194 @@ export const CustomerServiceRequest: React.FC = () => {
       {/* ========================================================================= */}
       {/* STEP 5: PHOTO EVIDENCE UPLOAD                                             */}
       {/* ========================================================================= */}
-      {step === 5 && (
-        <div className="space-y-6 animate-fadeIn">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Add Photo Evidence
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Photos help the service team bring the correct testing equipment and spare parts.
-            </p>
-          </div>
+      {/* ========================================================================= */}
+      {/* STEP 5: PHOTO EVIDENCE UPLOAD                                             */}
+      {/* ========================================================================= */}
+      {step === 5 && (() => {
+        const photoReq = selectedProblem?.photoRequirement || 'OPTIONAL';
 
-          {/* Contextual guidance banner */}
-          <div className="bg-indigo-50/70 border border-indigo-100 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5">
-            <Camera className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-indigo-950 space-y-1">
-              <p className="font-bold">Contextual Guidance:</p>
-              <p className="text-indigo-900">
-                {serviceType === 'SOLAR'
-                  ? 'Take a clear photo of the inverter display, any error code, or solar panel array. Never touch or open electrical components.'
-                  : 'Take a clear photo of the indoor unit display, outdoor condenser unit, or where water is leaking.'}
-              </p>
-            </div>
-          </div>
-
-          {/* Upload Area */}
-          <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-slate-300 hover:border-indigo-400 transition-colors text-center">
-            <label className="cursor-pointer flex flex-col items-center justify-center gap-2">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <UploadCloud className="w-6 h-6" />
+        if (photoReq === 'NOT_USEFUL') {
+          return (
+            <div className="space-y-6 animate-fadeIn">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  Photo Evidence
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Evidence verification for {selectedProblem?.title || 'your service request'}.
+                </p>
               </div>
-              <span className="text-sm font-bold text-slate-800">Click to upload photo</span>
-              <span className="text-xs text-slate-400">PNG, JPG up to 5MB</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={isUploadingPhoto}
-                className="hidden"
-              />
-            </label>
 
-            {isUploadingPhoto && (
-              <p className="text-xs text-indigo-600 font-semibold mt-3 animate-pulse">
-                Uploading photo...
-              </p>
-            )}
+              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-4">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-900">
+                    No Photograph Required
+                  </h3>
+                  <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                    For <strong>{selectedProblem?.title}</strong>, a photograph is not needed. Field issues like sounds, vibrations, or odors are directly verified on site by the certified technician using diagnostic instruments.
+                  </p>
+                </div>
 
-            {uploadError && (
-              <p className="text-xs text-rose-600 font-semibold mt-2">{uploadError}</p>
-            )}
-          </div>
-
-          {/* Uploaded Photos Preview List */}
-          {photos.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Attached Photos ({photos.length})
-              </h4>
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {photos.map((url, idx) => (
-                  <div key={idx} className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
-                    <img src={url} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(idx)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setStep(6)}
+                    className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl shadow-sm transition-all flex items-center gap-2 mx-auto active:scale-95"
+                  >
+                    <span>Continue to Review AI Understanding</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          )}
+          );
+        }
 
-          <div className="flex justify-between items-center pt-2">
-            <button
-              type="button"
-              onClick={() => setStep(6)}
-              className="text-xs text-slate-500 hover:text-slate-800 font-semibold transition-colors"
-            >
-              Skip photo upload
-            </button>
+        return (
+          <div className="space-y-6 animate-fadeIn">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                  Add Photo Evidence
+                </h1>
+                {photoReq === 'REQUIRED' && (
+                  <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                    Photo required
+                  </span>
+                )}
+                {photoReq === 'RECOMMENDED' && (
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                    Photo recommended
+                  </span>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                Photos help the service team bring the correct testing equipment and spare parts.
+              </p>
+            </div>
 
-            <button
-              onClick={() => setStep(6)}
-              className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl shadow-sm transition-all flex items-center gap-2 active:scale-95"
-            >
-              <span>Review AI Understanding</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* Requirement Banners */}
+            {photoReq === 'REQUIRED' ? (
+              <div className="bg-rose-50/80 border border-rose-200 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-rose-950 space-y-1">
+                  <p className="font-bold text-rose-900">Photo Required for Submission:</p>
+                  <p className="text-rose-900 leading-relaxed">
+                    For <strong>{selectedProblem?.title}</strong>, at least one photo is required to verify the equipment model and component state prior to technician dispatch. Submission is blocked until a photo is uploaded.
+                  </p>
+                </div>
+              </div>
+            ) : photoReq === 'RECOMMENDED' ? (
+              <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5">
+                <Camera className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1">
+                  <p className="font-bold text-amber-900">Photo Strongly Recommended:</p>
+                  <p className="text-amber-900 leading-relaxed">
+                    A clear photo of <strong>{selectedProblem?.title}</strong> helps the technician arrive prepared with correct tools on the first visit. You may still proceed without one if you cannot take a photo now.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-indigo-50/70 border border-indigo-100 rounded-3xl p-4 sm:p-5 flex items-start gap-3.5">
+                <Camera className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-indigo-950 space-y-1">
+                  <p className="font-bold">Contextual Guidance:</p>
+                  <p className="text-indigo-900">
+                    {serviceType === 'SOLAR'
+                      ? 'Take a clear photo of the inverter display, any error code, or solar panel array. Never touch or open electrical components.'
+                      : 'Take a clear photo of the indoor unit display, outdoor condenser unit, or where water is leaking.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Area */}
+            <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-slate-300 hover:border-indigo-400 transition-colors text-center">
+              <label className="cursor-pointer flex flex-col items-center justify-center gap-2">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <span className="text-sm font-bold text-slate-800">Click to upload photo</span>
+                <span className="text-xs text-slate-400">PNG, JPG up to 5MB</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={isUploadingPhoto}
+                  className="hidden"
+                />
+              </label>
+
+              {isUploadingPhoto && (
+                <p className="text-xs text-indigo-600 font-semibold mt-3 animate-pulse">
+                  Uploading photo...
+                </p>
+              )}
+
+              {uploadError && (
+                <p className="text-xs text-rose-600 font-semibold mt-2">{uploadError}</p>
+              )}
+            </div>
+
+            {/* Uploaded Photos Preview List */}
+            {photos.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Attached Photos ({photos.length})
+                </h4>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {photos.map((url, idx) => (
+                    <div key={idx} className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
+                      <img src={url} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(idx)}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Warning if photos.length === 0 and required */}
+            {photoReq === 'REQUIRED' && photos.length === 0 && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Please upload at least 1 photo to continue.</span>
+              </div>
+            )}
+
+            {/* Bottom Actions */}
+            <div className="flex justify-between items-center pt-2">
+              {photoReq !== 'REQUIRED' ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(6)}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-semibold transition-colors"
+                >
+                  {photoReq === 'RECOMMENDED' ? 'Continue without photo' : 'Skip photo upload'}
+                </button>
+              ) : (
+                <div />
+              )}
+
+              <button
+                onClick={() => setStep(6)}
+                disabled={photoReq === 'REQUIRED' && photos.length === 0}
+                className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-2xl shadow-sm transition-all flex items-center gap-2 active:scale-95"
+              >
+                <span>Review AI Understanding</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* STEP 6: AI UNDERSTANDING PREVIEW & FINAL SUBMISSION                       */}

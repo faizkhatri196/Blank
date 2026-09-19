@@ -52,6 +52,15 @@ export const TicketDetail: React.FC = () => {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [editReviewModalOpen, setEditReviewModalOpen] = useState(false);
   const [managerNotes, setManagerNotes] = useState('');
+  const [assignmentError, setAssignmentError] = useState<{
+    title: string;
+    message: string;
+    details?: {
+      customerLocation?: string;
+      technicianCoverage?: string;
+      reason?: string;
+    };
+  } | null>(null);
 
   const loadTicket = async () => {
     try {
@@ -62,6 +71,7 @@ export const TicketDetail: React.FC = () => {
       setReview(data.review);
       setServiceReport(data.serviceReport);
       setAssetHistory(data.assetHistory || []);
+      setManagerNotes(data.review?.managerNotes || '');
     } catch (err) {
       console.error('Failed to load ticket details:', err);
     } finally {
@@ -102,7 +112,22 @@ export const TicketDetail: React.FC = () => {
       setAssignModalOpen(false);
       await loadTicket();
     } catch (err: any) {
-      alert(`Assignment failed: ${err.message}`);
+      const errResponse = err.response?.data?.error;
+      if (errResponse) {
+        setAssignmentError({
+          title:
+            errResponse.code === 'SERVICE_AREA_MISMATCH'
+              ? 'Technician Coverage Area Mismatch'
+              : 'Assignment Validation Failed',
+          message: errResponse.message || 'The selected technician cannot be assigned to this ticket.',
+          details: errResponse.details,
+        });
+      } else {
+        setAssignmentError({
+          title: 'Assignment Failed',
+          message: err.message || 'An unexpected error occurred while assigning technician.',
+        });
+      }
     } finally {
       setIsAssigning(false);
     }
@@ -758,53 +783,195 @@ export const TicketDetail: React.FC = () => {
         maxWidth="lg"
       >
         <div className="space-y-4">
-          <p className="text-xs text-slate-500">
-            System calculated explainable compatibility based on <strong>Skill (40%)</strong>,{' '}
-            <strong>Tools (20%)</strong>, <strong>Availability (20%)</strong>,{' '}
-            <strong>Service Area (10%)</strong>, and <strong>Experience (10%)</strong>.
-          </p>
+          <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div>
+              <span className="font-semibold text-slate-700">Ticket Location: </span>
+              <span className="font-bold text-slate-900">
+                {ticket.serviceLocation?.city || (typeof ticket.customerId === 'object' ? ticket.customerId?.city : '') || 'Not specified'}
+                {ticket.serviceLocation?.area ? ` (${ticket.serviceLocation.area})` : ''}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              5-Factor Match: Skill (40%), Tools (20%), Status (20%), Area (10%), Exp (10%)
+            </div>
+          </div>
 
-          <div className="space-y-2.5 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
             {recommendations.length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-500">
-                No active technicians certified for {ticket.serviceType} found.
+              <div className="text-center py-8 text-xs text-slate-500">
+                No active technicians certified for {ticket.serviceType} found in the system.
               </div>
             ) : (
-              recommendations.map((rec) => (
-                <div
-                  key={rec.technicianId}
-                  className="p-4 rounded-xl border border-slate-200 hover:border-emerald-500 transition-all bg-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900">{rec.technicianName}</span>
-                      <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        {rec.score}% Match
-                      </span>
-                      <span className="text-[10px] text-slate-400">({rec.experienceYears}y exp)</span>
+              recommendations.map((rec) => {
+                const isEligible = rec.isEligible !== false;
+
+                return (
+                  <div
+                    key={rec.technicianId}
+                    className={`p-4 rounded-xl border transition-all shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      isEligible
+                        ? 'border-slate-200 hover:border-emerald-500 bg-white'
+                        : 'border-amber-200 bg-amber-50/40 opacity-90'
+                    }`}
+                  >
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">{rec.technicianName}</span>
+                        <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border ${
+                          isEligible
+                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                            : 'text-amber-800 bg-amber-100 border-amber-300'
+                        }`}>
+                          {rec.score}% Match
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          isEligible
+                            ? 'text-emerald-700 bg-emerald-100 border border-emerald-300'
+                            : 'text-amber-900 bg-amber-200 border border-amber-300'
+                        }`}>
+                          {isEligible ? '✓ Covers Service Area' : '⚠ Outside Coverage Area'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">({rec.experienceYears}y exp)</span>
+                      </div>
+
+                      {/* Coverage summary */}
+                      <div className="text-[11px] text-slate-600 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 flex flex-wrap gap-x-3 gap-y-1">
+                        <span>
+                          <strong>Coverage:</strong> {rec.technicianCoverageSummary || `${rec.coverageRadiusKm || 20}km radius`}
+                        </span>
+                        {rec.customerLocationSummary && (
+                          <span className="text-slate-500">
+                            <strong>Job:</strong> {rec.customerLocationSummary}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Ineligibility Reason */}
+                      {!isEligible && (rec.ineligibilityReason || rec.coverageExplanation) && (
+                        <div className="text-[11px] text-amber-900 bg-amber-100/70 px-2.5 py-1 rounded-lg border border-amber-200 flex items-start gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                          <span>{rec.ineligibilityReason || rec.coverageExplanation}</span>
+                        </div>
+                      )}
+
+                      <div className="space-y-0.5 pt-0.5">
+                        {rec.reasons.map((r, i) => (
+                          <div key={i} className="text-[11px] text-slate-600 flex items-center gap-1">
+                            <span className={isEligible ? 'text-emerald-600 font-bold' : 'text-slate-400'}>
+                              {isEligible ? '✓' : '•'}
+                            </span>{' '}
+                            {r}
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="space-y-0.5">
-                      {rec.reasons.map((r, i) => (
-                        <div key={i} className="text-[11px] text-slate-600 flex items-center gap-1">
-                          <span className="text-emerald-600 font-bold">✓</span> {r}
-                        </div>
-                      ))}
+                    <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleAssignTechnician(rec.technicianId)}
+                        disabled={isAssigning}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 shrink-0 shadow-sm ${
+                          isEligible
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            : 'bg-amber-600 hover:bg-amber-700 text-white'
+                        }`}
+                      >
+                        {isAssigning
+                          ? 'Assigning...'
+                          : isEligible
+                          ? 'Assign Job'
+                          : 'Assign (Validate Area)'}
+                      </button>
+                      {!isEligible && (
+                        <Link
+                          to="/manager/technicians"
+                          className="text-[10px] text-emerald-700 hover:underline font-semibold"
+                        >
+                          Edit Tech Coverage →
+                        </Link>
+                      )}
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => handleAssignTechnician(rec.technicianId)}
-                    disabled={isAssigning}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all disabled:opacity-50 shrink-0"
-                  >
-                    {isAssigning ? 'Assigning...' : 'Assign Job'}
-                  </button>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
+      </Modal>
+
+      {/* MODAL: Structured Assignment Error */}
+      <Modal
+        isOpen={!!assignmentError}
+        onClose={() => setAssignmentError(null)}
+        title={assignmentError?.title || 'Assignment Failed'}
+        maxWidth="md"
+      >
+        {assignmentError && (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="font-bold text-amber-950 text-sm">
+                  {assignmentError.title}
+                </h4>
+                <p className="text-amber-900 leading-relaxed">
+                  {assignmentError.message}
+                </p>
+              </div>
+            </div>
+
+            {assignmentError.details && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                  Coverage Diagnostics
+                </h5>
+                <div className="space-y-1 text-slate-700">
+                  {assignmentError.details.customerLocation && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Customer Location:</span>
+                      <span className="font-bold text-slate-900">
+                        {assignmentError.details.customerLocation}
+                      </span>
+                    </div>
+                  )}
+                  {assignmentError.details.technicianCoverage && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Technician Coverage:</span>
+                      <span className="font-bold text-slate-900">
+                        {assignmentError.details.technicianCoverage}
+                      </span>
+                    </div>
+                  )}
+                  {assignmentError.details.reason && (
+                    <div className="pt-1 text-[11px] text-rose-700 font-medium border-t border-slate-200">
+                      Reason: {assignmentError.details.reason}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setAssignmentError(null);
+                  setAssignModalOpen(true);
+                }}
+                className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-bold hover:bg-slate-50"
+              >
+                Choose Another Technician
+              </button>
+              <Link
+                to="/manager/technicians"
+                onClick={() => setAssignmentError(null)}
+                className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm"
+              >
+                Edit Technician Coverage
+              </Link>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* MODAL: Manager AI Adjustments */}

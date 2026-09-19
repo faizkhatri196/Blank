@@ -60,6 +60,8 @@ export const createTechnicianSchema = z
     tools: z.array(z.string()).default([]),
     certifications: z.array(z.string()).default([]),
     serviceAreas: z.array(z.string()).min(1, 'At least one service area is required'),
+    coverageRadiusKm: z.number().min(0).default(20),
+    pincodes: z.array(z.string()).default([]),
     availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).default('AVAILABLE'),
   })
   .refine((data) => !!(data.password || data.temporaryPassword), {
@@ -85,12 +87,15 @@ export const updateTechnicianSchema = z.object({
   phone: z.string().min(10).optional(),
   email: z.string().email().optional(),
   experienceYears: z.number().min(0).optional(),
-  serviceTypes: z.array(z.enum(['SOLAR', 'AC'])).min(1).optional(),
+  serviceTypes: z.array(z.string()).min(1).optional(),
   skills: z.array(z.string()).min(1).optional(),
   tools: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),
   serviceAreas: z.array(z.string()).min(1).optional(),
+  coverageRadiusKm: z.number().min(0).optional(),
+  pincodes: z.array(z.string()).optional(),
   availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).optional(),
+  active: z.boolean().optional(),
 });
 
 export const updateTechnicianStatusSchema = z.object({

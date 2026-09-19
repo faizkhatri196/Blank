@@ -126,6 +126,7 @@ export const CompanyOnboarding: React.FC = () => {
   // Temporary input buffers for area chips and pincodes
   const [tempAreaInput, setTempAreaInput] = useState<Record<number, string>>({});
   const [tempPincodeInput, setTempPincodeInput] = useState<Record<number, string>>({});
+  const [radiusInputs, setRadiusInputs] = useState<Record<number, string>>({});
 
   const addAreaChip = (index: number) => {
     const val = (tempAreaInput[index] || '').trim();
@@ -552,21 +553,40 @@ export const CompanyOnboarding: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                          Service Radius
+                          Service Radius (km)
                         </label>
                         <input
-                          type="number"
-                          value={area.radius || 20}
+                          type="text"
+                          inputMode="numeric"
+                          value={radiusInputs[idx] !== undefined ? radiusInputs[idx] : String(area.radius ?? 20)}
                           onChange={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            setServiceAreas((prev) => {
-                              const copy = [...prev];
-                              copy[idx].radius = val;
-                              return copy;
-                            });
+                            const raw = e.target.value;
+                            setRadiusInputs((prev) => ({ ...prev, [idx]: raw }));
+                            const val = Number(raw.trim());
+                            if (!isNaN(val) && val > 0) {
+                              setServiceAreas((prev) => {
+                                const copy = [...prev];
+                                copy[idx].radius = val;
+                                return copy;
+                              });
+                            }
                           }}
-                          placeholder="20 km"
-                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white"
+                          onBlur={() => {
+                            const raw = radiusInputs[idx];
+                            if (raw !== undefined) {
+                              const val = Number(raw.trim());
+                              if (isNaN(val) || val <= 0) {
+                                setRadiusInputs((prev) => ({ ...prev, [idx]: '20' }));
+                                setServiceAreas((prev) => {
+                                  const copy = [...prev];
+                                  copy[idx].radius = 20;
+                                  return copy;
+                                });
+                              }
+                            }
+                          }}
+                          placeholder="e.g. 20"
+                          className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 bg-white font-medium"
                         />
                       </div>
                     </div>

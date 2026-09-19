@@ -11,9 +11,11 @@ import { AIAnalysisReview } from '../models/AIAnalysisReview';
 import { ServiceReport } from '../models/ServiceReport';
 import { ServiceHistory } from '../models/ServiceHistory';
 import { AuditLog } from '../models/AuditLog';
+import { User } from '../models/User';
 import { AIFactory } from '../ai/AIFactory';
 import { calculateTechnicianMatches } from '../services/matchingService';
 import { generateTicketNumber, isValidStatusTransition } from '../services/ticketService';
+import { NotificationService } from '../services/notificationService';
 import {
   createServiceTicketSchema,
   updateTicketStatusSchema,
@@ -519,7 +521,7 @@ export async function getRecommendedTechnicians(req: AuthenticatedRequest, res: 
     const ticket = await ServiceTicket.findOne({
       _id: req.params.id,
       companyId: req.companyId,
-    }).populate('customerId', 'city');
+    });
 
     if (!ticket) {
       res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Ticket not found' } });
@@ -532,11 +534,30 @@ export async function getRecommendedTechnicians(req: AuthenticatedRequest, res: 
 
     const technicians = await Technician.find({
       companyId: req.companyId,
-      active: true,
     });
 
-    const customerCity = (ticket.customerId as any)?.city;
-    const recommendations = calculateTechnicianMatches(ticket, technicians, aiAnalysis, customerCity);
+    let customerCity = '';
+    let customerArea = '';
+    let customerAddress = '';
+    let customerPincode = '';
+
+    if (ticket.customerId) {
+      const cust = await Customer.findById(ticket.customerId);
+      if (cust) {
+        customerCity = cust.city || '';
+        customerAddress = cust.address || '';
+        customerPincode = cust.pincode || '';
+      }
+    }
+
+    const locationContext = {
+      city: ticket.serviceLocation?.city || customerCity,
+      area: ticket.serviceLocation?.area || customerArea,
+      pincode: ticket.serviceLocation?.pincode || customerPincode,
+      address: ticket.serviceLocation?.address || customerAddress,
+    };
+
+    const recommendations = calculateTechnicianMatches(ticket, technicians, aiAnalysis, locationContext);
 
     res.json({ success: true, data: recommendations });
   } catch (error: any) {
@@ -590,31 +611,52 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    // Customer / Ticket location context for coverage evaluation
+    const ticketCity = (ticket.serviceLocation?.city || '').toLowerCase();
+    const ticketArea = (ticket.serviceLocation?.area || '').toLowerCase();
+    const ticketAddress = (ticket.serviceLocation?.address || '').toLowerCase();
+    const ticketPincode = ticket.serviceLocation?.pincode || '';
+
+    let customerCity = '';
+    let customerAddress = '';
+    let customerPincode = '';
+
+    if (ticket.customerId) {
+      const cust = await Customer.findById(ticket.customerId);
+      if (cust) {
+        customerCity = (cust.city || '').toLowerCase();
+        customerAddress = (cust.address || '').toLowerCase();
+        customerPincode = cust.pincode || '';
+      }
+    }
+
+    const locationContext = `${ticketCity} ${ticketArea} ${ticketAddress} ${customerCity} ${customerAddress}`.trim();
+    const customerLocationSummary = [ticket.serviceLocation?.area, ticket.serviceLocation?.city || customerCity].filter(Boolean).join(', ') || 'Customer location';
+    const techCoverageSummary = technician.serviceAreas && technician.serviceAreas.length > 0 ? technician.serviceAreas.join(', ') : 'Universal Company Area';
+
     // Verify technician operational area coverage if technician has defined service areas
     if (technician.serviceAreas && technician.serviceAreas.length > 0) {
-      const ticketCity = (ticket.serviceLocation?.city || '').toLowerCase();
-      const ticketAddress = (ticket.serviceLocation?.address || '').toLowerCase();
-      let customerCity = '';
-      let customerAddress = '';
-      if (ticket.customerId) {
-        const cust = await Customer.findById(ticket.customerId);
-        if (cust) {
-          customerCity = (cust.city || '').toLowerCase();
-          customerAddress = (cust.address || '').toLowerCase();
-        }
-      }
-      const locationContext = `${ticketCity} ${ticketAddress} ${customerCity} ${customerAddress}`.trim();
       if (locationContext) {
-        const coversLocation = technician.serviceAreas.some((area) => {
+        const coversArea = technician.serviceAreas.some((area) => {
           const a = area.toLowerCase().trim();
           return locationContext.includes(a) || (ticketCity && a.includes(ticketCity));
         });
-        if (!coversLocation) {
+
+        const coversPincode = (ticketPincode || customerPincode) && technician.pincodes && technician.pincodes.length > 0
+          ? technician.pincodes.includes(ticketPincode || customerPincode)
+          : false;
+
+        if (!coversArea && !coversPincode) {
           res.status(400).json({
             success: false,
             error: {
               code: 'SERVICE_AREA_MISMATCH',
               message: `Technician ${technician.name} does not cover the service area for this ticket.`,
+              details: {
+                technicianName: technician.name,
+                customerLocation: customerLocationSummary,
+                technicianCoverage: techCoverageSummary,
+              },
             },
           });
           return;
@@ -636,6 +678,31 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
     // Mark technician as BUSY
     technician.availability = 'BUSY';
     await technician.save();
+
+    // Dispatch In-App Assignment Notification for the Technician
+    try {
+      const managerUser = await User.findById(req.userId);
+      const assignedLocationName = ticket.serviceLocation?.city || customerCity || 'service location';
+      const problemSummary = ticket.problemCategory || ticket.normalizedComplaint || ticket.complaint || 'Service Request';
+
+      await NotificationService.sendNotification({
+        recipientUserId: technician.userId,
+        companyId: req.companyId!,
+        type: 'NEW_ASSIGNMENT',
+        title: 'New Service Assignment',
+        message: `You have been assigned a ${ticket.serviceType} service request in ${assignedLocationName}.`,
+        metadata: {
+          serviceType: ticket.serviceType,
+          customerArea: customerLocationSummary,
+          problem: problemSummary,
+          assignedByName: managerUser?.name || 'Manager',
+          ticketNumber: ticket.ticketNumber,
+        },
+        relatedTicketId: ticket._id,
+      });
+    } catch (notifErr) {
+      console.error('Failed to create in-app technician notification:', notifErr);
+    }
 
     await AuditLog.create({
       companyId: req.companyId,

@@ -122,6 +122,8 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
       tools: data.tools,
       certifications: data.certifications,
       serviceAreas: data.serviceAreas,
+      coverageRadiusKm: data.coverageRadiusKm ?? 20,
+      pincodes: data.pincodes ?? [],
       availability: data.availability,
       active: true,
     });

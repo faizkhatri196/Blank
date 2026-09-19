@@ -51,7 +51,7 @@ export const Settings: React.FC = () => {
   const [modalState, setModalState] = useState('Gujarat');
   const [modalAreasText, setModalAreasText] = useState('');
   const [modalPincodesText, setModalPincodesText] = useState('');
-  const [modalRadius, setModalRadius] = useState<number>(20);
+  const [modalRadiusInput, setModalRadiusInput] = useState<string>('20');
   const [modalServices, setModalServices] = useState<string[]>(['SOLAR', 'AC']);
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSavingModal, setIsSavingModal] = useState(false);
@@ -63,25 +63,25 @@ export const Settings: React.FC = () => {
   const [health, setHealth] = useState<any>(null);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
 
-  const fetchCoverage = async () => {
+  const loadCompanyData = async () => {
     setIsLoadingCoverage(true);
     setCoverageError(null);
     try {
-      const res = await apiClient.get('/company/coverage');
-      if (res.data.success) {
+      const res = await apiClient.get('/company/profile');
+      if (res.data.success && res.data.data) {
         setCoverageAreas(res.data.data.serviceAreas || []);
-        setServicesSupported(res.data.data.servicesSupported || []);
+        setServicesSupported(res.data.data.servicesSupported || ['SOLAR', 'AC']);
       }
     } catch (err: any) {
-      console.error('Failed to load coverage:', err);
-      setCoverageError(err.response?.data?.error?.message || 'Failed to load service coverage.');
+      console.error('Failed to load company profile:', err);
+      setCoverageError(err.response?.data?.error?.message || 'Failed to load service coverage settings.');
     } finally {
       setIsLoadingCoverage(false);
     }
   };
 
   useEffect(() => {
-    fetchCoverage();
+    loadCompanyData();
   }, []);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export const Settings: React.FC = () => {
     setModalState('Gujarat');
     setModalAreasText('');
     setModalPincodesText('');
-    setModalRadius(20);
+    setModalRadiusInput('20');
     setModalServices(servicesSupported.length > 0 ? [...servicesSupported] : ['SOLAR', 'AC']);
     setModalError(null);
     setIsModalOpen(true);
@@ -120,7 +120,7 @@ export const Settings: React.FC = () => {
     setModalState(area.state || 'Gujarat');
     setModalAreasText((area.areas || []).join(', '));
     setModalPincodesText((area.pincodes || []).join(', '));
-    setModalRadius(area.radius || 20);
+    setModalRadiusInput(String(area.radius ?? 20));
     setModalServices(area.services.length > 0 ? [...area.services] : ['SOLAR']);
     setModalError(null);
     setIsModalOpen(true);
@@ -130,6 +130,11 @@ export const Settings: React.FC = () => {
     e.preventDefault();
     if (!modalCity.trim()) {
       setModalError('City name is required.');
+      return;
+    }
+    const cleanRadius = Number(modalRadiusInput.trim());
+    if (!modalRadiusInput.trim() || isNaN(cleanRadius) || cleanRadius <= 0) {
+      setModalError('Operating radius must be a valid number greater than 0 km.');
       return;
     }
     if (modalServices.length === 0) {
@@ -156,7 +161,7 @@ export const Settings: React.FC = () => {
       country: 'India',
       areas: parsedAreas,
       pincodes: parsedPincodes,
-      radius: modalRadius,
+      radius: cleanRadius,
       services: modalServices,
     };
 
@@ -569,6 +574,23 @@ export const Settings: React.FC = () => {
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
                 <span className="text-[11px] text-slate-400 mt-0.5 block">Leave empty to cover all pincodes.</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                  Operating Radius (km) *
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={modalRadiusInput}
+                  onChange={(e) => setModalRadiusInput(e.target.value)}
+                  placeholder="e.g. 20"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
+                />
+                <span className="text-[11px] text-slate-400 mt-0.5 block">
+                  Service dispatch perimeter from city center. Must be greater than 0 km.
+                </span>
               </div>
 
               <div>

@@ -11,6 +11,7 @@ import evaluationRoutes from './evaluationRoutes';
 import customerPortalRoutes from './customerPortalRoutes';
 import companyRoutes from './companyRoutes';
 import fieldOperationsRoutes from './fieldOperationsRoutes';
+import notificationRoutes from './notificationRoutes';
 import { getSystemHealth } from '../controllers/pilotController';
 
 const router = Router();
@@ -30,5 +31,6 @@ router.use('/pilot', pilotRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/evaluation', evaluationRoutes);
 router.use('/customer-portal', customerPortalRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

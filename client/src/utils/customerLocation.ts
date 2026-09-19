@@ -1,7 +1,12 @@
 export interface CustomerLocation {
   city: string;
-  pincode?: string;
+  state?: string;
+  country?: string;
   area?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  formattedAddress?: string;
 }
 
 const GUEST_STORAGE_KEY = 'servora.customer.guest_location';
@@ -48,8 +53,13 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
     if (parsed && typeof parsed.city === 'string' && parsed.city.trim().length > 0) {
       return {
         city: parsed.city.trim(),
-        pincode: parsed.pincode ? String(parsed.pincode).trim() : undefined,
+        state: parsed.state ? String(parsed.state).trim() : undefined,
+        country: parsed.country ? String(parsed.country).trim() : undefined,
         area: parsed.area ? String(parsed.area).trim() : undefined,
+        pincode: parsed.pincode ? String(parsed.pincode).trim() : undefined,
+        latitude: typeof parsed.latitude === 'number' ? parsed.latitude : undefined,
+        longitude: typeof parsed.longitude === 'number' ? parsed.longitude : undefined,
+        formattedAddress: parsed.formattedAddress ? String(parsed.formattedAddress).trim() : undefined,
       };
     }
     return null;
@@ -69,8 +79,13 @@ export function saveCustomerLocation(location: CustomerLocation, userId?: string
     if (!location || !location.city || !location.city.trim()) return;
     const cleanLocation: CustomerLocation = {
       city: location.city.trim(),
-      pincode: location.pincode ? String(location.pincode).trim() : undefined,
+      state: location.state ? String(location.state).trim() : undefined,
+      country: location.country ? String(location.country).trim() : undefined,
       area: location.area ? String(location.area).trim() : undefined,
+      pincode: location.pincode ? String(location.pincode).trim() : undefined,
+      latitude: typeof location.latitude === 'number' ? location.latitude : undefined,
+      longitude: typeof location.longitude === 'number' ? location.longitude : undefined,
+      formattedAddress: location.formattedAddress ? String(location.formattedAddress).trim() : undefined,
     };
     const key = getScopedLocationKey(userId);
     localStorage.setItem(key, JSON.stringify(cleanLocation));

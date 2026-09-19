@@ -3,13 +3,37 @@ import { IServiceTicket } from '../models/ServiceTicket';
 import { IAIAnalysis } from '../models/AIAnalysis';
 import { TechnicianMatchResult } from '../types';
 
+export interface CustomerLocationContext {
+  city?: string;
+  area?: string;
+  pincode?: string;
+  address?: string;
+}
+
 export function calculateTechnicianMatches(
   ticket: IServiceTicket,
   technicians: ITechnician[],
   aiAnalysis?: IAIAnalysis | null,
-  customerCity?: string
+  locationContextInput?: CustomerLocationContext | string
 ): TechnicianMatchResult[] {
   const serviceType = ticket.serviceType;
+
+  // Normalize location context
+  let locationContext: CustomerLocationContext = {};
+  if (typeof locationContextInput === 'string') {
+    locationContext = { city: locationContextInput };
+  } else if (locationContextInput) {
+    locationContext = locationContextInput;
+  }
+
+  // Also read from ticket if not fully provided
+  const ticketCity = locationContext.city || ticket.serviceLocation?.city || '';
+  const ticketArea = locationContext.area || ticket.serviceLocation?.area || '';
+  const ticketPincode = locationContext.pincode || ticket.serviceLocation?.pincode || '';
+  const ticketAddress = locationContext.address || ticket.serviceLocation?.address || '';
+
+  const locText = `${ticketCity} ${ticketArea} ${ticketAddress} ${ticketPincode}`.toLowerCase().trim();
+  const customerLocDisplay = [ticketArea, ticketCity].filter(Boolean).join(', ') || ticketCity || 'Customer location';
 
   // Extract required skills and tools from AI analysis or defaults
   const requiredTools = aiAnalysis?.recommendedTools || ['MULTIMETER', 'CLAMP_METER'];
@@ -18,7 +42,7 @@ export function calculateTechnicianMatches(
   const requiredSkills: string[] = [];
   if (serviceType === 'SOLAR') {
     requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
-    const complaint = ticket.complaint.toLowerCase();
+    const complaint = (ticket.complaint || '').toLowerCase();
     if (complaint.includes('inverter') || ticket.errorCode) {
       requiredSkills.push('INVERTER_REPAIR');
     }
@@ -28,9 +52,9 @@ export function calculateTechnicianMatches(
     if (complaint.includes('battery')) {
       requiredSkills.push('BATTERY_SYSTEMS');
     }
-  } else {
+  } else if (serviceType === 'AC') {
     requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
-    const complaint = ticket.complaint.toLowerCase();
+    const complaint = (ticket.complaint || '').toLowerCase();
     if (complaint.includes('pcb') || ticket.errorCode) {
       requiredSkills.push('PCB_REPAIR');
     }
@@ -40,17 +64,58 @@ export function calculateTechnicianMatches(
     if (complaint.includes('compressor')) {
       requiredSkills.push('COMPRESSOR_REPAIR');
     }
+  } else {
+    requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
   }
 
-  // 1. FILTER: Active and supports this specific serviceType
-  const eligible = technicians.filter(
+  // 1. FILTER: Active and certified for this ticket's serviceType
+  const eligibleCandidates = technicians.filter(
     (tech) => tech.active && tech.serviceTypes.includes(serviceType)
   );
 
-  const results: TechnicianMatchResult[] = eligible.map((tech) => {
+  const results: TechnicianMatchResult[] = eligibleCandidates.map((tech) => {
     const reasons: string[] = [];
     const missingSkills: string[] = [];
     const missingTools: string[] = [];
+
+    const supportsService = tech.serviceTypes.includes(serviceType);
+    const techAreas = tech.serviceAreas || [];
+    const techPincodes = tech.pincodes || [];
+    const techCoverageDisplay = techAreas.length > 0 ? techAreas.join(', ') : 'Universal Company Area';
+
+    // Verify service area coverage
+    let coversLocation = true;
+    let coverageStatus: 'COVERS_LOCATION' | 'OUTSIDE_SERVICE_AREA' | 'NO_COVERAGE_CONFIGURED' = 'COVERS_LOCATION';
+    let coverageExplanation = 'Customer location is inside service area';
+    let ineligibilityReason: string | undefined = undefined;
+
+    if (techAreas.length > 0) {
+      const matchedArea = techAreas.some((area) => {
+        const a = area.toLowerCase().trim();
+        if (!a) return false;
+        return locText.includes(a) || (ticketCity && a.includes(ticketCity.toLowerCase()));
+      });
+
+      const matchedPincode = ticketPincode && techPincodes.length > 0 && techPincodes.includes(ticketPincode);
+
+      if (locText && !matchedArea && !matchedPincode) {
+        coversLocation = false;
+        coverageStatus = 'OUTSIDE_SERVICE_AREA';
+        coverageExplanation = `Customer location (${customerLocDisplay}) is outside technician coverage (${techCoverageDisplay})`;
+        ineligibilityReason = 'Technician service area does not cover this customer location.';
+      }
+    } else {
+      coverageStatus = 'NO_COVERAGE_CONFIGURED';
+      coverageExplanation = 'Covers all company service areas';
+    }
+
+    if (!supportsService) {
+      ineligibilityReason = `Technician is not certified for ${serviceType} service.`;
+    } else if (!tech.active) {
+      ineligibilityReason = 'Technician profile is currently deactivated.';
+    }
+
+    const isEligible = tech.active && supportsService && coversLocation;
 
     // Factor 1: Skill compatibility (40%)
     let skillScore = 0;
@@ -66,7 +131,7 @@ export function calculateTechnicianMatches(
       }
       skillScore = (matchedCount / requiredSkills.length) * 40;
     } else {
-      skillScore = 40; // No special skills needed
+      skillScore = 40;
     }
 
     // Factor 2: Tool compatibility (20%)
@@ -99,18 +164,12 @@ export function calculateTechnicianMatches(
     }
 
     // Factor 4: Service area (10%)
-    let areaScore = 5; // default partial
-    if (customerCity && tech.serviceAreas && tech.serviceAreas.length > 0) {
-      const cityLower = customerCity.toLowerCase();
-      const areaMatch = tech.serviceAreas.some((a) =>
-        a.toLowerCase().includes(cityLower) || cityLower.includes(a.toLowerCase())
-      );
-      if (areaMatch) {
-        areaScore = 10;
-        reasons.push(`Covers customer city (${customerCity})`);
-      } else {
-        areaScore = 2;
-      }
+    let areaScore = 0;
+    if (coversLocation) {
+      areaScore = 10;
+      reasons.push(`Covers customer location (${customerLocDisplay})`);
+    } else {
+      areaScore = 0;
     }
 
     // Factor 5: Experience (10%)
@@ -127,18 +186,30 @@ export function calculateTechnicianMatches(
       phone: tech.phone,
       experienceYears: tech.experienceYears,
       serviceTypes: tech.serviceTypes,
-      score: totalScore,
+      score: isEligible ? totalScore : Math.min(totalScore, 40),
       reasons: reasons.slice(0, 5),
       missingSkills,
       missingTools,
       availability: tech.availability,
-      serviceCompatibility: true,
+      serviceCompatibility: supportsService,
       serviceAreas: tech.serviceAreas,
+      coverageRadiusKm: tech.coverageRadiusKm,
+      pincodes: tech.pincodes,
+      isEligible,
+      coverageStatus,
+      coverageExplanation,
+      ineligibilityReason,
+      customerLocationSummary: customerLocDisplay,
+      technicianCoverageSummary: techCoverageDisplay,
     };
   });
 
-  // Sort descending by match score
-  results.sort((a, b) => b.score - a.score);
+  // Sort: Eligible technicians first (sorted descending by match score), then Ineligible technicians
+  results.sort((a, b) => {
+    if (a.isEligible && !b.isEligible) return -1;
+    if (!a.isEligible && b.isEligible) return 1;
+    return b.score - a.score;
+  });
 
   return results;
 }

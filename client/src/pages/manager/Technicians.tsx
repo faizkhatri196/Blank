@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../../api/client';
 import { Technician, ServiceType } from '../../types';
 import { Modal } from '../../components/common/Modal';
-import { Users, Plus, Phone, Wrench, Shield, CheckCircle, Search, Loader2 } from 'lucide-react';
+import { Users, Plus, Phone, Wrench, Shield, CheckCircle, Search, Loader2, Edit2, Eye, Power, AlertCircle, MapPin } from 'lucide-react';
 
 export const Technicians: React.FC = () => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -27,8 +27,30 @@ export const Technicians: React.FC = () => {
   const [skillsInput, setSkillsInput] = useState('SOLAR_INSTALLATION, INVERTER_REPAIR');
   const [toolsInput, setToolsInput] = useState('MULTIMETER, CLAMP_METER, MC4_TOOL');
   const [serviceAreasInput, setServiceAreasInput] = useState('');
+  const [radiusInput, setRadiusInput] = useState('20');
+  const [pincodesInput, setPincodesInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // Edit Technician form state
+  const [editingTech, setEditingTech] = useState<Technician | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editExperienceYears, setEditExperienceYears] = useState(3);
+  const [editServiceTypes, setEditServiceTypes] = useState<ServiceType[]>(['SOLAR']);
+  const [editSkillsInput, setEditSkillsInput] = useState('');
+  const [editToolsInput, setEditToolsInput] = useState('');
+  const [editServiceAreasInput, setEditServiceAreasInput] = useState('');
+  const [editRadiusInput, setEditRadiusInput] = useState('20');
+  const [editPincodesInput, setEditPincodesInput] = useState('');
+  const [editAvailability, setEditAvailability] = useState<'AVAILABLE' | 'BUSY' | 'OFFLINE'>('AVAILABLE');
+  const [editActive, setEditActive] = useState(true);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [editModalError, setEditModalError] = useState<string | null>(null);
+
+  // View Technician modal state
+  const [viewingTech, setViewingTech] = useState<Technician | null>(null);
 
   const loadTechnicians = async () => {
     setIsLoading(true);
@@ -85,6 +107,9 @@ export const Technicians: React.FC = () => {
       const serviceAreas = serviceAreasInput
         .split(',')
         .map((a) => a.trim())
+      const pincodes = pincodesInput
+        .split(',')
+        .map((p) => p.trim())
         .filter(Boolean);
 
       await apiClient.post('/technicians', {
@@ -97,6 +122,8 @@ export const Technicians: React.FC = () => {
         skills,
         tools,
         serviceAreas,
+        coverageRadiusKm: Number(radiusInput) || 20,
+        pincodes,
         certifications: ['Certified Field Technician Level II'],
       });
 
@@ -114,12 +141,113 @@ export const Technicians: React.FC = () => {
       setPhone('');
       setPassword('');
       setConfirmPassword('');
+      setRadiusInput('20');
+      setPincodesInput('');
       await loadTechnicians();
     } catch (err: any) {
       setModalError(err.message || 'Failed to add technician');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openEditModal = (tech: Technician) => {
+    setEditingTech(tech);
+    setEditName(tech.name);
+    setEditPhone(tech.phone);
+    setEditExperienceYears(tech.experienceYears);
+    setEditServiceTypes(tech.serviceTypes || ['SOLAR']);
+    setEditSkillsInput((tech.skills || []).join(', '));
+    setEditToolsInput((tech.tools || []).join(', '));
+    setEditServiceAreasInput((tech.serviceAreas || []).join(', '));
+    setEditRadiusInput(String(tech.coverageRadiusKm ?? 20));
+    setEditPincodesInput((tech.pincodes || []).join(', '));
+    setEditAvailability(tech.availability || 'AVAILABLE');
+    setEditActive(tech.active !== false);
+    setEditModalError(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateTechnician = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTech) return;
+    setEditModalError(null);
+    setIsEditSubmitting(true);
+
+    try {
+      const skills = editSkillsInput
+        .split(',')
+        .map((s) => s.trim().toUpperCase().replace(/\s+/g, '_'))
+        .filter(Boolean);
+
+      const tools = editToolsInput
+        .split(',')
+        .map((t) => t.trim().toUpperCase().replace(/\s+/g, '_'))
+        .filter(Boolean);
+
+      const serviceAreas = editServiceAreasInput
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+
+      const pincodes = editPincodesInput
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
+
+      const radiusNum = Number(editRadiusInput);
+      if (isNaN(radiusNum) || radiusNum <= 0) {
+        setEditModalError('Coverage radius must be a positive number of kilometers');
+        setIsEditSubmitting(false);
+        return;
+      }
+
+      await apiClient.patch(`/technicians/${editingTech._id}`, {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        experienceYears: Number(editExperienceYears),
+        serviceTypes: editServiceTypes,
+        skills,
+        tools,
+        serviceAreas,
+        coverageRadiusKm: radiusNum,
+        pincodes,
+        availability: editAvailability,
+        active: editActive,
+      });
+
+      setIsEditModalOpen(false);
+      setEditingTech(null);
+      await loadTechnicians();
+    } catch (err: any) {
+      setEditModalError(err.message || 'Failed to update technician');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (tech: Technician) => {
+    try {
+      const nextActive = !tech.active;
+      await apiClient.patch(`/technicians/${tech._id}`, { active: nextActive });
+      await loadTechnicians();
+    } catch (err: any) {
+      alert(`Failed to toggle technician status: ${err.message}`);
+    }
+  };
+
+  const handleToggleEditServiceType = (st: ServiceType) => {
+    if (editServiceTypes.includes(st)) {
+      if (editServiceTypes.length > 1) {
+        setEditServiceTypes(editServiceTypes.filter((t) => t !== st));
+      }
+    } else {
+      setEditServiceTypes([...editServiceTypes, st]);
+    }
+  };
+
+  const openViewModal = (tech: Technician) => {
+    setViewingTech(tech);
   };
 
   const handleStatusChange = async (techId: string, newAvailability: string) => {
@@ -317,12 +445,70 @@ export const Technicians: React.FC = () => {
                 </div>
               </div>
 
-              {/* Service Areas */}
-              <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Areas:</span>
-                <span className="font-medium text-slate-700 truncate max-w-[180px]">
-                  {tech.serviceAreas.join(', ')}
-                </span>
+              {/* Service Areas & Coverage */}
+              <div className="pt-3 border-t border-slate-100 space-y-1.5 text-[11px]">
+                <div className="flex items-center justify-between text-slate-500">
+                  <span className="font-semibold">Coverage:</span>
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {tech.coverageRadiusKm ?? 20} km radius
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-slate-500">
+                  <span>Areas:</span>
+                  <span className="font-medium text-slate-700 truncate max-w-[180px]">
+                    {tech.serviceAreas && tech.serviceAreas.length > 0 ? tech.serviceAreas.join(', ') : 'None assigned'}
+                  </span>
+                </div>
+                {tech.pincodes && tech.pincodes.length > 0 && (
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span>Pincodes:</span>
+                    <span className="font-medium text-slate-700 truncate max-w-[180px]">
+                      {tech.pincodes.join(', ')}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-slate-500 font-semibold">Status:</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    tech.active !== false
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {tech.active !== false ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons: View, Edit, Activate/Deactivate */}
+              <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openViewModal(tech)}
+                  className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEditModal(tech)}
+                  className="flex-1 inline-flex items-center justify-center gap-1 py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleActive(tech)}
+                  className={`inline-flex items-center justify-center p-1.5 rounded-xl border text-xs font-semibold transition-colors ${
+                    tech.active !== false
+                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                  }`}
+                  title={tech.active !== false ? 'Deactivate Technician' : 'Activate Technician'}
+                >
+                  <Power className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))}
@@ -430,15 +616,28 @@ export const Technicians: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Experience Years</label>
-            <input
-              type="number"
-              min="0"
-              value={experienceYears}
-              onChange={(e) => setExperienceYears(parseInt(e.target.value, 10))}
-              className="w-full border border-slate-300 rounded-xl p-2"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Experience Years</label>
+              <input
+                type="number"
+                min="0"
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(parseInt(e.target.value, 10))}
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Coverage Radius (km)</label>
+              <input
+                type="number"
+                min="1"
+                value={radiusInput}
+                onChange={(e) => setRadiusInput(e.target.value)}
+                placeholder="20"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
           </div>
 
           <div>
@@ -465,16 +664,31 @@ export const Technicians: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              Service Areas (comma separated)
-            </label>
-            <input
-              type="text"
-              value={serviceAreasInput}
-              onChange={(e) => setServiceAreasInput(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl p-2"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Service Areas (comma separated)
+              </label>
+              <input
+                type="text"
+                value={serviceAreasInput}
+                onChange={(e) => setServiceAreasInput(e.target.value)}
+                placeholder="e.g. Rajkot, Kalawad Road"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Pincodes (comma separated)
+              </label>
+              <input
+                type="text"
+                value={pincodesInput}
+                onChange={(e) => setPincodesInput(e.target.value)}
+                placeholder="e.g. 360001, 360005"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -494,6 +708,332 @@ export const Technicians: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL: Edit Technician */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingTech(null);
+        }}
+        title={`Edit Technician: ${editingTech?.name || ''}`}
+        maxWidth="lg"
+      >
+        <form onSubmit={handleUpdateTechnician} className="space-y-4 text-xs">
+          {editModalError && (
+            <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-xl">
+              {editModalError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
+              <input
+                type="text"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Phone Number *</label>
+              <input
+                type="text"
+                required
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Experience Years</label>
+              <input
+                type="number"
+                min="0"
+                value={editExperienceYears}
+                onChange={(e) => setEditExperienceYears(parseInt(e.target.value, 10))}
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Coverage Radius (km) *</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={editRadiusInput}
+                onChange={(e) => setEditRadiusInput(e.target.value)}
+                placeholder="20"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Certified Service Capabilities *
+            </label>
+            <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editServiceTypes.includes('SOLAR')}
+                  onChange={() => handleToggleEditServiceType('SOLAR')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Solar Photovoltaic</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editServiceTypes.includes('AC')}
+                  onChange={() => handleToggleEditServiceType('AC')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Air Conditioning / HVAC</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Skills (comma separated)
+            </label>
+            <input
+              type="text"
+              value={editSkillsInput}
+              onChange={(e) => setEditSkillsInput(e.target.value)}
+              className="w-full border border-slate-300 rounded-xl p-2"
+            />
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">
+              Assigned Tools (comma separated)
+            </label>
+            <input
+              type="text"
+              value={editToolsInput}
+              onChange={(e) => setEditToolsInput(e.target.value)}
+              className="w-full border border-slate-300 rounded-xl p-2"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Service Areas (comma separated)
+              </label>
+              <input
+                type="text"
+                value={editServiceAreasInput}
+                onChange={(e) => setEditServiceAreasInput(e.target.value)}
+                placeholder="e.g. Rajkot, Gondal"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">
+                Pincodes (comma separated)
+              </label>
+              <input
+                type="text"
+                value={editPincodesInput}
+                onChange={(e) => setEditPincodesInput(e.target.value)}
+                placeholder="e.g. 360001, 360005"
+                className="w-full border border-slate-300 rounded-xl p-2"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Dispatch Availability</label>
+              <select
+                value={editAvailability}
+                onChange={(e) => setEditAvailability(e.target.value as any)}
+                className="w-full border border-slate-300 rounded-xl p-2 bg-white"
+              >
+                <option value="AVAILABLE">AVAILABLE</option>
+                <option value="BUSY">BUSY</option>
+                <option value="OFFLINE">OFFLINE</option>
+              </select>
+            </div>
+            <div className="flex items-center pt-5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editActive}
+                  onChange={(e) => setEditActive(e.target.checked)}
+                  className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                />
+                <span className="font-bold text-slate-800">Technician Active</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingTech(null);
+              }}
+              className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isEditSubmitting}
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50"
+            >
+              {isEditSubmitting ? 'Saving Changes...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL: View Technician */}
+      <Modal
+        isOpen={!!viewingTech}
+        onClose={() => setViewingTech(null)}
+        title={viewingTech?.name || 'Technician Profile'}
+        maxWidth="md"
+      >
+        {viewingTech && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <p className="text-sm font-bold text-slate-900">{viewingTech.name}</p>
+                <p className="text-slate-500">{viewingTech.email}</p>
+                <p className="text-slate-500">{viewingTech.phone}</p>
+              </div>
+              <div className="text-right space-y-1">
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  viewingTech.availability === 'AVAILABLE'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                    : viewingTech.availability === 'BUSY'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-300'
+                    : 'bg-slate-100 text-slate-600 border border-slate-300'
+                }`}>
+                  {viewingTech.availability}
+                </span>
+                <div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    viewingTech.active !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {viewingTech.active !== false ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                Service Capabilities & Experience
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {viewingTech.serviceTypes.map((st) => (
+                  <span
+                    key={st}
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-md ${
+                      st === 'SOLAR'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                        : 'bg-sky-100 text-sky-900 border border-sky-200'
+                    }`}
+                  >
+                    {st === 'SOLAR' ? 'Solar Photovoltaic' : 'Air Conditioning / HVAC'}
+                  </span>
+                ))}
+                <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">
+                  {viewingTech.experienceYears} Years Experience
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                Coverage & Operating Radius
+              </h4>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Coverage Radius:</span>
+                  <span className="font-bold text-slate-800">{viewingTech.coverageRadiusKm ?? 20} km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Assigned Areas:</span>
+                  <span className="font-medium text-slate-800">
+                    {viewingTech.serviceAreas && viewingTech.serviceAreas.length > 0
+                      ? viewingTech.serviceAreas.join(', ')
+                      : 'None specified'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Pincodes:</span>
+                  <span className="font-medium text-slate-800">
+                    {viewingTech.pincodes && viewingTech.pincodes.length > 0
+                      ? viewingTech.pincodes.join(', ')
+                      : 'All within coverage radius'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                Skills
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                {viewingTech.skills.map((s, idx) => (
+                  <span key={idx} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                    {s.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">
+                Equipped Tools
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                {viewingTech.tools.map((t, idx) => (
+                  <span key={idx} className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                    {t.replace(/_/g, ' ')}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  const tech = viewingTech;
+                  setViewingTech(null);
+                  openEditModal(tech);
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold"
+              >
+                Edit Technician
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewingTech(null)}
+                className="px-4 py-2 border border-slate-300 rounded-xl text-slate-700 font-bold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

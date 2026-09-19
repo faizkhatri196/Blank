@@ -202,6 +202,14 @@ export interface TechnicianMatchResult {
   availability: TechnicianAvailability;
   serviceCompatibility: boolean;
   serviceAreas: string[];
+  coverageRadiusKm?: number;
+  pincodes?: string[];
+  isEligible: boolean;
+  coverageStatus: 'COVERS_LOCATION' | 'OUTSIDE_SERVICE_AREA' | 'NO_COVERAGE_CONFIGURED';
+  coverageExplanation: string;
+  ineligibilityReason?: string;
+  customerLocationSummary?: string;
+  technicianCoverageSummary?: string;
 }
 
 export interface SolarReadings {

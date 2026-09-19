@@ -27,6 +27,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80',
       alt: 'Solar inverter unit not turning on',
       recommendedEvidence: ['Clear photo of the inverter display screen', 'Photo of the main AC/DC isolator switches'],
+      photoRequirement: 'REQUIRED',
     },
     {
       code: 'LOW_GENERATION',
@@ -35,6 +36,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&w=600&q=80',
       alt: 'Solar panels generating lower power output',
       recommendedEvidence: ['Photo of inverter daily kWh generation reading', 'Rooftop view of solar panel array'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'GENERATION_STOPPED',
@@ -43,6 +45,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1545208942-e1c9c916524b?auto=format&fit=crop&w=600&q=80',
       alt: 'Zero solar energy generation during day',
       recommendedEvidence: ['Inverter front LED lights and status screen'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'INVERTER_ERROR_CODE',
@@ -51,6 +54,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1558441719-8b489c634a1b?auto=format&fit=crop&w=600&q=80',
       alt: 'Inverter display showing fault error code',
       recommendedEvidence: ['Close-up photo of the error code on the inverter screen'],
+      photoRequirement: 'REQUIRED',
     },
     {
       code: 'PANEL_DAMAGE_DIRT',
@@ -59,6 +63,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1592833159155-c62df1b65634?auto=format&fit=crop&w=600&q=80',
       alt: 'Rooftop solar panels requiring cleaning or showing damage',
       recommendedEvidence: ['Photo showing the panel array condition and shading/dirt'],
+      photoRequirement: 'REQUIRED',
     },
     {
       code: 'WIRING_CONNECTOR_ISSUE',
@@ -67,6 +72,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?auto=format&fit=crop&w=600&q=80',
       alt: 'Solar DC cabling and connector setup',
       recommendedEvidence: ['Safe photo of wiring area from a distance (Do not touch conductors)'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'HIGH_ELECTRICITY_BILL',
@@ -75,6 +81,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
       alt: 'Electricity utility bill and net meter',
       recommendedEvidence: ['Photo of recent electricity utility bills and net meter display'],
+      photoRequirement: 'OPTIONAL',
     },
     {
       code: 'ROUTINE_MAINTENANCE',
@@ -83,6 +90,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80',
       alt: 'Solar installation routine maintenance inspection',
       recommendedEvidence: ['General photo of the solar rooftop installation'],
+      photoRequirement: 'OPTIONAL',
     },
     {
       code: 'SOMETHING_ELSE',
@@ -91,6 +99,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
       alt: 'Custom service request',
       recommendedEvidence: ['Photo of the equipment of concern'],
+      photoRequirement: 'OPTIONAL',
     },
     {
       code: 'NOT_SURE_TRIAGE',
@@ -99,6 +108,7 @@ export const SOLAR_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80',
       alt: 'Assisted diagnostic triage',
       recommendedEvidence: ['General photo of the inverter and rooftop setup'],
+      photoRequirement: 'OPTIONAL',
       triageQuestions: [
         {
           id: 'q_generation',
@@ -141,6 +151,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80',
       alt: 'Air conditioner running without cooling',
       recommendedEvidence: ['Photo of indoor AC unit display showing temperature', 'Outdoor condenser unit photo if safe'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'WATER_LEAKING',
@@ -149,6 +160,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
       alt: 'Indoor AC unit dripping or leaking water',
       recommendedEvidence: ['Photo of indoor unit showing water dripping area and wall'],
+      photoRequirement: 'REQUIRED',
     },
     {
       code: 'UNUSUAL_NOISE',
@@ -157,6 +169,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=600&q=80',
       alt: 'AC unit producing abnormal vibration or noise',
       recommendedEvidence: ['Photo of indoor or outdoor unit where noise is originating'],
+      photoRequirement: 'NOT_USEFUL',
     },
     {
       code: 'NOT_TURNING_ON',
@@ -165,6 +178,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=600&q=80',
       alt: 'AC unit power failure',
       recommendedEvidence: ['Photo of AC electrical switch/MCB and indoor display panel'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'OUTDOOR_UNIT_ISSUE',
@@ -173,6 +187,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?auto=format&fit=crop&w=600&q=80',
       alt: 'Outdoor split AC condenser unit',
       recommendedEvidence: ['Safe photo of outdoor condenser unit if accessible without risk'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'WEAK_AIRFLOW',
@@ -181,6 +196,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1631545806478-f103b41d0877?auto=format&fit=crop&w=600&q=80',
       alt: 'Indoor AC unit front grille and blower',
       recommendedEvidence: ['Photo of indoor AC front grille and louvers'],
+      photoRequirement: 'RECOMMENDED',
     },
     {
       code: 'BAD_SMELL',
@@ -189,6 +205,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80',
       alt: 'Indoor unit emitting unpleasant odor',
       recommendedEvidence: ['Photo of indoor unit and surroundings'],
+      photoRequirement: 'NOT_USEFUL',
     },
     {
       code: 'PERIODIC_SERVICE',
@@ -197,6 +214,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=600&q=80',
       alt: 'Routine AC seasonal jet servicing and maintenance',
       recommendedEvidence: ['Photo of indoor and outdoor units'],
+      photoRequirement: 'OPTIONAL',
     },
     {
       code: 'SOMETHING_ELSE',
@@ -205,6 +223,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
       alt: 'Other AC operational issue',
       recommendedEvidence: ['Photo of AC equipment showing issue'],
+      photoRequirement: 'OPTIONAL',
     },
     {
       code: 'NOT_SURE_TRIAGE',
@@ -213,6 +232,7 @@ export const AC_CATALOG: ServiceDisplayMeta = {
       image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80',
       alt: 'Assisted AC diagnostic triage',
       recommendedEvidence: ['Photo of the indoor AC unit'],
+      photoRequirement: 'OPTIONAL',
       triageQuestions: [
         {
           id: 'q_power',

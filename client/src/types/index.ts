@@ -117,6 +117,8 @@ export interface Technician {
   tools: string[];
   certifications: string[];
   serviceAreas: string[];
+  coverageRadiusKm?: number;
+  pincodes?: string[];
   availability: TechnicianAvailability;
   active: boolean;
 }
@@ -202,7 +204,17 @@ export interface ServiceTicket {
   symptoms: string[];
   errorCode?: string;
   priority: TicketPriority;
+  problemCategory?: string;
   photos: string[];
+  serviceLocation?: {
+    address?: string;
+    city?: string;
+    area?: string;
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   status: TicketStatus;
   aiAnalysisId?: AIAnalysis | any;
   assignedTechnicianId?: Technician | any;
@@ -276,6 +288,14 @@ export interface TechnicianMatchResult {
   availability: TechnicianAvailability;
   serviceCompatibility: boolean;
   serviceAreas: string[];
+  coverageRadiusKm?: number;
+  pincodes?: string[];
+  isEligible: boolean;
+  coverageStatus: 'COVERS_LOCATION' | 'OUTSIDE_SERVICE_AREA' | 'NO_COVERAGE_CONFIGURED';
+  coverageExplanation: string;
+  ineligibilityReason?: string;
+  customerLocationSummary?: string;
+  technicianCoverageSummary?: string;
 }
 
 export interface PilotMetrics {
@@ -349,6 +369,7 @@ export interface CustomerProblemCard {
   image: string;
   alt: string;
   recommendedEvidence: string[];
+  photoRequirement?: 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL' | 'NOT_USEFUL';
   triageQuestions?: Array<{
     id: string;
     question: string;

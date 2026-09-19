@@ -19,6 +19,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { ProductWalkthrough } from '../../components/walkthrough/ProductWalkthrough';
+import { FAQAccordion } from '../../components/common/FAQAccordion';
 
 export const WalkthroughPage: React.FC = () => {
   const navigate = useNavigate();
@@ -448,6 +449,11 @@ export const WalkthroughPage: React.FC = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Platform FAQ */}
+        <section className="pt-4">
+          <FAQAccordion />
         </section>
 
         {/* Tester Call to Action */}

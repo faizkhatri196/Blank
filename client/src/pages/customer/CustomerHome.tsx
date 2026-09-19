@@ -19,6 +19,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { AvailableServiceItem, CustomerSafeTicket } from '../../types';
+import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
+import { FAQAccordion } from '../../components/common/FAQAccordion';
 import {
   CustomerLocation,
   getCustomerSavedLocation,
@@ -117,6 +119,18 @@ export const CustomerHome: React.FC = () => {
     }
     fetchUserActiveTicket();
   }, [user]);
+
+  // Select structured location from autocomplete
+  const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
+    // Reset downstream selection immediately
+    setAvailableServices([]);
+    setIsCoverageAvailable(true);
+    setCoverageMessage('');
+    setLocation(selectedLoc);
+    saveCustomerLocation(selectedLoc, user?.id);
+    setIsEditingLocation(false);
+    setLocationFeedback(null);
+  };
 
   // Submit explicit location
   const handleApplyLocation = (e: React.FormEvent) => {
@@ -339,13 +353,19 @@ export const CustomerHome: React.FC = () => {
 
         {/* Location Selection Drawer */}
         {isEditingLocation && (
-          <form
-            onSubmit={handleApplyLocation}
-            className="mt-4 pt-4 border-t border-slate-100 space-y-3 animate-fadeIn"
-          >
-            <p className="text-xs text-slate-600 font-medium">
-              Enter your city or area to verify service coverage:
-            </p>
+          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 animate-fadeIn">
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Search Your City or Area
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Type your neighborhood or city name to see live verified suggestions:
+              </p>
+              <LocationAutocompleteInput
+                onSelect={handleStructuredLocationSelect}
+                placeholder="e.g. Bopal, Satellite, Kalavad Road, Maninagar..."
+              />
+            </div>
 
             {locationFeedback && (
               <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
@@ -354,71 +374,16 @@ export const CustomerHome: React.FC = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase">City / Town *</label>
-                <input
-                  type="text"
-                  value={cityInput}
-                  onChange={(e) => setCityInput(e.target.value)}
-                  placeholder="e.g. Rajkot, Surat, Ahmedabad, Vadodara"
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 bg-white"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-500 uppercase">Pincode (Optional)</label>
-                <input
-                  type="text"
-                  value={pincodeInput}
-                  onChange={(e) => setPincodeInput(e.target.value)}
-                  placeholder="e.g. 360001"
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Quick city suggestions */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-[11px] font-bold text-slate-400">Sample Cities:</span>
-              {[
-                { name: 'Rajkot', pin: '360001' },
-                { name: 'Ahmedabad', pin: '380015' },
-                { name: 'Gandhinagar', pin: '382007' },
-                { name: 'Surat', pin: '395001' },
-                { name: 'Mumbai', pin: '400001' },
-              ].map((c) => (
-                <button
-                  type="button"
-                  key={c.name}
-                  onClick={() => {
-                    setCityInput(c.name);
-                    setPincodeInput(c.pin);
-                  }}
-                  className="px-2 py-0.5 rounded-lg text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium border border-slate-200 transition-colors"
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end pt-1">
               <button
                 type="button"
                 onClick={() => setIsEditingLocation(false)}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800"
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors"
-              >
-                Verify Coverage
-              </button>
             </div>
-          </form>
+          </div>
         )}
       </section>
 
@@ -648,6 +613,11 @@ export const CustomerHome: React.FC = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Production FAQ Section */}
+      <section className="pt-2">
+        <FAQAccordion />
       </section>
     </div>
   );
