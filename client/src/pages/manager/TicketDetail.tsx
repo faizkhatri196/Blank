@@ -150,11 +150,6 @@ export const TicketDetail: React.FC = () => {
               </h2>
               <ServiceBadge serviceType={ticket.serviceType} size="sm" />
               <PriorityBadge priority={ticket.priority} />
-              {ticket.isDemoData && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">
-                  DEMO DATA
-                </span>
-              )}
             </div>
             <p className="text-xs text-slate-500">
               Created on {new Date(ticket.createdAt).toLocaleDateString()} by{' '}

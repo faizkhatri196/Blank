@@ -406,5 +406,8 @@ export interface AvailableServiceItem {
   shortDescription: string;
   icon: string;
   heroImage: string;
+  providerCount?: number;
+  primaryCompanyId?: string;
+  providers?: { companyId: string; companyName: string }[];
 }
 

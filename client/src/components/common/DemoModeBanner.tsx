@@ -6,6 +6,12 @@ export const DemoModeBanner: React.FC = () => {
   const { user } = useAuth();
   const [showCreds, setShowCreds] = useState(false);
 
+  // Only show demo banner if explicitly requested via ?demo=true in URL (for internal testing)
+  const isExplicitDemoParam = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'true';
+  if (!isExplicitDemoParam) {
+    return null;
+  }
+
   // If user is logged into the Pilot or Client workspace, do not show any simulated demo environment banner
   if (user?.isPilotCompany || user?.environmentContext === 'PILOT' || user?.environmentContext === 'CLIENT' || user?.companyName?.toLowerCase().includes('pilot')) {
     return null;

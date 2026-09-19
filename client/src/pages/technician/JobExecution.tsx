@@ -61,6 +61,7 @@ export const JobExecution: React.FC = () => {
   const [additionalFeedback, setAdditionalFeedback] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [locationSharingNotice, setLocationSharingNotice] = useState<string | null>(null);
 
   const loadTicket = async () => {
     try {
@@ -80,10 +81,11 @@ export const JobExecution: React.FC = () => {
 
   const broadcastLocation = async () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      setLocationSharingNotice('Location sharing unavailable');
       return;
     }
     setIsBroadcastingLocation(true);
+    setLocationSharingNotice(null);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
@@ -94,6 +96,7 @@ export const JobExecution: React.FC = () => {
             activeTicketId: ticket?._id,
           });
           setLastBroadcastTime(new Date().toLocaleTimeString());
+          setLocationSharingNotice(null);
         } catch (err: any) {
           console.error('Failed to broadcast location:', err);
         } finally {
@@ -102,6 +105,7 @@ export const JobExecution: React.FC = () => {
       },
       (err) => {
         console.warn('Geolocation error or permission denied:', err.message);
+        setLocationSharingNotice('Location sharing unavailable');
         setIsBroadcastingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
@@ -341,42 +345,53 @@ export const JobExecution: React.FC = () => {
 
       {/* LIVE LOCATION TELEMETRY BROADCAST (Active jobs) */}
       {['ON_THE_WAY', 'ON_SITE', 'DIAGNOSING', 'REPAIRING'].includes(ticket.status) && (
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                <span>Field Location Sharing</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
+                <MapPin className="w-4 h-4" />
               </div>
-              <div className="text-[10px] text-slate-500">
-                {lastBroadcastTime
-                  ? `Last broadcast: ${lastBroadcastTime}`
-                  : 'Coordinates shared on phase changes'}
+              <div>
+                <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <span>Field Location Sharing</span>
+                  <span className={`w-2 h-2 rounded-full ${locationSharingNotice ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`} />
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  {lastBroadcastTime
+                    ? `Last broadcast: ${lastBroadcastTime}`
+                    : locationSharingNotice
+                    ? 'GPS unavailable — manual field reporting active'
+                    : 'Coordinates shared on phase changes'}
+                </div>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={broadcastLocation}
+              disabled={isBroadcastingLocation}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
+            >
+              {isBroadcastingLocation ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                  Sync GPS
+                </>
+              )}
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={broadcastLocation}
-            disabled={isBroadcastingLocation}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shrink-0"
-          >
-            {isBroadcastingLocation ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                Sync GPS
-              </>
-            )}
-          </button>
+          {locationSharingNotice && (
+            <div className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Location sharing unavailable. You can continue updating job status manually.</span>
+            </div>
+          )}
         </div>
       )}
 

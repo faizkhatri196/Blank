@@ -3,6 +3,7 @@ import { Outlet, Navigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Wrench, CheckCircle2, UserCheck, LogOut } from 'lucide-react';
 import { DemoModeBanner } from '../components/common/DemoModeBanner';
+import { PortalSwitcher } from '../components/common/PortalSwitcher';
 
 export const TechnicianLayout: React.FC = () => {
   const { user, logout, isLoading } = useAuth();
@@ -19,6 +20,10 @@ export const TechnicianLayout: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role === 'CUSTOMER') {
+    return <Navigate to="/customer" replace />;
+  }
+
   if (user.role !== 'TECHNICIAN') {
     return <Navigate to="/manager/dashboard" replace />;
   }
@@ -26,30 +31,31 @@ export const TechnicianLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-900/5 sm:bg-slate-200/50 pb-20 items-center">
       <div className="w-full max-w-lg flex flex-col min-h-screen bg-slate-100 sm:shadow-xl sm:border-x sm:border-slate-300">
-        <DemoModeBanner />
-
         {/* High-contrast mobile top bar */}
         <header className="bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
           <div>
-            <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Field Technician App</span>
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Outdoors
+            <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
+              <span>SERVORA</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
+                Field Pro
               </span>
             </div>
-            <div className="text-sm font-bold text-white flex items-center gap-1.5 mt-0.5">
+            <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               {user.name}
             </div>
           </div>
 
-          <button
-            onClick={logout}
-            title="Sign out"
-            className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-xl transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <PortalSwitcher variant="dark" />
+            <button
+              onClick={logout}
+              title="Sign out"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-xl transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </header>
 
         {/* Main mobile workspace */}

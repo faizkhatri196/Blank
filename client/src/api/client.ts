@@ -52,11 +52,26 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 401 Unauthorized - Session expired
+    // 401 Unauthorized - Session expired vs. Invalid credentials
     if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isAuthAction =
+        url.includes('/auth/login') ||
+        url.includes('/auth/signup') ||
+        url.includes('/auth/customer-signup') ||
+        url.includes('/auth/customer/signup') ||
+        url.includes('/auth/reset-password');
+
+      if (isAuthAction) {
+        const msg =
+          error.response?.data?.error?.message ||
+          'Invalid credentials. Please verify your email and password.';
+        return Promise.reject(new Error(msg));
+      }
+
       localStorage.removeItem('copilot_token');
       localStorage.removeItem('copilot_user');
-      if (window.location.pathname !== '/login') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.href = '/login?session_expired=true';
       }
       return Promise.reject(new Error('Your session has expired. Please sign in again.'));

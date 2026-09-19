@@ -2,13 +2,15 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, Mail, MapPin, LogOut, ShieldCheck, HelpCircle } from 'lucide-react';
+import { getCustomerSavedLocation } from '../../utils/customerLocation';
 
 export const CustomerProfile: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const savedCity = localStorage.getItem('servora_customer_city') || 'Ahmedabad';
-  const savedPincode = localStorage.getItem('servora_customer_pincode') || '380015';
+  const savedLoc = getCustomerSavedLocation(user?.id);
+  const savedCity = savedLoc ? savedLoc.city : null;
+  const savedPincode = savedLoc ? savedLoc.pincode : null;
 
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-fadeIn">
@@ -47,7 +49,10 @@ export const CustomerProfile: React.FC = () => {
           <div className="flex items-center gap-2.5 text-slate-700">
             <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
             <span>
-              Default Area: {savedCity} ({savedPincode})
+              Default Area:{' '}
+              {savedCity
+                ? `${savedCity}${savedPincode ? ` (${savedPincode})` : ''}`
+                : 'Not set (Select on Home screen)'}
             </span>
           </div>
         </div>

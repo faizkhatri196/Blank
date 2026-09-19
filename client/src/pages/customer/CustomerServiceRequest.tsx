@@ -4,9 +4,13 @@ import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
+import { getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
 import {
   Sun,
   Wind,
+  Zap,
+  Droplet,
+  Wrench,
   Camera,
   UploadCloud,
   X,
@@ -33,35 +37,38 @@ export const CustomerServiceRequest: React.FC = () => {
   // 2: Available Services ("What service do you need?")
   // 3: Problem Selection ("What seems to be the problem?")
   // 4: Complaint & Triage ("Tell us what happened")
-  // 5: Photo Evidence ("Upload equipment photos")
-  // 6: AI Understanding Preview & Submit
+  // 5: Contact & Submit ("Schedule Visit")
   const [step, setStep] = useState<number>(1);
 
-  // Location State (THE FIRST DISCOVERY INPUT)
-  const [city, setCity] = useState<string>(() => localStorage.getItem('servora_customer_city') || 'Ahmedabad');
-  const [pincode, setPincode] = useState<string>(() => localStorage.getItem('servora_customer_pincode') || '380015');
-  const [address, setAddress] = useState<string>('');
-  const [isLocating, setIsLocating] = useState<boolean>(false);
+  // Step 1: Location Verification State (Strictly null/empty if fresh customer)
+  const initialService = (searchParams.get('service') as ServiceType) || '';
+  const savedLoc = getCustomerSavedLocation(user?.id);
+  const initialCity = searchParams.get('city') || savedLoc?.city || '';
+  const initialPincode = searchParams.get('pincode') || savedLoc?.pincode || '';
 
-  // Location Availability Check State
+  const [city, setCity] = useState<string>(initialCity);
+  const [pincode, setPincode] = useState<string>(initialPincode);
+  const [address, setAddress] = useState<string>('');
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
-  const [isLocationAvailable, setIsLocationAvailable] = useState<boolean | null>(null);
+  const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(Boolean(initialCity));
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
 
-  // Service Selection (Only from available services)
-  const initialService = (searchParams.get('service') as ServiceType) || 'SOLAR';
-  const [serviceType, setServiceType] = useState<ServiceType>(initialService);
-
-  // Problem Selection
-  const catalog = SERVICE_CATALOG_MAP[serviceType] || SERVICE_CATALOG_MAP.SOLAR;
+  // Step 2 & 3: Service & Problem Selection State
+  const [serviceType, setServiceType] = useState<ServiceType | ''>(initialService);
   const [selectedProblem, setSelectedProblem] = useState<CustomerProblemCard | null>(null);
 
-  // Complaint & Triage Answers
-  const [complaint, setComplaint] = useState<string>('');
-  const [triageAnswers, setTriageAnswers] = useState<Record<string, string>>({});
+  // Problem Selection
+  const catalog = SERVICE_CATALOG_MAP[serviceType as ServiceType] || SERVICE_CATALOG_MAP.SOLAR;
 
-  // Photos / Evidence
+  // Step 4: Complaint & Interactive AI Triage
+  const [complaint, setComplaint] = useState<string>('');
+  const [isAnalyzingTriage, setIsAnalyzingTriage] = useState<boolean>(false);
+  const [triageAnswers, setTriageAnswers] = useState<Record<string, string>>({});
+  const [triageSummary, setTriageSummary] = useState<string | null>(null);
+
+  // Step 5: Photo Evidence
   const [photos, setPhotos] = useState<string[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -74,16 +81,40 @@ export const CustomerServiceRequest: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Location Change Handler (Rule 8 & 9: Clear downstream state when location changes)
+  const handleLocationChange = (newCity: string, newPincode: string) => {
+    setCity(newCity);
+    setPincode(newPincode);
+    setServiceType('');
+    setSelectedProblem(null);
+    setComplaint('');
+    setTriageAnswers({});
+    setTriageSummary(null);
+    setPhotos([]);
+    setAvailableServices([]);
+
+    if (newCity && newCity.trim()) {
+      saveCustomerLocation({ city: newCity.trim(), pincode: newPincode?.trim() || undefined }, user?.id);
+      checkServiceAvailability(newCity, newPincode);
+    } else {
+      setIsLocationAvailable(false);
+    }
+  };
+
   // Query service availability whenever city or pincode changes
   const checkServiceAvailability = async (checkCity: string, checkPincode: string) => {
-    if (!checkCity.trim()) return;
+    if (!checkCity || !checkCity.trim()) {
+      setIsLocationAvailable(false);
+      setAvailableServices([]);
+      return;
+    }
     setIsCheckingAvailability(true);
     setLocationError(null);
 
     try {
       const res = await apiClient.post('/customer-portal/services/available', {
         city: checkCity.trim(),
-        pincode: checkPincode.trim(),
+        pincode: checkPincode ? checkPincode.trim() : undefined,
       });
 
       if (res.data.success) {
@@ -93,10 +124,10 @@ export const CustomerServiceRequest: React.FC = () => {
         setAvailableServices(services);
 
         if (!isCovered) {
-          setLocationError(res.data.data.message || 'Servora services are not currently available in your area.');
+          setLocationError(res.data.data.message || `Servora services are not currently available in ${checkCity}.`);
         } else {
           // If current serviceType is not available in this location, switch to first available
-          if (services.length > 0 && !services.some((s) => s.serviceType === serviceType)) {
+          if (services.length > 0 && (!serviceType || !services.some((s) => s.serviceType === serviceType))) {
             setServiceType(services[0].serviceType);
             setSelectedProblem(null);
           }
@@ -104,19 +135,21 @@ export const CustomerServiceRequest: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Availability check failed:', err);
-      setLocationError('Unable to verify location coverage. Please check your network or try again.');
+      setLocationError(err.response?.data?.error?.message || 'Unable to verify location coverage. Please check your network.');
       setIsLocationAvailable(false);
     } finally {
       setIsCheckingAvailability(false);
     }
   };
 
-  // Run availability check on initial mount
+  // Run availability check on initial mount only if city is already explicitly known
   useEffect(() => {
-    checkServiceAvailability(city, pincode);
+    if (city && city.trim()) {
+      checkServiceAvailability(city, pincode);
+    }
   }, []);
 
-  // Browser Geolocation
+  // Browser Geolocation with real reverse geocoding (ZERO fallback to Ahmedabad)
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser. Please enter your city manually.');
@@ -125,19 +158,29 @@ export const CustomerServiceRequest: React.FC = () => {
 
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (_pos) => {
-        const detectedCity = 'Ahmedabad';
-        const detectedPin = '380015';
-        setCity(detectedCity);
-        setPincode(detectedPin);
-        localStorage.setItem('servora_customer_city', detectedCity);
-        localStorage.setItem('servora_customer_pincode', detectedPin);
-        setIsLocating(false);
-        checkServiceAvailability(detectedCity, detectedPin);
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+          const detectedCity = data.address?.city || data.address?.town || data.address?.district;
+          const detectedPin = data.address?.postcode || '';
+
+          if (detectedCity && typeof detectedCity === 'string') {
+            handleLocationChange(detectedCity.trim(), detectedPin ? String(detectedPin).trim() : '');
+          } else {
+            alert('Could not determine city from GPS. Please enter your city or area manually.');
+          }
+        } catch {
+          alert('Could not retrieve GPS location. Please enter your city or area manually.');
+        } finally {
+          setIsLocating(false);
+        }
       },
       (_err) => {
         setIsLocating(false);
-        alert('Location permission denied. Please enter your city and pincode manually.');
+        alert('Location permission denied. Please enter your city or area manually.');
       },
       { timeout: 8000 }
     );
@@ -280,11 +323,9 @@ export const CustomerServiceRequest: React.FC = () => {
                   type="text"
                   value={city}
                   onChange={(e) => {
-                    setCity(e.target.value);
-                    localStorage.setItem('servora_customer_city', e.target.value);
-                    checkServiceAvailability(e.target.value, pincode);
+                    handleLocationChange(e.target.value, pincode);
                   }}
-                  placeholder="e.g. Ahmedabad, Gandhinagar, Sanand"
+                  placeholder="Enter your city or area"
                   className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                   required
                 />
@@ -298,9 +339,7 @@ export const CustomerServiceRequest: React.FC = () => {
                   type="text"
                   value={pincode}
                   onChange={(e) => {
-                    setPincode(e.target.value);
-                    localStorage.setItem('servora_customer_pincode', e.target.value);
-                    checkServiceAvailability(city, e.target.value);
+                    handleLocationChange(city, e.target.value);
                   }}
                   placeholder="e.g. 380015"
                   className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
@@ -323,21 +362,17 @@ export const CustomerServiceRequest: React.FC = () => {
               />
             </div>
 
-            {/* Quick Pilot City Presets & GPS detection */}
+            {/* Quick Location Presets & GPS detection */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-bold text-slate-400">Supported Pilot Cities:</span>
-                {['Ahmedabad', 'Gandhinagar', 'Sanand', 'Bopal'].map((c) => (
+                <span className="text-[11px] font-bold text-slate-400">Quick Locations:</span>
+                {['Ahmedabad', 'Rajkot', 'Gandhinagar', 'Surat'].map((c) => (
                   <button
                     type="button"
                     key={c}
                     onClick={() => {
-                      const pin = c === 'Ahmedabad' ? '380015' : c === 'Gandhinagar' ? '382007' : '382110';
-                      setCity(c);
-                      setPincode(pin);
-                      localStorage.setItem('servora_customer_city', c);
-                      localStorage.setItem('servora_customer_pincode', pin);
-                      checkServiceAvailability(c, pin);
+                      const pin = c === 'Ahmedabad' ? '380015' : c === 'Rajkot' ? '360001' : c === 'Gandhinagar' ? '382007' : '395001';
+                      handleLocationChange(c, pin);
                     }}
                     className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all ${
                       city.toLowerCase() === c.toLowerCase()
@@ -388,7 +423,7 @@ export const CustomerServiceRequest: React.FC = () => {
                       Servora services are not currently available in your area.
                     </h4>
                     <p className="text-xs text-amber-800 mt-0.5">
-                      {locationError || `We do not have active field service coverage deployed in ${city}. Please switch to a supported area like Ahmedabad to proceed.`}
+                      {locationError || `We do not have active field service coverage deployed in ${city}.`}
                     </p>
                   </div>
                 </div>
@@ -450,7 +485,47 @@ export const CustomerServiceRequest: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {availableServices.map((srv) => {
               const isSelected = serviceType === srv.serviceType;
-              const isSolar = srv.serviceType === 'SOLAR';
+              const getServiceTheme = (type: string) => {
+                switch (type) {
+                  case 'SOLAR':
+                    return {
+                      icon: <Sun className="w-6 h-6" />,
+                      iconBg: 'bg-amber-100 text-amber-600',
+                      selectedRing: 'border-amber-500 bg-amber-50/40 ring-amber-500/20',
+                      selectedRadio: 'bg-amber-500 border-amber-500',
+                    };
+                  case 'AC':
+                    return {
+                      icon: <Wind className="w-6 h-6" />,
+                      iconBg: 'bg-cyan-100 text-cyan-600',
+                      selectedRing: 'border-cyan-500 bg-cyan-50/40 ring-cyan-500/20',
+                      selectedRadio: 'bg-cyan-500 border-cyan-500',
+                    };
+                  case 'ELECTRICAL':
+                    return {
+                      icon: <Zap className="w-6 h-6" />,
+                      iconBg: 'bg-yellow-100 text-yellow-600',
+                      selectedRing: 'border-yellow-500 bg-yellow-50/40 ring-yellow-500/20',
+                      selectedRadio: 'bg-yellow-500 border-yellow-500',
+                    };
+                  case 'PLUMBING':
+                    return {
+                      icon: <Droplet className="w-6 h-6" />,
+                      iconBg: 'bg-blue-100 text-blue-600',
+                      selectedRing: 'border-blue-500 bg-blue-50/40 ring-blue-500/20',
+                      selectedRadio: 'bg-blue-500 border-blue-500',
+                    };
+                  default:
+                    return {
+                      icon: <Wrench className="w-6 h-6" />,
+                      iconBg: 'bg-indigo-100 text-indigo-600',
+                      selectedRing: 'border-indigo-500 bg-indigo-50/40 ring-indigo-500/20',
+                      selectedRadio: 'bg-indigo-500 border-indigo-500',
+                    };
+                }
+              };
+
+              const theme = getServiceTheme(srv.serviceType);
 
               return (
                 <div
@@ -461,29 +536,19 @@ export const CustomerServiceRequest: React.FC = () => {
                   }}
                   className={`group relative rounded-3xl p-6 border transition-all cursor-pointer flex flex-col justify-between overflow-hidden ${
                     isSelected
-                      ? isSolar
-                        ? 'border-amber-500 bg-amber-50/40 shadow-sm ring-2 ring-amber-500/20'
-                        : 'border-cyan-500 bg-cyan-50/40 shadow-sm ring-2 ring-cyan-500/20'
+                      ? `${theme.selectedRing} shadow-sm ring-2`
                       : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                   }`}
                 >
                   <div className="flex items-start justify-between">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                        isSolar
-                          ? 'bg-amber-100 text-amber-600'
-                          : 'bg-cyan-100 text-cyan-600'
-                      }`}
-                    >
-                      {isSolar ? <Sun className="w-6 h-6" /> : <Wind className="w-6 h-6" />}
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${theme.iconBg}`}>
+                      {theme.icon}
                     </div>
 
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${
                         isSelected
-                          ? isSolar
-                            ? 'bg-amber-500 border-amber-500 text-white'
-                            : 'bg-cyan-500 border-cyan-500 text-white'
+                          ? `${theme.selectedRadio} text-white`
                           : 'border-slate-300 bg-white'
                       }`}
                     >
@@ -526,7 +591,7 @@ export const CustomerServiceRequest: React.FC = () => {
           <div className="bg-slate-100/80 rounded-2xl p-3 px-4 flex items-center justify-between border border-slate-200 text-xs">
             <div className="flex items-center gap-2 text-slate-700 font-medium truncate">
               <span className="font-bold text-indigo-700">
-                {serviceType === 'SOLAR' ? '☀️ Solar Service' : '❄️ AC & HVAC Service'}
+                {catalog.title}
               </span>
               <span className="text-slate-400">|</span>
               <span className="truncate">{city}</span>

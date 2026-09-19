@@ -610,11 +610,6 @@ export const Dashboard: React.FC = () => {
                       <span className="text-xs font-bold text-slate-900">{t.ticketNumber}</span>
                       <ServiceBadge serviceType={t.serviceType} />
                       <PriorityBadge priority={t.priority} />
-                      {t.isDemoData && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
-                          DEMO
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs font-medium text-slate-700 truncate">{t.complaint}</p>
                     <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">

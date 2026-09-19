@@ -21,6 +21,10 @@ export const ManagerLayout: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role === 'CUSTOMER') {
+    return <Navigate to="/customer" replace />;
+  }
+
   if (user.role !== 'SERVICE_MANAGER') {
     return <Navigate to="/technician/dashboard" replace />;
   }

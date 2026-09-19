@@ -58,12 +58,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           <div>
             <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
               SERVORA
-              <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                V0
-              </span>
             </div>
             <div className="text-[10px] text-emerald-400 font-medium tracking-tight">
-              AI-powered field service ops
+              Field Service Operations
             </div>
           </div>
         </div>
@@ -109,16 +106,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         })}
       </nav>
 
-      {/* Footer / Version */}
+      {/* Footer / Status */}
       <div className="p-4 border-t border-slate-800 text-[11px] text-slate-400 bg-slate-900/50">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-slate-300">V0 Pilot Edition</span>
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-            Demo
+          <span className="font-bold text-slate-300">SERVORA Platform</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono">
+            Online
           </span>
         </div>
-        <div className="text-[10px] text-slate-400 mt-0.5">
-          Real Groundwork Verification
+        <div className="text-[10px] text-slate-500 mt-0.5">
+          Field Operations Infrastructure
         </div>
       </div>
     </div>

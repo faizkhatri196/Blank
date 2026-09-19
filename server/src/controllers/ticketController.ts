@@ -590,6 +590,38 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
       return;
     }
 
+    // Verify technician operational area coverage if technician has defined service areas
+    if (technician.serviceAreas && technician.serviceAreas.length > 0) {
+      const ticketCity = (ticket.serviceLocation?.city || '').toLowerCase();
+      const ticketAddress = (ticket.serviceLocation?.address || '').toLowerCase();
+      let customerCity = '';
+      let customerAddress = '';
+      if (ticket.customerId) {
+        const cust = await Customer.findById(ticket.customerId);
+        if (cust) {
+          customerCity = (cust.city || '').toLowerCase();
+          customerAddress = (cust.address || '').toLowerCase();
+        }
+      }
+      const locationContext = `${ticketCity} ${ticketAddress} ${customerCity} ${customerAddress}`.trim();
+      if (locationContext) {
+        const coversLocation = technician.serviceAreas.some((area) => {
+          const a = area.toLowerCase().trim();
+          return locationContext.includes(a) || (ticketCity && a.includes(ticketCity));
+        });
+        if (!coversLocation) {
+          res.status(400).json({
+            success: false,
+            error: {
+              code: 'SERVICE_AREA_MISMATCH',
+              message: `Technician ${technician.name} does not cover the service area for this ticket.`,
+            },
+          });
+          return;
+        }
+      }
+    }
+
     ticket.assignedTechnicianId = technician._id as mongoose.Types.ObjectId;
     ticket.status = 'ASSIGNED';
     ticket.statusHistory.push({

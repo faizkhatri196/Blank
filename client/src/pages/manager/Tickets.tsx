@@ -139,11 +139,6 @@ export const Tickets: React.FC = () => {
                   <tr key={ticket._id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900">{ticket.ticketNumber}</div>
-                      {ticket.isDemoData && (
-                        <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1 py-0.5 rounded">
-                          DEMO
-                        </span>
-                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

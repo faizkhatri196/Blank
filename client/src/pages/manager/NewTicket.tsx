@@ -18,7 +18,7 @@ export const NewTicket: React.FC = () => {
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerPhone, setNewCustomerPhone] = useState('');
   const [newCustomerAddress, setNewCustomerAddress] = useState('');
-  const [newCustomerCity, setNewCustomerCity] = useState('Ahmedabad');
+  const [newCustomerCity, setNewCustomerCity] = useState('');
 
   // Solar Equipment
   const [capacityKW, setCapacityKW] = useState(5.0);
@@ -105,11 +105,16 @@ export const NewTicket: React.FC = () => {
           setIsLoading(false);
           return;
         }
+        if (!newCustomerCity.trim()) {
+          setError('Customer city is required');
+          setIsLoading(false);
+          return;
+        }
         const custRes = await apiClient.post('/customers', {
           name: newCustomerName.trim(),
           phone: newCustomerPhone.trim(),
-          address: newCustomerAddress.trim() || 'GIDC Industrial Estate, Sanand',
-          city: newCustomerCity.trim() || 'Ahmedabad',
+          address: newCustomerAddress.trim() || 'Service Location Address',
+          city: newCustomerCity.trim(),
         });
         customerId = custRes.data.data._id;
       } else {
@@ -314,6 +319,17 @@ export const NewTicket: React.FC = () => {
                   placeholder="+91 98765 00000"
                   value={newCustomerPhone}
                   onChange={(e) => setNewCustomerPhone(e.target.value)}
+                  className="w-full text-xs border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">City / Area *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sanand, Rajkot, Ahmedabad"
+                  value={newCustomerCity}
+                  onChange={(e) => setNewCustomerCity(e.target.value)}
                   className="w-full text-xs border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>

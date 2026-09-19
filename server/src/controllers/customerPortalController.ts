@@ -209,7 +209,7 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
     const companies = await Company.find({ active: true });
 
     const availableServiceTypesSet = new Set<ServiceType>();
-    let matchingCompany: any = null;
+    const serviceProvidersMap = new Map<ServiceType, Array<{ companyId: string; companyName: string }>>();
 
     for (const comp of companies) {
       const areas = comp.serviceAreas || [];
@@ -223,9 +223,13 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
       });
 
       if (match) {
-        matchingCompany = comp;
         const servicesForArea = match.services || comp.servicesSupported || ['SOLAR', 'AC'];
-        servicesForArea.forEach((s: ServiceType) => availableServiceTypesSet.add(s));
+        servicesForArea.forEach((s: ServiceType) => {
+          availableServiceTypesSet.add(s);
+          const providers = serviceProvidersMap.get(s) || [];
+          providers.push({ companyId: comp._id.toString(), companyName: comp.name });
+          serviceProvidersMap.set(s, providers);
+        });
       }
     }
 
@@ -240,22 +244,29 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
           pincode,
           services: [],
           availableServices: [],
-          message: 'Servora services are not currently available in your area.',
+          message: 'Servora services are not currently available in this area.',
         },
       });
       return;
     }
 
     const serviceDefinitions = availableServiceTypes
-      .map((st) => ServiceRegistry.getService(st))
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
-      .map((s) => ({
-        serviceType: s.serviceType,
-        displayName: s.displayName,
-        shortDescription: s.shortDescription,
-        icon: s.icon,
-        heroImage: s.heroImage,
-      }));
+      .map((st) => {
+        const def = ServiceRegistry.getService(st);
+        if (!def) return null;
+        const providers = serviceProvidersMap.get(st) || [];
+        return {
+          serviceType: def.serviceType,
+          displayName: def.displayName,
+          shortDescription: def.shortDescription,
+          icon: def.icon,
+          heroImage: def.heroImage,
+          providerCount: providers.length,
+          primaryCompanyId: providers[0]?.companyId,
+          providers,
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
     res.json({
       success: true,
@@ -263,7 +274,7 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
         coverageAvailable: true,
         city,
         pincode,
-        companyId: matchingCompany?._id,
+        companyId: serviceDefinitions[0]?.primaryCompanyId,
         services: serviceDefinitions,
         availableServices: serviceDefinitions,
       },
@@ -348,11 +359,13 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     const cleanPincode = location.pincode ? String(location.pincode).trim() : undefined;
 
     // Determine covering company based on authoritative service-area configuration
+    // Determine covering company based on authoritative service-area configuration
     const requestedCompanyId = req.body.companyId || req.companyId;
     const companies = await Company.find({ active: true });
 
+    // Match company whose configured serviceAreas explicitly cover this city, pincode, and serviceType
     let targetCompany = companies.find((c) => {
-      // If customer is already bound to a company or selected a specific provider, match it
+      // If a specific provider was chosen, verify it
       if (requestedCompanyId && !c._id.equals(requestedCompanyId)) return false;
       const areas = c.serviceAreas || [];
       return areas.some((a) => {
@@ -366,14 +379,20 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       });
     });
 
-    if (!targetCompany && requestedCompanyId) {
-      // Check if user's company supports it under general servicesSupported if no specific area defined
-      const userCompany = companies.find((c) => c._id.equals(requestedCompanyId));
-      if (userCompany && (!userCompany.serviceAreas || userCompany.serviceAreas.length === 0)) {
-        if ((userCompany.servicesSupported || []).includes(serviceType)) {
-          targetCompany = userCompany;
-        }
-      }
+    // If requestedCompanyId was specified but did not match, check other active companies covering this location
+    if (!targetCompany) {
+      targetCompany = companies.find((c) => {
+        const areas = c.serviceAreas || [];
+        return areas.some((a) => {
+          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
+          if (!cityMatch) return false;
+          if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
+            if (!a.pincodes.includes(cleanPincode)) return false;
+          }
+          const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
+          return servicesForArea.includes(serviceType);
+        });
+      });
     }
 
     if (!targetCompany) {

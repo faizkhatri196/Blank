@@ -31,11 +31,22 @@ import { TechnicianDashboard } from '../pages/technician/TechnicianDashboard';
 import { JobExecution } from '../pages/technician/JobExecution';
 import { TechnicianProfile } from '../pages/technician/TechnicianProfile';
 
+import { BrandFilm } from '../pages/marketing/BrandFilm';
+import { PortalsGateway } from '../pages/portal/PortalsGateway';
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/customer" replace />} />
+      <Route path="/portals" element={<PortalsGateway />} />
+      <Route path="/gateway" element={<Navigate to="/portals" replace />} />
+      <Route path="/brand-film" element={<BrandFilm />} />
+      <Route path="/film" element={<Navigate to="/brand-film" replace />} />
+      <Route path="/video" element={<Navigate to="/brand-film" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/customer/login" element={<Navigate to="/login?portal=customer" replace />} />
+      <Route path="/technician/login" element={<Navigate to="/login?portal=technician" replace />} />
+      <Route path="/manager/login" element={<Navigate to="/login?portal=manager" replace />} />
       <Route path="/onboarding" element={<CompanyOnboarding />} />
       <Route path="/register" element={<Navigate to="/onboarding" replace />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />

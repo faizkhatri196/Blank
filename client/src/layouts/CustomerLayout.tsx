@@ -3,18 +3,19 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut } from 'lucide-react';
 import { DemoModeBanner } from '../components/common/DemoModeBanner';
+import { PortalSwitcher } from '../components/common/PortalSwitcher';
+import { getCustomerSavedLocation } from '../utils/customerLocation';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Retrieve selected location or default to Ahmedabad
-  const savedCity = localStorage.getItem('servora_customer_city') || 'Ahmedabad';
+  // Retrieve user-scoped selected location (null for new customer)
+  const savedLocation = getCustomerSavedLocation(user?.id);
+  const displayCity = savedLocation ? savedLocation.city : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      <DemoModeBanner />
-
       {/* Top Consumer Navigation */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -30,11 +31,8 @@ export const CustomerLayout: React.FC = () => {
               <div>
                 <span className="font-extrabold text-lg tracking-tight text-slate-900 flex items-center gap-1">
                   SERVORA
-                  <span className="text-[10px] font-bold tracking-widest text-indigo-600 uppercase bg-indigo-50 px-1.5 py-0.5 rounded-full border border-indigo-100">
-                    V2
-                  </span>
                 </span>
-                <p className="text-[11px] text-slate-500 font-medium hidden sm:block">AI Field Service Operations</p>
+                <p className="text-[11px] text-slate-500 font-medium hidden sm:block">Field Service Operations</p>
               </div>
             </button>
           </div>
@@ -46,28 +44,34 @@ export const CustomerLayout: React.FC = () => {
             title="Change service location"
           >
             <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="truncate max-w-[120px] sm:max-w-none">{savedCity}</span>
-            <span className="text-[10px] text-indigo-600 font-bold ml-0.5 underline">Change</span>
+            <span className="truncate max-w-[120px] sm:max-w-none">
+              {displayCity || 'Select Location'}
+            </span>
+            <span className="text-[10px] text-indigo-600 font-bold ml-0.5 underline">
+              {displayCity ? 'Change' : 'Set Area'}
+            </span>
           </button>
 
-          {/* User Auth Info / Links */}
+          {/* Portal Switcher & User Auth */}
           <div className="flex items-center gap-2">
+            <PortalSwitcher />
+
             {user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 pl-1 border-l border-slate-200">
                 <span className="text-xs font-semibold text-slate-700 hidden md:inline-block">
                   Hi, {user.name.split(' ')[0]}
                 </span>
                 <button
                   onClick={logout}
                   title="Sign Out"
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
               <NavLink
-                to="/login"
+                to="/login?portal=customer"
                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-colors"
               >
                 <LogIn className="w-3.5 h-3.5" />

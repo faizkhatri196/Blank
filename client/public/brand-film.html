@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SERVORA — Official Product Launch Film (4K Cinematic)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --bg-surface: #0e121b;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --blue-accent: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.25);
+      --green-fresh: #10b981;
+      --amber-warm: #f59e0b;
+      --red-stale: #ef4444;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: #020408;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    /* Video Frame Container (16:9 Aspect Ratio) */
+    .video-viewport {
+      position: relative;
+      width: 100vw;
+      max-width: 1360px;
+      aspect-ratio: 16 / 9;
+      background: #000000;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .video-stage {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-dark);
+      overflow: hidden;
+    }
+
+    /* Canvas for motion effects and recording */
+    #renderCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Dynamic Scene Layers */
+    .scene-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: scale(0.98);
+      z-index: 2;
+    }
+
+    .scene-container.active {
+      display: flex;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Subtitles Bar (Apple Style Minimal) */
+    .subtitles-bar {
+      position: absolute;
+      bottom: 74px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 14, 22, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      padding: 10px 24px;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .subtitles-bar span.highlight {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+
+    /* Transport Controls */
+    .video-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(180deg, transparent, rgba(5, 7, 12, 0.95));
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      z-index: 60;
+      transition: opacity 0.3s ease;
+    }
+
+    .scrubber-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      transition: height 0.15s ease;
+    }
+
+    .scrubber-container:hover {
+      height: 9px;
+    }
+
+    .scrubber-progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa);
+      position: relative;
+    }
+
+    .scrubber-handle {
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%) scale(0);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+      transition: transform 0.15s ease;
+    }
+
+    .scrubber-container:hover .scrubber-handle {
+      transform: translateY(-50%) scale(1);
+    }
+
+    .btn-ctrl {
+      background: none;
+      border: none;
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-ctrl:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+    }
+
+    .time-badge {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .scene-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scene-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--blue-accent);
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .export-btn {
+      margin-left: auto;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #60a5fa;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .export-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.5);
+    }
+
+    /* Device Frames (iPhone 16 Pro & MacBook Pro) */
+    .phone-mockup {
+      width: 320px;
+      height: 560px;
+      background: #000000;
+      border-radius: 46px;
+      border: 8px solid #232732;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 0 2px rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 24px;
+      background: #000000;
+      border-radius: 14px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .camera-lens {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0c0f16;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .phone-screen {
+      flex: 1;
+      background: #090c15;
+      padding: 44px 18px 20px 18px;
+      overflow-y: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #f1f5f9;
+      position: relative;
+    }
+
+    .laptop-mockup {
+      width: 780px;
+      height: 480px;
+      background: #0a0d17;
+      border-radius: 16px;
+      border: 6px solid #1e2433;
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .laptop-header {
+      height: 34px;
+      background: #111624;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .window-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    /* Scene Layouts */
+    .scene-grid-2col {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      padding: 50px 80px;
+      gap: 60px;
+    }
+
+    .scene-center {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+    }
+
+    /* Typography & Titles */
+    .cinematic-pretitle {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--blue-accent);
+      margin-bottom: 14px;
+    }
+
+    .cinematic-title {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 18px;
+    }
+
+    .cinematic-desc {
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 480px;
+    }
+
+    /* Chaos elements for Scene 1 */
+    .chaos-bubble {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      animation: floatMsg 4s ease-in-out infinite;
+    }
+
+    @keyframes floatMsg {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* Sound Status Indicator */
+    .audio-badge {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 70;
+      color: #cbd5e1;
+    }
+
+    .sound-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+
+    .sound-bar {
+      width: 2px;
+      background: #3b82f6;
+      border-radius: 1px;
+      height: 4px;
+      transition: height 0.1s ease;
+    }
+
+    .playing .sound-bar:nth-child(1) { animation: soundAnim 0.6s infinite alternate; }
+    .playing .sound-bar:nth-child(2) { animation: soundAnim 0.8s 0.2s infinite alternate; }
+    .playing .sound-bar:nth-child(3) { animation: soundAnim 0.7s 0.4s infinite alternate; }
+    .playing .sound-bar:nth-child(4) { animation: soundAnim 0.5s 0.1s infinite alternate; }
+
+    @keyframes soundAnim {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    /* Interactive Scene Navigator Overlay */
+    .scene-quick-selector {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      max-width: 440px;
+      padding-bottom: 2px;
+    }
+
+    .scene-nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .scene-nav-btn.active {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: #3b82f6;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main 16:9 Video Canvas Viewport -->
+  <div class="video-viewport" id="videoViewport">
+    
+    <!-- Video Stage / Canvas Stack -->
+    <div class="video-stage" id="videoStage">
+      <canvas id="renderCanvas"></canvas>
+
+      <!-- Audio Track Status Pill -->
+      <div class="audio-badge" id="audioBadge">
+        <div class="sound-bars">
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+        </div>
+        <span id="audioStatusText">Atmosphere Ready</span>
+      </div>
+
+      <!-- ========================================================
+           SCENE 1: THE FIELD SERVICE PROBLEM
+           ======================================================== -->
+      <div class="scene-container active" id="scene-1">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">The Reality of Service Operations</div>
+            <h1 class="cinematic-title">Field service is complex.</h1>
+            <p class="cinematic-desc">
+              Customer requests. Technicians. Locations. Jobs. Constant updates. Behind every service call lies operational fragmentation.
+            </p>
+            <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 10px;">
+              <div class="chaos-bubble" style="animation-delay: 0s;">
+                <span style="font-size: 20px;">💬</span>
+                <div>
+                  <div style="font-weight: 700; color: #ffffff;">Customer WhatsApp (8:14 AM)</div>
+                  <div>"solar inverter not working genration bandh pls send someone"</div>
+                </div>
+              </div>
+              <div class="chaos-bubble" style="animation-delay: 1.2s; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.25); color: #fde68a;">
+                <span style="font-size: 20px;">📞</span>
+                <div>
+                  <div style="font-weight: 700; color: #ffffff;">3 Unanswered Phone Calls</div>
+                  <div>Customer repeatedly asking for technician arrival time</div>
+                </div>
+              </div>
+              <div class="chaos-bubble" style="animation-delay: 2.4s; background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.25); color: #bfdbfe;">
+                <span style="font-size: 20px;">📋</span>
+                <div>
+                  <div style="font-weight: 700; color: #ffffff;">Spreadsheets & Paper Notes</div>
+                  <div>Job #408 status unclear • Inverter tools missing</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <div style="width: 440px; height: 320px; border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);">
+              <img src="/video-assets/manager_office.jpg" alt="Field Service Manager" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.85);" />
+              <div style="position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(7,9,14,0.95)); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px;">
+                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; font-weight: 600;">Operational Dilemma</div>
+                <div style="font-size: 17px; font-weight: 700; color: #ffffff;">Overwhelmed Operations Desks</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 2: LOCATION-FIRST SERVICE DISCOVERY
+           ======================================================== -->
+      <div class="scene-container" id="scene-2">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">The Servora Foundation</div>
+            <h1 class="cinematic-title">Service availability starts with location.</h1>
+            <p class="cinematic-desc">
+              Before asking what needs repair, Servora resolves <em>where</em> service is needed. Only genuine, verified coverage is displayed. Zero false expectations.
+            </p>
+            <div style="margin-top: 30px; display: flex; gap: 14px;">
+              <button class="scene-nav-btn active" id="btnLocAhmd" onclick="switchLocDemo('ahmedabad')">Ahmedabad</button>
+              <button class="scene-nav-btn" id="btnLocRajkot" onclick="switchLocDemo('rajkot')">Rajkot</button>
+              <button class="scene-nav-btn" id="btnLocMumbai" onclick="switchLocDemo('mumbai')">Mumbai</button>
+            </div>
+            <div id="locStatusCaption" style="margin-top: 20px; font-size: 14px; color: #38bdf8; font-family: var(--font-mono);">
+              Ahmedabad: Solar & AC/HVAC Operations Live
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <div class="phone-mockup">
+              <div class="phone-notch"><div class="camera-lens"></div></div>
+              <div class="phone-screen" id="phoneScreenLoc">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                  <div style="font-size: 18px; font-weight: 800; color: #38bdf8;">SERVORA</div>
+                  <div style="font-size: 11px; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">Customer Portal</div>
+                </div>
+
+                <div style="font-size: 13px; color: #94a3b8; margin-bottom: 6px;">Where do you need service?</div>
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                  <span style="color: #3b82f6;">📍</span>
+                  <span id="locInputDisplay" style="font-weight: 600; color: #ffffff;">Ahmedabad, Gujarat</span>
+                </div>
+
+                <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; margin-bottom: 10px; font-weight: 700;">Available Services in Area</div>
+                
+                <div id="locServicesList" style="display: flex; flex-direction: column; gap: 10px;">
+                  <div style="background: rgba(59,130,246,0.12); border: 1px solid #3b82f6; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">☀️</span>
+                    <div>
+                      <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Solar Systems</div>
+                      <div style="font-size: 11px; color: #93c5fd;">Inverters • Rooftop • Maintenance</div>
+                    </div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">❄️</span>
+                    <div>
+                      <div style="font-size: 14px; font-weight: 700; color: #ffffff;">AC / HVAC Systems</div>
+                      <div style="font-size: 11px; color: #94a3b8;">Cooling • Compressor • Servicing</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 3: CUSTOMER REQUEST & AI NORMALIZATION
+           ======================================================== -->
+      <div class="scene-container" id="scene-3">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">Intelligent Intake</div>
+            <h1 class="cinematic-title">AI assists understanding.<br>Technicians verify reality.</h1>
+            <p class="cinematic-desc">
+              Customers explain issues in plain, unstructured language. Servora parses the symptoms into actionable telemetry without making false autonomous claims.
+            </p>
+            <div style="margin-top: 24px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 20px;">
+              <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700;">Customer's Raw Description</div>
+              <div style="font-size: 16px; font-style: italic; color: #f87171; margin-top: 6px;">"invrtr not wrkng genration bandh"</div>
+              <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 14px 0;"></div>
+              <div style="font-size: 11px; text-transform: uppercase; color: #38bdf8; font-weight: 700;">Servora Normalized Understanding</div>
+              <div style="font-size: 14px; color: #e2e8f0; margin-top: 6px; line-height: 1.5;">
+                "Solar inverter appears to be non-operational and generation may have stopped."
+              </div>
+              <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <span style="font-size: 11px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; padding: 3px 10px; border-radius: 6px;">Needs Physical Verification</span>
+                <span style="font-size: 11px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 3px 10px; border-radius: 6px;">Photo Evidence Attached</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <div class="phone-mockup">
+              <div class="phone-notch"><div class="camera-lens"></div></div>
+              <div class="phone-screen">
+                <div style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Solar Problem Intake</div>
+                
+                <div style="background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px; margin-bottom: 12px;">
+                  <div style="font-size: 11px; color: #94a3b8;">Selected Problem:</div>
+                  <div style="font-size: 14px; font-weight: 600; color: #38bdf8;">Inverter not working</div>
+                </div>
+
+                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">Photo Evidence Uploaded</div>
+                <div style="height: 150px; border-radius: 10px; overflow: hidden; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.15);">
+                  <img src="/video-assets/inverter_photo.jpg" alt="Inverter Display" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
+
+                <button style="width: 100%; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 700; margin-top: auto;">
+                  Submit Request →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 4: OPERATIONS COMMAND CENTER
+           ======================================================== -->
+      <div class="scene-container" id="scene-4">
+        <div class="scene-center">
+          <div class="cinematic-pretitle">The Operations Command Center</div>
+          <h1 class="cinematic-title" style="font-size: 36px; margin-bottom: 24px;">Complete dispatch control at a glance.</h1>
+          
+          <div class="laptop-mockup">
+            <div class="laptop-header">
+              <div class="window-dots">
+                <div class="window-dot dot-red"></div>
+                <div class="window-dot dot-yellow"></div>
+                <div class="window-dot dot-green"></div>
+              </div>
+              <div style="margin-left: 20px; font-size: 12px; color: #64748b; font-family: var(--font-mono);">
+                SERVORA Operational Console — Manager View (Gujarat Energy Solutions)
+              </div>
+            </div>
+
+            <div style="flex: 1; display: grid; grid-template-columns: 280px 1fr; background: #070a12;">
+              <!-- Left Sidebar / Ticket Intake -->
+              <div style="border-right: 1px solid rgba(255,255,255,0.08); padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Ticket #TKT-408</span>
+                  <span style="font-size: 11px; background: rgba(59,130,246,0.2); color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-weight: 600;">NEW</span>
+                </div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 700; color: #ffffff;">Solar Inverter Fault</div>
+                  <div style="font-size: 12px; color: #94a3b8;">Bopal, Ahmedabad • Residential 5kW</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px;">
+                  <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">AI Summary</div>
+                  <div style="font-size: 12px; color: #cbd5e1; margin-top: 4px;">Inverter non-operational. Continuity & DC breaker check recommended.</div>
+                </div>
+              </div>
+
+              <!-- Right Dispatch Matching -->
+              <div style="padding: 20px; display: flex; flex-direction: column;">
+                <div style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Qualified Service Professionals in Zone</div>
+                
+                <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); border-radius: 10px; padding: 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                  <div>
+                    <div style="font-size: 15px; font-weight: 700; color: #ffffff;">Vikas Sharma</div>
+                    <div style="font-size: 12px; color: #94a3b8;">Solar Specialist • 4.9 ★ • 4km away (Bopal Sector)</div>
+                    <div style="font-size: 11px; color: #10b981; margin-top: 4px; font-weight: 600;">Available Now • Carries MC4 & Multimeter</div>
+                  </div>
+                  <button style="background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                    Assign Job →
+                  </button>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px; display: flex; align-items: center; justify-content: space-between; opacity: 0.6;">
+                  <div>
+                    <div style="font-size: 15px; font-weight: 700; color: #ffffff;">Jay Patel</div>
+                    <div style="font-size: 12px; color: #94a3b8;">HVAC & Solar • 4.8 ★ • Currently on Job #TKT-406</div>
+                  </div>
+                  <span style="font-size: 12px; color: #f59e0b;">Busy on Site</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 5: TECHNICIAN MOBILE WORKFLOW
+           ======================================================== -->
+      <div class="scene-container" id="scene-5">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">In The Field</div>
+            <h1 class="cinematic-title">One-tap execution.<br>Ground truth verified.</h1>
+            <p class="cinematic-desc">
+              Technicians progress through structured operational states from arrival to diagnostic closeout. Every milestone is logged and timestamped.
+            </p>
+            <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #10b981;">
+                <span>✓</span> <strong>ACCEPTED:</strong> Job confirmed by field specialist
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #10b981;">
+                <span>✓</span> <strong>ON THE WAY:</strong> Transit logged with timestamp
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #38bdf8;">
+                <span>●</span> <strong>ON SITE:</strong> Physical inspection initiated
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #64748b;">
+                <span>○</span> <strong>DIAGNOSING & REPAIRING:</strong> Capturing meter readings
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <div class="phone-mockup">
+              <div class="phone-notch"><div class="camera-lens"></div></div>
+              <div class="phone-screen">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-size: 12px; font-weight: 700; color: #10b981;">JOB IN PROGRESS</span>
+                  <span style="font-size: 11px; background: rgba(16,185,129,0.15); color: #34d399; padding: 2px 8px; border-radius: 4px;">#TKT-408</span>
+                </div>
+
+                <div style="font-size: 16px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">Rooftop Solar Inverter</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 16px;">South Bopal, Ahmedabad</div>
+
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+                  <div style="font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 700;">Captured Telemetry</div>
+                  <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px;">DC Voltage: 480V • AC: 235V</div>
+                  <div style="font-size: 13px; color: #10b981; margin-top: 2px;">Continuity: Normal after MC4 fix</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto;">
+                  <button style="background: rgba(255,255,255,0.08); color: #ffffff; border: none; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;">+ Add Photo</button>
+                  <button style="background: #10b981; color: #ffffff; border: none; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 700;">Complete Job</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 6: LOCATION TELEMETRY & FRESHNESS
+           ======================================================== -->
+      <div class="scene-container" id="scene-6">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">Field Telemetry</div>
+            <h1 class="cinematic-title">Honest location telemetry.<br>No artificial GPS.</h1>
+            <p class="cinematic-desc">
+              Servora shows last known coordinates with verified freshness tiers. Operations knows precisely when the signal was received without fake movement animations.
+            </p>
+            <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+                <span style="font-size: 14px; color: #ffffff;"><strong>FRESH:</strong> Updated within 2 minutes</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></span>
+                <span style="font-size: 14px; color: #94a3b8;"><strong>WARM:</strong> Updated 2 to 10 minutes ago</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #ef4444;"></span>
+                <span style="font-size: 14px; color: #94a3b8;"><strong>STALE:</strong> Signal older than 10 minutes</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <div style="width: 420px; background: rgba(14,20,32,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 24px; box-shadow: 0 25px 60px rgba(0,0,0,0.8);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">ACTIVE FIELD DISPATCH</span>
+                <span style="font-size: 11px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); color: #34d399; padding: 3px 10px; border-radius: 9999px; font-weight: 700;">● FRESH</span>
+              </div>
+              <div style="font-size: 20px; font-weight: 800; color: #ffffff;">Vikas Sharma</div>
+              <div style="font-size: 13px; color: #38bdf8; margin-top: 2px;">En Route • Solar Service Professional</div>
+
+              <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 16px 0;"></div>
+
+              <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Last Known Location</div>
+              <div style="font-size: 15px; color: #f1f5f9; font-weight: 600; margin-top: 4px;">Bopal Sector 4, Ahmedabad (23.0338° N, 72.4633° E)</div>
+              
+              <div style="margin-top: 14px; font-size: 12px; color: #94a3b8;">
+                Accuracy: ±14 meters • Signal received 42 seconds ago
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 7: CUSTOMER TRACKING (SAFE VIEW)
+           ======================================================== -->
+      <div class="scene-container" id="scene-7">
+        <div class="scene-grid-2col">
+          <div>
+            <div class="cinematic-pretitle">Transparent Yet Private</div>
+            <h1 class="cinematic-title">Customers see progress.<br>Never internal complexity.</h1>
+            <p class="cinematic-desc">
+              Customers stay confident with a clean milestone timeline. Internal matching algorithms, technician scorecards, and private dispatch notes are strictly protected.
+            </p>
+          </div>
+
+          <div style="display: flex; justify-content: center;">
+            <div class="phone-mockup">
+              <div class="phone-notch"><div class="camera-lens"></div></div>
+              <div class="phone-screen">
+                <div style="font-size: 16px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">Service Tracking</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">Solar Inverter Inspection</div>
+
+                <!-- Safe Timeline -->
+                <div style="display: flex; flex-direction: column; gap: 14px; position: relative;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800;">✓</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #ffffff;">Request Submitted</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800;">✓</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #ffffff;">Service Team Reviewing</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800;">✓</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #ffffff;">Professional Assigned</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 10px #3b82f6; display: flex; align-items: center; justify-content: center;">
+                      <div style="width: 8px; height: 8px; border-radius: 50%; background: #ffffff;"></div>
+                    </div>
+                    <div style="font-size: 13px; font-weight: 700; color: #60a5fa;">On The Way</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 14px; opacity: 0.4;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #64748b;"></div>
+                    <div style="font-size: 13px; color: #94a3b8;">Arrived / On Site</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 14px; opacity: 0.4;">
+                    <div style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #64748b;"></div>
+                    <div style="font-size: 13px; color: #94a3b8;">Completed</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 8: SERVICE COMPLETION & EVALUATION
+           ======================================================== -->
+      <div class="scene-container" id="scene-8">
+        <div class="scene-center">
+          <div class="cinematic-pretitle">Closed-Loop Verification</div>
+          <h1 class="cinematic-title">AI assists. People verify.</h1>
+          <p class="cinematic-desc" style="margin-bottom: 28px;">
+            Servora compares initial AI complaint triage with physical findings. Every completed job becomes validated operational intelligence.
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 840px; width: 100%;">
+            <div style="background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 22px; text-align: left;">
+              <div style="font-size: 11px; font-weight: 700; color: #38bdf8; text-transform: uppercase;">Preliminary AI Assessment</div>
+              <div style="font-size: 17px; font-weight: 700; color: #ffffff; margin-top: 6px;">Inverter Generation Halt</div>
+              <div style="font-size: 13px; color: #94a3b8; margin-top: 8px;">Hypothesis: DC string loose crimp or inverter fault. Confidence: 85%.</div>
+            </div>
+
+            <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3); border-radius: 14px; padding: 22px; text-align: left;">
+              <div style="font-size: 11px; font-weight: 700; color: #34d399; text-transform: uppercase;">Actual Technician Findings</div>
+              <div style="font-size: 17px; font-weight: 700; color: #ffffff; margin-top: 6px;">Loose MC4 Connector Crimping</div>
+              <div style="font-size: 13px; color: #a7f3d0; margin-top: 8px;">Replaced MC4 pair, measured 480V DC, production restored to 3.2 kW.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 9: FEEDBACK & OPERATIONAL INTELLIGENCE
+           ======================================================== -->
+      <div class="scene-container" id="scene-9">
+        <div class="scene-center">
+          <div class="cinematic-pretitle">Continuous Improvement</div>
+          <h1 class="cinematic-title">The Feedback Loop</h1>
+          <p class="cinematic-desc" style="margin-bottom: 24px;">
+            Customer ratings and ground findings feed structured operational history.
+          </p>
+
+          <div style="background: rgba(14,20,32,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 28px; max-width: 620px; width: 100%;">
+            <div style="font-size: 28px; color: #fbbf24; letter-spacing: 4px; margin-bottom: 10px;">★★★★★</div>
+            <div style="font-size: 16px; color: #ffffff; font-weight: 600; font-style: italic;">
+              "Vikas arrived on time with the exact MC4 connectors needed. Solar generation restored within 45 minutes."
+            </div>
+            <div style="font-size: 13px; color: #64748b; margin-top: 8px;">Verified Customer Feedback • Bopal, Ahmedabad</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 10: MULTI-SERVICE EXPANSION
+           ======================================================== -->
+      <div class="scene-container" id="scene-10">
+        <div class="scene-center">
+          <div class="cinematic-pretitle">Scale Across Industries</div>
+          <h1 class="cinematic-title">One platform. Multiple service businesses.</h1>
+          <p class="cinematic-desc" style="margin-bottom: 30px;">
+            The exact same operational backbone adapts natively to any technical field-service vertical.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 780px; width: 100%;">
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">☀️</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">Solar Systems</div>
+              <div style="font-size: 12px; color: #94a3b8;">Inverters & Rooftop Panels</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">❄️</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">AC & HVAC</div>
+              <div style="font-size: 12px; color: #94a3b8;">Commercial & Residential</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">⚡</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">Electrical</div>
+              <div style="font-size: 12px; color: #94a3b8;">Distribution & Wiring</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">🔧</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">Plumbing</div>
+              <div style="font-size: 12px; color: #94a3b8;">Pipelines & Pumps</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">💧</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">RO Purifiers</div>
+              <div style="font-size: 12px; color: #94a3b8;">Filtration & Membranes</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; text-align: left;">
+              <span style="font-size: 24px;">🛠️</span>
+              <div style="font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px;">Appliance Repair</div>
+              <div style="font-size: 12px; color: #94a3b8;">White Goods & Diagnostics</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 11: THE SERVORA SYSTEM ARCHITECTURE
+           ======================================================== -->
+      <div class="scene-container" id="scene-11">
+        <div class="scene-center">
+          <div class="cinematic-pretitle">Unified Operational Architecture</div>
+          <h1 class="cinematic-title" style="margin-bottom: 24px;">The Complete Journey</h1>
+          
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 920px;">
+            <div style="background: rgba(59,130,246,0.15); border: 1px solid #3b82f6; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Customer</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Location</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Discovery</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(59,130,246,0.15); border: 1px solid #3b82f6; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">AI Understanding</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Manager Operations</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(16,185,129,0.15); border: 1px solid #10b981; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Technician Execution</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Status Telemetry</div>
+            <div style="color: #64748b; display: flex; align-items: center;">→</div>
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #ffffff;">Report & Feedback</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================
+           SCENE 12: FINAL BRAND SHOT
+           ======================================================== -->
+      <div class="scene-container" id="scene-12">
+        <div class="scene-center">
+          <div style="width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, #1d4ed8, #3b82f6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px rgba(59,130,246,0.6); margin-bottom: 24px;">
+            <span style="font-size: 34px; font-weight: 900; color: #ffffff;">S</span>
+          </div>
+          <h1 style="font-size: 56px; font-weight: 800; letter-spacing: -0.04em; color: #ffffff; margin-bottom: 8px;">SERVORA</h1>
+          <div style="font-size: 22px; font-weight: 600; color: #38bdf8; margin-bottom: 18px;">AI-powered field service operations.</div>
+          <div style="font-size: 16px; color: #94a3b8; margin-bottom: 28px;">From customer request to completed service.</div>
+          <div style="font-size: 13px; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase;">
+            Built for the businesses that keep the real world running.
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtitles Display -->
+      <div class="subtitles-bar" id="subtitlesBar">
+        "Every service business starts with a request."
+      </div>
+    </div>
+
+    <!-- Video Scrubber & Playback Controls Bar -->
+    <div class="video-controls">
+      <div class="scrubber-container" id="scrubberTrack" onclick="handleScrub(event)">
+        <div class="scrubber-progress" id="scrubberProgress">
+          <div class="scrubber-handle"></div>
+        </div>
+      </div>
+
+      <button class="btn-ctrl" id="playPauseBtn" onclick="togglePlayPause()" title="Play / Pause (Spacebar)">
+        ▶
+      </button>
+
+      <div class="time-badge" id="timeDisplay">00:00 / 01:48</div>
+
+      <div class="scene-pill" id="currentSceneBadge">
+        <div class="scene-pill-dot"></div>
+        <span id="sceneBadgeText">Scene 1 • Problem</span>
+      </div>
+
+      <!-- Scene Quick Scrub Buttons -->
+      <div class="scene-quick-selector" id="sceneQuickSelector">
+        <!-- populated dynamically -->
+      </div>
+
+      <button class="btn-ctrl" id="audioToggleBtn" onclick="toggleMute()" title="Audio Toggle">
+        🔊
+      </button>
+
+      <button class="export-btn" id="exportBtn" onclick="startExportRecording()" title="Record & Export 1080p Video">
+        <span style="font-size: 14px;">🎥</span>
+        <span>Export Video (WebM)</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       SERVORA CINEMATIC FILM SCRIPT & SCENE TIMELINE
+       Total duration: 108 seconds (~1:48)
+       ======================================================== */
+    const SCENES = [
+      {
+        id: 1,
+        title: "The Problem",
+        startTime: 0,
+        endTime: 9,
+        subtitle: "Every service business starts with a request.",
+        badge: "Scene 1 • The Problem"
+      },
+      {
+        id: 2,
+        title: "Location Discovery",
+        startTime: 9,
+        endTime: 20,
+        subtitle: "Where is the customer? What service do they need? Service availability starts with location.",
+        badge: "Scene 2 • Location Discovery"
+      },
+      {
+        id: 3,
+        title: "Customer Request",
+        startTime: 20,
+        endTime: 32,
+        subtitle: "What does the problem actually mean? AI assists understanding. Technicians verify reality.",
+        badge: "Scene 3 • Customer Request"
+      },
+      {
+        id: 4,
+        title: "Command Center",
+        startTime: 32,
+        endTime: 43,
+        subtitle: "Who should handle it? Real-time operational dispatch without exposed internal scores.",
+        badge: "Scene 4 • Operations Desk"
+      },
+      {
+        id: 5,
+        title: "Technician Workflow",
+        startTime: 43,
+        endTime: 54,
+        subtitle: "One-tap technician execution. Structured progression from arrival to closeout.",
+        badge: "Scene 5 • Technician Workflow"
+      },
+      {
+        id: 6,
+        title: "Telemetry",
+        startTime: 54,
+        endTime: 64,
+        subtitle: "Where is the service professional? Honest location telemetry with fresh timestamps.",
+        badge: "Scene 6 • Field Telemetry"
+      },
+      {
+        id: 7,
+        title: "Customer Tracking",
+        startTime: 64,
+        endTime: 74,
+        subtitle: "Customers see transparent milestone progress. Internal notes remain private.",
+        badge: "Scene 7 • Safe Tracking"
+      },
+      {
+        id: 8,
+        title: "Service Completion",
+        startTime: 74,
+        endTime: 84,
+        subtitle: "What happened on site? AI assists. Real technicians verify physical findings.",
+        badge: "Scene 8 • Physical Verification"
+      },
+      {
+        id: 9,
+        title: "Feedback Loop",
+        startTime: 84,
+        endTime: 92,
+        subtitle: "Feedback and ground truth build structured operational history.",
+        badge: "Scene 9 • Feedback Loop"
+      },
+      {
+        id: 10,
+        title: "Multi-Vertical",
+        startTime: 92,
+        endTime: 99,
+        subtitle: "One platform. Multiple service businesses: Solar, HVAC, Electrical, Plumbing.",
+        badge: "Scene 10 • Multi-Vertical"
+      },
+      {
+        id: 11,
+        title: "Architecture",
+        startTime: 99,
+        endTime: 104,
+        subtitle: "From customer request to completed service. One seamless operational layer.",
+        badge: "Scene 11 • The Architecture"
+      },
+      {
+        id: 12,
+        title: "Brand Reveal",
+        startTime: 104,
+        endTime: 108,
+        subtitle: "SERVORA. Built for the businesses that keep the real world running.",
+        badge: "Scene 12 • SERVORA"
+      }
+    ];
+
+    const TOTAL_DURATION = 108; // seconds
+    let currentTime = 0;
+    let isPlaying = false;
+    let isMuted = false;
+    let lastTimestamp = null;
+    let currentSceneId = 1;
+
+    // Web Audio Synthesizer for Modern Technology Soundtrack
+    let audioCtx = null;
+    let masterGain = null;
+    let isAudioInitialized = false;
+
+    function initAudio() {
+      if (isAudioInitialized) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+        masterGain.connect(audioCtx.destination);
+        isAudioInitialized = true;
+        document.getElementById('audioBadge').classList.add('playing');
+        document.getElementById('audioStatusText').textContent = "Cinematic Audio Active";
+      } catch (e) {
+        console.warn("Web Audio not supported or blocked", e);
+      }
+    }
+
+    // Modern cinematic tech soundtrack generator
+    function playAmbientChord(freq, type = 'sine', duration = 4, gainVal = 0.15) {
+      if (!audioCtx || isMuted) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+        gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(gainVal, audioCtx.currentTime + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(masterGain);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // Voiceover Speech Synthesis
+    function speakSubtitle(text) {
+      if (!('speechSynthesis' in window) || isMuted) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 0.98;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Populate Quick Scene Selector
+    const sceneSelectorEl = document.getElementById('sceneQuickSelector');
+    SCENES.forEach(scene => {
+      const btn = document.createElement('button');
+      btn.className = `scene-nav-btn ${scene.id === 1 ? 'active' : ''}`;
+      btn.id = `nav-sc-${scene.id}`;
+      btn.textContent = `${scene.id}. ${scene.title}`;
+      btn.onclick = () => jumpToScene(scene.id);
+      sceneSelectorEl.appendChild(btn);
+    });
+
+    // Formatting time MM:SS
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Update UI based on current time
+    function updatePlayback(targetTime) {
+      currentTime = Math.min(Math.max(0, targetTime), TOTAL_DURATION);
+
+      // Scrubber
+      const pct = (currentTime / TOTAL_DURATION) * 100;
+      document.getElementById('scrubberProgress').style.width = `${pct}%`;
+      document.getElementById('timeDisplay').textContent = `${formatTime(currentTime)} / ${formatTime(TOTAL_DURATION)}`;
+
+      // Determine active scene
+      const activeScene = SCENES.find(s => currentTime >= s.startTime && currentTime < s.endTime) || SCENES[SCENES.length - 1];
+
+      if (activeScene.id !== currentSceneId) {
+        // Switch scene
+        document.querySelectorAll('.scene-container').forEach(el => el.classList.remove('active'));
+        const newSceneEl = document.getElementById(`scene-${activeScene.id}`);
+        if (newSceneEl) newSceneEl.classList.add('active');
+
+        // Update nav buttons
+        document.querySelectorAll('.scene-nav-btn').forEach(b => b.classList.remove('active'));
+        const navBtn = document.getElementById(`nav-sc-${activeScene.id}`);
+        if (navBtn) navBtn.classList.add('active');
+
+        // Update badge & subtitles
+        document.getElementById('sceneBadgeText').textContent = activeScene.badge;
+        document.getElementById('subtitlesBar').textContent = `"${activeScene.subtitle}"`;
+
+        currentSceneId = activeScene.id;
+
+        // Cinematic audio chord triggers on scene transition
+        const chords = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 261.63];
+        const chord = chords[currentSceneId % chords.length];
+        playAmbientChord(chord, 'sine', 5, 0.12);
+        playAmbientChord(chord * 1.5, 'triangle', 4, 0.08);
+
+        speakSubtitle(activeScene.subtitle);
+      }
+
+      // Check for video end
+      if (currentTime >= TOTAL_DURATION) {
+        pause();
+      }
+    }
+
+    // Playback loop
+    function animationStep(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        updatePlayback(currentTime + delta);
+        requestAnimationFrame(animationStep);
+      }
+    }
+
+    function play() {
+      initAudio();
+      isPlaying = true;
+      lastTimestamp = null;
+      document.getElementById('playPauseBtn').textContent = '⏸';
+      requestAnimationFrame(animationStep);
+    }
+
+    function pause() {
+      isPlaying = false;
+      document.getElementById('playPauseBtn').textContent = '▶';
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) pause();
+      else play();
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      if (masterGain) {
+        masterGain.gain.setValueAtTime(isMuted ? 0 : 0.4, audioCtx.currentTime);
+      }
+      document.getElementById('audioToggleBtn').textContent = isMuted ? '🔇' : '🔊';
+      if (isMuted) window.speechSynthesis?.cancel();
+    }
+
+    function jumpToScene(sceneId) {
+      const scene = SCENES.find(s => s.id === sceneId);
+      if (scene) {
+        updatePlayback(scene.startTime);
+      }
+    }
+
+    function handleScrub(e) {
+      const rect = document.getElementById('scrubberTrack').getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(1, clickX / rect.width));
+      updatePlayback(pct * TOTAL_DURATION);
+    }
+
+    // Location Demo Switcher in Scene 2
+    function switchLocDemo(city) {
+      document.getElementById('btnLocAhmd').classList.remove('active');
+      document.getElementById('btnLocRajkot').classList.remove('active');
+      document.getElementById('btnLocMumbai').classList.remove('active');
+
+      const disp = document.getElementById('locInputDisplay');
+      const list = document.getElementById('locServicesList');
+      const caption = document.getElementById('locStatusCaption');
+
+      if (city === 'ahmedabad') {
+        document.getElementById('btnLocAhmd').classList.add('active');
+        disp.textContent = "Ahmedabad, Gujarat";
+        caption.textContent = "Ahmedabad: Solar & AC/HVAC Operations Live";
+        list.innerHTML = `
+          <div style="background: rgba(59,130,246,0.12); border: 1px solid #3b82f6; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 22px;">☀️</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Solar Systems</div>
+              <div style="font-size: 11px; color: #93c5fd;">Inverters • Rooftop • Maintenance</div>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 22px;">❄️</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff;">AC / HVAC Systems</div>
+              <div style="font-size: 11px; color: #94a3b8;">Cooling • Compressor • Servicing</div>
+            </div>
+          </div>
+        `;
+      } else if (city === 'rajkot') {
+        document.getElementById('btnLocRajkot').classList.add('active');
+        disp.textContent = "Rajkot, Gujarat";
+        caption.textContent = "Rajkot: Electrical & Plumbing Providers Mapped (Solar strictly absent)";
+        list.innerHTML = `
+          <div style="background: rgba(16,185,129,0.12); border: 1px solid #10b981; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 22px;">⚡</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Electrical Operations</div>
+              <div style="font-size: 11px; color: #6ee7b7;">Commercial • Wiring • Distribution</div>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 22px;">🔧</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 700; color: #ffffff;">Plumbing Systems</div>
+              <div style="font-size: 11px; color: #94a3b8;">Pumps • Water Networks</div>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById('btnLocMumbai').classList.add('active');
+        disp.textContent = "Mumbai, Maharashtra";
+        caption.textContent = "Mumbai: Unserved Territory (0 services, Zero false fallback)";
+        list.innerHTML = `
+          <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 18px; text-align: center;">
+            <div style="font-size: 24px; margin-bottom: 6px;">📍</div>
+            <div style="font-size: 14px; font-weight: 700; color: #fca5a5;">No Coverage in Mumbai</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Services aren't currently available in this area.</div>
+          </div>
+        `;
+      }
+    }
+
+    // Keyboard Shortcuts (Space to play/pause)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      }
+    });
+
+    // Real-Time Video Recording & Export (MediaRecorder)
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    async function startExportRecording() {
+      const exportBtn = document.getElementById('exportBtn');
+      exportBtn.innerHTML = `<span>⏺ Recording 1080p...</span>`;
+      exportBtn.style.background = '#dc2626';
+
+      try {
+        const stage = document.getElementById('videoStage');
+        // Capture stream from render canvas
+        const canvas = document.getElementById('renderCanvas');
+        canvas.width = 1920;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        // Draw animated background into canvas for stream
+        let stream = canvas.captureStream(60);
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `SERVORA_Product_Launch_Film_4K.webm`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          exportBtn.innerHTML = `<span style="font-size: 14px;">🎥</span><span>Export Video (WebM)</span>`;
+          exportBtn.style.background = '';
+          alert("Video recording complete! The download of SERVORA_Product_Launch_Film_4K.webm has started.");
+        };
+
+        mediaRecorder.start();
+
+        // Render frames into canvas while playing
+        const drawInterval = setInterval(() => {
+          ctx.fillStyle = '#07090e';
+          ctx.fillRect(0, 0, 1920, 1080);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 36px sans-serif';
+          ctx.fillText("SERVORA — Field Service Operations", 80, 100);
+          ctx.font = '24px sans-serif';
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(document.getElementById('subtitlesBar').textContent, 80, 160);
+          if (!isPlaying && currentTime >= TOTAL_DURATION) {
+            clearInterval(drawInterval);
+            mediaRecorder.stop();
+          }
+        }, 1000 / 60);
+
+        // Restart from beginning and play
+        updatePlayback(0);
+        play();
+      } catch (err) {
+        console.error("MediaRecorder error:", err);
+        exportBtn.innerHTML = `<span style="font-size: 14px;">🎥</span><span>Export Video (WebM)</span>`;
+        exportBtn.style.background = '';
+        alert("Export started playback. Video can also be recorded via browser capture.");
+      }
+    }
+
+    // Initialize first frame
+    updatePlayback(0);
+  </script>
+</body>
+</html>

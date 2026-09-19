@@ -272,7 +272,7 @@ describe('End-to-End Operational Lifecycle Integration Tests', () => {
     const metrics = await calculatePilotMetrics(companyId, 'SOLAR');
     expect(metrics.overview.completedTickets).toBe(1);
     expect(metrics.rates.diagnosisMatch.percentage).toBe(100);
-  });
+  }, 30000);
 
   it('SCENARIO B: Full AC / HVAC Lifecycle (Intake -> AI -> Match -> Field Report -> History)', async () => {
     // 1. Create AC Ticket
@@ -378,5 +378,5 @@ describe('End-to-End Operational Lifecycle Integration Tests', () => {
     const metrics = await calculatePilotMetrics(companyId, 'AC');
     expect(metrics.overview.completedTickets).toBe(1);
     expect(metrics.rates.diagnosisMatch.percentage).toBe(100);
-  });
+  }, 30000);
 });

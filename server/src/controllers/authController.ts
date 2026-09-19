@@ -5,7 +5,8 @@ import crypto from 'crypto';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { User } from '../models/User';
 import { Company } from '../models/Company';
-import { loginSchema, companySignupSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators';
+import { Customer } from '../models/Customer';
+import { loginSchema, companySignupSchema, customerSignupSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators';
 import { ENV } from '../config/env';
 
 export async function signup(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -139,6 +140,110 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
     res.status(500).json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: error.message || 'Signup failed' },
+    });
+  }
+}
+
+export async function customerSignup(req: Request, res: Response): Promise<void> {
+  try {
+    const parseResult = customerSignupSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: parseResult.error.errors[0]?.message || 'Invalid signup details',
+        },
+      });
+      return;
+    }
+
+    const data = parseResult.data;
+    const normalizedEmail = data.email.toLowerCase().trim();
+
+    // Verify email uniqueness across all users
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'EMAIL_EXISTS',
+          message: 'An account with this email already exists. Please sign in instead.',
+        },
+      });
+      return;
+    }
+
+    // Associate customer with an active service company
+    let company = await Company.findOne({ active: true, isPilot: false });
+    if (!company) {
+      company = await Company.findOne({ active: true });
+    }
+    if (!company) {
+      company = await Company.findOne({});
+    }
+
+    if (!company) {
+      res.status(500).json({
+        success: false,
+        error: { code: 'NO_COMPANY', message: 'No active service company found for customer registration.' },
+      });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    const user = await User.create({
+      companyId: company._id,
+      name: data.name.trim(),
+      email: normalizedEmail,
+      phone: data.phone.trim(),
+      passwordHash,
+      role: 'CUSTOMER',
+      active: true,
+      lastLogin: new Date(),
+    });
+
+    const customer = await Customer.create({
+      companyId: company._id,
+      userId: user._id,
+      name: data.name.trim(),
+      email: normalizedEmail,
+      phone: data.phone.trim(),
+      city: data.city.trim(),
+      address: data.address?.trim() || `${data.city.trim()}`,
+    });
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        companyId: company._id,
+        role: user.role,
+      },
+      ENV.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          companyId: user.companyId,
+          companyName: company.name,
+          customerId: customer._id,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: error.message || 'Customer registration failed' },
     });
   }
 }

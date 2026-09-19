@@ -26,7 +26,7 @@ export const Technicians: React.FC = () => {
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(['SOLAR']);
   const [skillsInput, setSkillsInput] = useState('SOLAR_INSTALLATION, INVERTER_REPAIR');
   const [toolsInput, setToolsInput] = useState('MULTIMETER, CLAMP_METER, MC4_TOOL');
-  const [serviceAreasInput, setServiceAreasInput] = useState('Ahmedabad, Sanand');
+  const [serviceAreasInput, setServiceAreasInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
