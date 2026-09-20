@@ -6,6 +6,7 @@ import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
 import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
+import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
 import {
   Sun,
   Wind,
@@ -45,9 +46,11 @@ export const CustomerServiceRequest: React.FC = () => {
   const initialService = (searchParams.get('service') as ServiceType) || '';
   const savedLoc = getCustomerSavedLocation(user?.id);
   const initialCity = searchParams.get('city') || savedLoc?.city || '';
+  const initialArea = searchParams.get('area') || savedLoc?.area || '';
   const initialPincode = searchParams.get('pincode') || savedLoc?.pincode || '';
 
   const [city, setCity] = useState<string>(initialCity);
+  const [area, setArea] = useState<string>(initialArea);
   const [pincode, setPincode] = useState<string>(initialPincode);
   const [lat, setLat] = useState<number | undefined>(savedLoc?.latitude);
   const [lng, setLng] = useState<number | undefined>(savedLoc?.longitude);
@@ -69,7 +72,7 @@ export const CustomerServiceRequest: React.FC = () => {
   const [complaint, setComplaint] = useState<string>('');
   const [isAnalyzingTriage, setIsAnalyzingTriage] = useState<boolean>(false);
   const [triageAnswers, setTriageAnswers] = useState<Record<string, string>>({});
-  const [triageSummary, setTriageSummary] = useState<string | null>(null);
+  const [triageSummary, setTriageSummary] = useState<any>(null);
 
   // Step 5: Photo Evidence
   const [photos, setPhotos] = useState<string[]>([]);
@@ -79,14 +82,17 @@ export const CustomerServiceRequest: React.FC = () => {
   // Customer Contact Details
   const [customerName, setCustomerName] = useState<string>(user?.name || '');
   const [customerPhone, setCustomerPhone] = useState<string>(user?.phone || '');
+  const [preferredDate, setPreferredDate] = useState<string>('');
+  const [preferredSlot, setPreferredSlot] = useState<string>('MORNING');
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Structured Autocomplete Location Select Handler
+  // Structured location handler
   const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
     setCity(selectedLoc.city);
+    setArea(selectedLoc.area || '');
     setPincode(selectedLoc.pincode || '');
     setLat(selectedLoc.latitude);
     setLng(selectedLoc.longitude);
@@ -351,20 +357,12 @@ export const CustomerServiceRequest: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            {/* Structured Location Autocomplete Search */}
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                Service Area / City Search <span className="text-rose-500">*</span>
-              </label>
-              <LocationAutocompleteInput
-                value={city ? (pincode ? `${city} (${pincode})` : city) : ''}
-                onSelect={handleStructuredLocationSelect}
-                placeholder="Search area or city (e.g. Bopal, Satellite, Kalavad Road, Maninagar)..."
-              />
-              <span className="text-[11px] text-slate-400 mt-1 block">
-                Select your verified locality to check exact service coverage.
-              </span>
-            </div>
+            {/* Hierarchical Verified Location Selector (City -> Area / Locality) */}
+            <LocationHierarchySelector
+              currentLocation={city ? { city, area, pincode, latitude: lat, longitude: lng } : null}
+              onLocationSelected={handleStructuredLocationSelect}
+              onClearLocation={() => handleLocationChange('', '')}
+            />
 
             {/* Street / Building Address */}
             <div>
@@ -376,30 +374,9 @@ export const CustomerServiceRequest: React.FC = () => {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="e.g. Flat 402, Sunset Heights, Main Road"
-                className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
                 required
               />
-            </div>
-
-            {/* Location detection / clear */}
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-              <div className="text-xs text-slate-500">
-                {city ? (
-                  <span>Selected: <strong>{city}</strong> {pincode ? `(${pincode})` : ''}</span>
-                ) : (
-                  <span className="text-slate-400">No location selected yet</span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={handleUseCurrentLocation}
-                disabled={isLocating}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5 shrink-0"
-              >
-                <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
-                <span>{isLocating ? 'Detecting...' : 'Use Current Location'}</span>
-              </button>
             </div>
 
             {/* Real-time Coverage Status Feedback */}
@@ -477,14 +454,14 @@ export const CustomerServiceRequest: React.FC = () => {
           {/* Confirmed Location Badge */}
           <div className="bg-slate-100/80 rounded-2xl p-3 px-4 flex items-center justify-between border border-slate-200 text-xs">
             <div className="flex items-center gap-2 text-slate-700 font-medium truncate">
-              <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="truncate">
-                {address ? `${address}, ` : ''}{city} {pincode ? `(${pincode})` : ''}
+                {address ? `${address}, ` : ''}{area ? `${area}, ` : ''}{city} {pincode ? `(${pincode})` : ''}
               </span>
             </div>
             <button
               onClick={() => setStep(1)}
-              className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors shrink-0 ml-3"
+              className="text-emerald-700 font-bold hover:text-emerald-800 transition-colors shrink-0 ml-3"
             >
               Change Location
             </button>

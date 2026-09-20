@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { ProductWalkthrough } from '../../components/walkthrough/ProductWalkthrough';
 import { FAQAccordion } from '../../components/common/FAQAccordion';
+import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 export const WalkthroughPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,17 +44,7 @@ export const WalkthroughPage: React.FC = () => {
       <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <Link to="/portals" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-black shadow-sm group-hover:scale-105 transition-transform">
-              <Shield className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-extrabold text-base sm:text-lg tracking-tight text-white flex items-center gap-1">
-                SERVORA
-              </span>
-              <span className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider block sm:inline sm:ml-1.5 sm:border-l sm:border-slate-800 sm:pl-1.5">
-                Product Walkthrough
-              </span>
-            </div>
+            <ServoraLogo variant="compact" inverted size="sm" subtitle="Product Walkthrough" />
           </Link>
 
           <div className="flex items-center gap-2.5 sm:gap-3">

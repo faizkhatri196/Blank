@@ -26,11 +26,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div className={`p-4 rounded-xl border shadow-xs ${toneClasses[tone]} transition-all`}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 truncate">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 break-words leading-tight min-w-0 flex-1">
           {title}
         </span>
-        {icon && <div className="text-slate-400 shrink-0">{icon}</div>}
+        {icon && <div className="text-slate-400 shrink-0 mt-0.5">{icon}</div>}
       </div>
       <div className="mt-2 flex items-baseline gap-2 flex-wrap">
         <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">{value}</span>

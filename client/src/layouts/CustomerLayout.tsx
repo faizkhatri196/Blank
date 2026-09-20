@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut, PlayCircle } from 'lucide-react';
+import { ServoraLogo } from '../components/common/ServoraLogo';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
 import { getCustomerSavedLocation } from '../utils/customerLocation';
 
@@ -17,22 +18,15 @@ export const CustomerLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
       {/* Top Consumer Navigation */}
       <header className="bg-white/95 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          {/* Official Logo & Brand */}
+          <div className="flex items-center shrink-0">
             <button
               onClick={() => navigate('/customer')}
-              className="flex items-center gap-2 group text-left focus:outline-none"
+              className="flex items-center text-left focus:outline-none"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white font-black shadow-sm group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5 text-amber-300" />
-              </div>
-              <div>
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 flex items-center gap-1">
-                  SERVORA
-                </span>
-                <p className="text-[11px] text-slate-500 font-medium hidden sm:block">Field Service Operations</p>
-              </div>
+              <ServoraLogo variant="compact" size="xs" className="xs:hidden" />
+              <ServoraLogo variant="compact" size="sm" className="hidden xs:flex" />
             </button>
           </div>
 

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { AvailableServiceItem, CustomerSafeTicket } from '../../types';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
+import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
 import { FAQAccordion } from '../../components/common/FAQAccordion';
 import {
   CustomerLocation,
@@ -357,18 +358,12 @@ export const CustomerHome: React.FC = () => {
         {/* Location Selection Drawer */}
         {isEditingLocation && (
           <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 animate-fadeIn">
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                Search Your City or Area
-              </label>
-              <p className="text-[11px] text-slate-500 mb-2">
-                Type your neighborhood or city name to see live verified suggestions:
-              </p>
-              <LocationAutocompleteInput
-                onSelect={handleStructuredLocationSelect}
-                placeholder="e.g. Bopal, Satellite, Kalavad Road, Maninagar..."
-              />
-            </div>
+            <LocationHierarchySelector
+              currentLocation={location}
+              onLocationSelected={handleStructuredLocationSelect}
+              onClearLocation={handleClearLocation}
+              autoOpen={true}
+            />
 
             {locationFeedback && (
               <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
@@ -383,7 +378,7 @@ export const CustomerHome: React.FC = () => {
                 onClick={() => setIsEditingLocation(false)}
                 className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800"
               >
-                Cancel
+                Close
               </button>
             </div>
           </div>
@@ -392,17 +387,17 @@ export const CustomerHome: React.FC = () => {
 
       {/* STATE 1: LOCATION_REQUIRED (When customer location is null) */}
       {!location ? (
-        <section className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm text-center max-w-2xl mx-auto space-y-6 animate-fadeIn">
-          <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto shadow-inner">
+        <section className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm text-center max-w-2xl mx-auto space-y-6 animate-fadeIn">
+          <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
             <MapPin className="w-8 h-8" />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Where do you need service?
             </h2>
             <p className="text-slate-600 text-xs sm:text-sm font-normal max-w-md mx-auto">
-              Please provide your city or area to check live service availability and discover certified field engineers near you.
+              Search your city and area to check certified field engineering coverage for Solar & HVAC systems.
             </p>
           </div>
 
@@ -413,57 +408,13 @@ export const CustomerHome: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleApplyLocation} className="max-w-md mx-auto space-y-3 text-left">
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                City / Area *
-              </label>
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  value={cityInput}
-                  onChange={(e) => setCityInput(e.target.value)}
-                  placeholder="Enter your city (e.g. Rajkot, Surat, Ahmedabad)"
-                  required
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 bg-white"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1">
-                Pincode (Optional)
-              </label>
-              <input
-                type="text"
-                value={pincodeInput}
-                onChange={(e) => setPincodeInput(e.target.value)}
-                placeholder="e.g. 360001"
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 bg-white"
-              />
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
-              <button
-                type="submit"
-                className="w-full sm:flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                <span>Check Available Services</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleUseCurrentLocation}
-                disabled={isLocating}
-                className="w-full sm:w-auto py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0"
-              >
-                <Compass className={`w-4 h-4 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
-                <span>{isLocating ? 'Locating...' : 'Use GPS'}</span>
-              </button>
-            </div>
-          </form>
+          <div className="max-w-md mx-auto text-left pt-2">
+            <LocationHierarchySelector
+              currentLocation={null}
+              onLocationSelected={handleStructuredLocationSelect}
+              autoOpen={true}
+            />
+          </div>
         </section>
       ) : (
         /* STATE 2: LOCATION_KNOWN -> Check Coverage & Render Services */

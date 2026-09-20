@@ -25,6 +25,7 @@ import {
   Mail,
   Lock,
 } from 'lucide-react';
+import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 interface ServiceOption {
   type: string;
@@ -296,10 +297,8 @@ export const CompanyOnboarding: React.FC = () => {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl w-full mx-auto space-y-8">
         {/* Header Branding */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 mb-2">
-            <Building2 className="w-8 h-8" />
-          </div>
+        <div className="text-center space-y-2 flex flex-col items-center">
+          <ServoraLogo variant="full" size="lg" className="justify-center mb-1" />
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Register Your Service Enterprise
           </h1>

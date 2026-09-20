@@ -167,16 +167,16 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Primary KPI Grid (MongoDB Atlas Metrics) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         <MetricCard
-          title="Open Service Jobs"
+          title="Open Requests"
           value={metrics?.overview.openTickets ?? 0}
           subtitle="Currently active in pipeline"
           icon={<ClipboardList className="w-4 h-4 text-amber-500" />}
           tone="warning"
         />
         <MetricCard
-          title="Available Techs"
+          title="Available Technicians"
           value={metrics?.overview.availableTechnicians ?? 0}
           fraction={`${metrics?.overview.availableTechnicians ?? 0}/${metrics?.overview.totalTechnicians ?? 0}`}
           subtitle="Ready for dispatch"
@@ -207,14 +207,14 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* REAL-TIME FIELD OPERATIONS SECTION */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white p-5 sm:p-6 rounded-2xl shadow-xl border border-emerald-900/40 space-y-5">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 text-white p-4 sm:p-6 rounded-2xl shadow-xl border border-emerald-900/40 space-y-4 sm:space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
               <Radio className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-extrabold text-white tracking-tight">
                   Active Field Operations
                 </h3>
@@ -228,40 +228,40 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Operational Quick Stats Strip */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
-              <span className="text-[10px] text-slate-400 block font-semibold">Active Jobs</span>
+          {/* Operational Quick Stats Strip (Responsive 3x2 on mobile, 6x1 on desktop) */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 w-full sm:w-auto">
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-center">
+              <span className="text-[10px] text-slate-400 block font-semibold truncate">Active</span>
               <span className="text-sm font-extrabold text-white">
                 {fieldOps?.kpis.activeServices ?? 0}
               </span>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-cyan-950/50 border border-cyan-800/40 text-center">
-              <span className="text-[10px] text-cyan-300 block font-semibold">On The Way</span>
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-cyan-950/50 border border-cyan-800/40 text-center">
+              <span className="text-[10px] text-cyan-300 block font-semibold truncate">En Route</span>
               <span className="text-sm font-extrabold text-cyan-200">
                 {fieldOps?.kpis.onTheWay ?? 0}
               </span>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-amber-950/50 border border-amber-800/40 text-center">
-              <span className="text-[10px] text-amber-300 block font-semibold">On Site</span>
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-amber-950/50 border border-amber-800/40 text-center">
+              <span className="text-[10px] text-amber-300 block font-semibold truncate">On Site</span>
               <span className="text-sm font-extrabold text-amber-200">
                 {fieldOps?.kpis.onSite ?? 0}
               </span>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-purple-950/50 border border-purple-800/40 text-center">
-              <span className="text-[10px] text-purple-300 block font-semibold">Diagnosing</span>
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-purple-950/50 border border-purple-800/40 text-center">
+              <span className="text-[10px] text-purple-300 block font-semibold truncate">Diagnosing</span>
               <span className="text-sm font-extrabold text-purple-200">
                 {fieldOps?.kpis.diagnosing ?? 0}
               </span>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-blue-950/50 border border-blue-800/40 text-center">
-              <span className="text-[10px] text-blue-300 block font-semibold">Repairing</span>
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-blue-950/50 border border-blue-800/40 text-center">
+              <span className="text-[10px] text-blue-300 block font-semibold truncate">Repairing</span>
               <span className="text-sm font-extrabold text-blue-200">
                 {fieldOps?.kpis.repairing ?? 0}
               </span>
             </div>
-            <div className="px-3 py-1.5 rounded-xl bg-emerald-950/50 border border-emerald-800/40 text-center">
-              <span className="text-[10px] text-emerald-300 block font-semibold">Today Closed</span>
+            <div className="px-2 sm:px-3 py-1.5 rounded-xl bg-emerald-950/50 border border-emerald-800/40 text-center">
+              <span className="text-[10px] text-emerald-300 block font-semibold truncate">Closed</span>
               <span className="text-sm font-extrabold text-emerald-200">
                 {fieldOps?.kpis.completedToday ?? 0}
               </span>

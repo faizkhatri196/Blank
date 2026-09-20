@@ -13,7 +13,12 @@ import {
   UserCheck,
   X,
   FileCheck2,
+  Sun,
+  Wind,
+  Layers,
 } from 'lucide-react';
+import { ServoraLogo } from './ServoraLogo';
+import { PortalSwitcher } from './PortalSwitcher';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -21,7 +26,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
-  const { user } = useAuth();
+  const { user, activeServiceFilter, setActiveServiceFilter } = useAuth();
   const isManager = user?.role === 'SERVICE_MANAGER';
 
   const showTestModules = typeof window !== 'undefined' && (
@@ -50,19 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
     <div className="flex flex-col h-full bg-slate-900 text-slate-300">
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-emerald-900/30">
-            S
-          </div>
-          <div>
-            <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              SERVORA
-            </div>
-            <div className="text-[10px] text-emerald-400 font-medium tracking-tight">
-              Field Service Operations
-            </div>
-          </div>
-        </div>
+        <ServoraLogo variant="full" inverted size="sm" />
 
         {/* Close Button for Mobile Drawer */}
         {onClose && (
@@ -73,6 +66,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           >
             <X className="w-5 h-5" />
           </button>
+        )}
+      </div>
+
+      {/* Mobile-only Portal & Filter Section */}
+      <div className="p-3 border-b border-slate-800 space-y-2 md:hidden">
+        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          Portals & Scope
+        </div>
+        <PortalSwitcher />
+
+        {isManager && (
+          <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs">
+            <button
+              onClick={() => setActiveServiceFilter('ALL')}
+              className={`flex-1 py-1 text-center font-bold text-[11px] rounded-lg transition-all ${
+                activeServiceFilter === 'ALL'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ALL
+            </button>
+            <button
+              onClick={() => setActiveServiceFilter('SOLAR')}
+              className={`flex-1 py-1 text-center font-bold text-[11px] rounded-lg transition-all ${
+                activeServiceFilter === 'SOLAR'
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              SOLAR
+            </button>
+            <button
+              onClick={() => setActiveServiceFilter('AC')}
+              className={`flex-1 py-1 text-center font-bold text-[11px] rounded-lg transition-all ${
+                activeServiceFilter === 'AC'
+                  ? 'bg-sky-500 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              AC
+            </button>
+          </div>
         )}
       </div>
 

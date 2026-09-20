@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../api/client';
 import { Wrench, CheckCircle2, UserCheck, LogOut, Bell, X, ExternalLink } from 'lucide-react';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
+import { ServoraLogo } from '../components/common/ServoraLogo';
 
 interface InAppNotification {
   _id: string;
@@ -108,17 +109,11 @@ export const TechnicianLayout: React.FC = () => {
       <div className="w-full max-w-lg flex flex-col min-h-screen bg-slate-100 sm:shadow-xl sm:border-x sm:border-slate-300 relative">
         {/* High-contrast mobile top bar */}
         <header className="bg-slate-900 text-white px-4 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-md">
-          <div>
-            <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              <span>SERVORA</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
-                Field Pro
-              </span>
-            </div>
-            <div className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mt-0.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              {user.name}
-            </div>
+          <div className="flex items-center gap-2">
+            <ServoraLogo variant="compact" inverted size="xs" />
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider shrink-0">
+              Field Pro
+            </span>
           </div>
 
           <div className="flex items-center gap-2">

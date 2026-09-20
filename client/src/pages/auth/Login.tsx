@@ -18,6 +18,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { saveCustomerLocation } from '../../utils/customerLocation';
+import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 type PortalRole = 'customer' | 'technician' | 'manager';
 
@@ -178,17 +179,9 @@ export const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col justify-center py-10 sm:px-6 lg:px-8">
       {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center px-4 mb-6">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-3 shadow-lg">
-          <Shield className="w-7 h-7" />
-        </div>
-        <h1 className="text-3xl font-black text-white tracking-tight">
-          SERVORA
-        </h1>
-        <p className="mt-1 text-xs text-indigo-400 font-bold tracking-widest uppercase">
-          AI-Powered Field Service Operations
-        </p>
-        <div className="mt-2.5 flex items-center justify-center gap-2">
+      <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center px-4 mb-6 flex flex-col items-center">
+        <ServoraLogo variant="full" inverted size="xl" />
+        <div className="mt-3 flex items-center justify-center gap-2">
           <Link
             to="/portals"
             className="text-[11px] font-semibold text-slate-300 hover:text-white underline"
@@ -198,7 +191,7 @@ export const Login: React.FC = () => {
           <span className="text-slate-600">•</span>
           <Link
             to="/walkthrough"
-            className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300"
+            className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
           >
             Product Walkthrough
           </Link>
@@ -260,21 +253,21 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white py-7 px-6 shadow-2xl rounded-3xl sm:px-9 border border-slate-100">
+        <div className="bg-white py-6 px-4 xs:px-6 sm:px-9 shadow-2xl rounded-3xl border border-slate-100 max-w-full">
           {/* Role Header Banner */}
           <div className="mb-5 pb-4 border-b border-slate-100">
             {activePortal === 'customer' && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
                     Customer Experience Portal
                   </span>
-                  <span className="text-[11px] text-slate-400">Homeowner / Facility</span>
+                  <span className="text-[11px] text-slate-400 font-medium">Homeowner / Facility</span>
                 </div>
-                <h2 className="text-lg font-black text-slate-900">
+                <h2 className="text-lg font-black text-slate-900 leading-snug">
                   {mode === 'LOGIN' ? 'Sign In to Customer Portal' : 'Create Customer Account'}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   {mode === 'LOGIN'
                     ? 'Track service requests, live technician GPS ETA, and digital completion reports.'
                     : 'Set up your customer account for rapid repair booking and tracking.'}
@@ -283,32 +276,32 @@ export const Login: React.FC = () => {
             )}
 
             {activePortal === 'technician' && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                     Field Engineer Mobile Terminal
                   </span>
-                  <span className="text-[11px] text-slate-400">Field Service Pro</span>
+                  <span className="text-[11px] text-slate-400 font-medium">Field Service Pro</span>
                 </div>
-                <h2 className="text-lg font-black text-slate-900">Technician Sign In</h2>
-                <p className="text-xs text-slate-500">
+                <h2 className="text-lg font-black text-slate-900 leading-snug">Technician Sign In</h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
                   Access assigned job tickets, GPS navigation, AI diagnostic aids, and submit reports.
                 </p>
               </div>
             )}
 
             {activePortal === 'manager' && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
                     Company Operations Suite
                   </span>
-                  <span className="text-[11px] text-slate-400">Company Dispatch & HQ</span>
+                  <span className="text-[11px] text-slate-400 font-medium">Company Dispatch & HQ</span>
                 </div>
-                <h2 className="text-lg font-black text-slate-900">
+                <h2 className="text-lg font-black text-slate-900 leading-snug">
                   {mode === 'LOGIN' ? 'Operations Manager Sign In' : 'Register Service Company'}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 leading-relaxed">
                   {mode === 'LOGIN'
                     ? 'Automated 5-factor dispatching, team telemetry, and AI diagnosis confidence auditing.'
                     : 'Register your service company workspace and configure service areas.'}

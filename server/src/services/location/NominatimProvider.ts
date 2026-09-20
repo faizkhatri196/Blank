@@ -93,6 +93,67 @@ const KNOWN_PLACES: Record<string, LocationSearchResult[]> = {
       provider: 'nominatim',
     },
   ],
+  mundra: [
+    {
+      formattedAddress: 'Mundra, Gujarat 370421, India',
+      city: 'Mundra',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370421',
+      latitude: 22.8393,
+      longitude: 69.7249,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Samaghoga, Mundra, Gujarat 370415, India',
+      city: 'Mundra',
+      locality: 'Samaghoga',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370415',
+      latitude: 22.8447,
+      longitude: 69.7153,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Baroi, Mundra, Gujarat 370415, India',
+      city: 'Mundra',
+      locality: 'Baroi',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370415',
+      latitude: 22.8312,
+      longitude: 69.734,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Mundra Port / SEZ, Mundra, Gujarat 370421, India',
+      city: 'Mundra',
+      locality: 'Mundra Port',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370421',
+      latitude: 22.75,
+      longitude: 69.7,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Dhrab, Mundra, Gujarat 370405, India',
+      city: 'Mundra',
+      locality: 'Dhrab',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370405',
+      latitude: 22.8123,
+      longitude: 69.7541,
+      provider: 'nominatim',
+    },
+  ],
   mumbai: [
     {
       formattedAddress: 'Mumbai, Maharashtra, India',
@@ -103,6 +164,42 @@ const KNOWN_PLACES: Record<string, LocationSearchResult[]> = {
       postalCode: '400001',
       latitude: 19.076,
       longitude: 72.8777,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Powai, Mumbai, Maharashtra 400076, India',
+      city: 'Mumbai',
+      locality: 'Powai',
+      district: 'Mumbai Suburban',
+      state: 'Maharashtra',
+      country: 'India',
+      postalCode: '400076',
+      latitude: 19.1176,
+      longitude: 72.906,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Andheri, Mumbai, Maharashtra 400053, India',
+      city: 'Mumbai',
+      locality: 'Andheri',
+      district: 'Mumbai Suburban',
+      state: 'Maharashtra',
+      country: 'India',
+      postalCode: '400053',
+      latitude: 19.1197,
+      longitude: 72.8464,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Thane, Mumbai Suburban, Maharashtra 400601, India',
+      city: 'Mumbai',
+      locality: 'Thane',
+      district: 'Thane District',
+      state: 'Maharashtra',
+      country: 'India',
+      postalCode: '400601',
+      latitude: 19.2183,
+      longitude: 72.9781,
       provider: 'nominatim',
     },
   ],
@@ -136,12 +233,18 @@ export class NominatimLocationProvider {
   /**
    * Search for locations matching query with fuzzy normalization.
    */
-  public static async search(query: string): Promise<LocationSearchResult[]> {
-    if (!query || query.trim().length < 2) return [];
+  public static async search(query: string, cityContext?: string): Promise<LocationSearchResult[]> {
+    const rawTarget = cityContext
+      ? (query && query.trim().length >= 2 && query.toLowerCase() !== cityContext.toLowerCase()
+          ? `${query}, ${cityContext}`
+          : cityContext)
+      : query;
 
-    const norm = FuzzyNormalizer.normalize(query);
+    if (!rawTarget || rawTarget.trim().length < 2) return [];
+
+    const norm = FuzzyNormalizer.normalize(rawTarget);
     const effectiveQuery = norm.normalizedQuery;
-    const cacheKey = effectiveQuery.toLowerCase().trim();
+    const cacheKey = `${effectiveQuery.toLowerCase().trim()}${cityContext ? `::${cityContext.toLowerCase().trim()}` : ''}`;
 
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -151,7 +254,7 @@ export class NominatimLocationProvider {
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(
         effectiveQuery
-      )}&limit=8`;
+      )}&limit=10`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -168,7 +271,16 @@ export class NominatimLocationProvider {
       if (response.ok) {
         const rawResults = (await response.json()) as NominatimItem[];
         if (Array.isArray(rawResults) && rawResults.length > 0) {
-          const mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
+          let mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
+          if (cityContext && KNOWN_PLACES[cityContext.toLowerCase()]) {
+            const knownLocalities = KNOWN_PLACES[cityContext.toLowerCase()].filter((k) => k.locality);
+            const seen = new Set(mapped.map((m) => (m.locality || m.formattedAddress).toLowerCase()));
+            for (const loc of knownLocalities) {
+              if (loc.locality && !seen.has(loc.locality.toLowerCase())) {
+                mapped.push(loc);
+              }
+            }
+          }
           cache.set(cacheKey, { data: mapped, timestamp: Date.now() });
           return mapped;
         }
@@ -180,6 +292,15 @@ export class NominatimLocationProvider {
     // Offline / fallback lookup
     for (const [key, results] of Object.entries(KNOWN_PLACES)) {
       if (cacheKey.includes(key) || key.includes(cacheKey)) {
+        if (query && query.trim().length >= 2 && query.toLowerCase() !== key) {
+          const matchedSub = results.filter(
+            (r) =>
+              (r.locality && r.locality.toLowerCase().includes(query.toLowerCase())) ||
+              (r.postalCode && r.postalCode.includes(query)) ||
+              (r.formattedAddress && r.formattedAddress.toLowerCase().includes(query.toLowerCase()))
+          );
+          if (matchedSub.length > 0) return matchedSub;
+        }
         return results;
       }
     }
@@ -189,6 +310,9 @@ export class NominatimLocationProvider {
     }
     if (norm.extractedPostalCode === '380015' || cacheKey.includes('380015')) {
       return KNOWN_PLACES.ahmedabad.filter((r) => r.postalCode === '380015' || r.locality === 'Satellite');
+    }
+    if (norm.extractedPostalCode === '370421' || norm.extractedPostalCode === '370415' || cacheKey.includes('370421') || cacheKey.includes('370415')) {
+      return KNOWN_PLACES.mundra;
     }
 
     return [];

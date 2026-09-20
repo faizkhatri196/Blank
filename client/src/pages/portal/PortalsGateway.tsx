@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, User, Wrench, Building2, ArrowRight, CheckCircle2, Sparkles, LogIn, PlayCircle } from 'lucide-react';
+import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 export const PortalsGateway: React.FC = () => {
   const navigate = useNavigate();
@@ -8,16 +9,8 @@ export const PortalsGateway: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 text-white flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* Brand Header */}
-      <header className="max-w-6xl mx-auto w-full text-center mb-10 sm:mb-14">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-4 shadow-lg">
-          <Shield className="w-8 h-8" />
-        </div>
-        <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-          SERVORA
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-indigo-400 font-bold uppercase tracking-widest">
-          AI-Powered Field Service Operations Platform
-        </p>
+      <header className="max-w-6xl mx-auto w-full text-center mb-10 sm:mb-14 flex flex-col items-center">
+        <ServoraLogo variant="full" inverted size="xl" className="justify-center mb-3" />
         <p className="mt-3 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto font-normal">
           Select your designated portal below to access your role-tailored workspace.
         </p>

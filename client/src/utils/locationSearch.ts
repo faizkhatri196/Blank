@@ -37,8 +37,13 @@ export async function searchLocations(
 
   // 1. Try server-side location provider abstraction
   try {
+    const params: Record<string, string> = { q: trimmed };
+    if (cityContext) {
+      params.city = cityContext;
+    }
+
     const res = await apiClient.get('/location/search', {
-      params: { q: trimmed },
+      params,
       signal: activeAbortController.signal,
     });
 
@@ -47,7 +52,7 @@ export async function searchLocations(
         city: item.city || item.locationName || '',
         state: item.state || '',
         country: item.country || '',
-        area: item.rawType === 'suburb' ? item.locationName : undefined,
+        area: item.area || item.locality || (item.rawType === 'suburb' ? item.locationName : undefined),
         pincode: item.postalCode || undefined,
         latitude: item.latitude,
         longitude: item.longitude,
@@ -146,6 +151,39 @@ export async function searchLocations(
       return [];
     }
     console.error('Location search failed:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetches verified localities/suburbs/service areas for a selected city from the server
+ */
+export async function fetchCityLocalities(city: string): Promise<StructuredLocationSuggestion[]> {
+  if (!city || city.trim().length < 2) return [];
+  try {
+    const res = await apiClient.get('/location/search', {
+      params: { q: city.trim(), city: city.trim() },
+    });
+
+    if (res.data?.success && Array.isArray(res.data.data)) {
+      // Filter suggestions that have an area, locality, or rawType === 'suburb'
+      const areas = res.data.data.filter(
+        (item: any) => item.area || item.locality || item.rawType === 'suburb'
+      );
+      return areas.map((item: any) => ({
+        city: item.city || city,
+        state: item.state || '',
+        country: item.country || '',
+        area: item.area || item.locality || item.locationName,
+        pincode: item.postalCode || undefined,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        formattedAddress: item.formattedAddress || `${item.area || item.locality || item.locationName}, ${city}`,
+      }));
+    }
+    return [];
+  } catch (err) {
+    console.error('Failed to fetch localities for city:', city, err);
     return [];
   }
 }

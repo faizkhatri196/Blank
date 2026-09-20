@@ -107,4 +107,35 @@ describe('Location System & Geospatial Verification Suite', () => {
       expect(results.length).toBe(0);
     });
   });
+
+  describe('F: Hierarchical City & Area Search (Mundra & Localities)', () => {
+    it('should search and return verified Mundra city result with pincode 370421', async () => {
+      const results = await NominatimLocationProvider.search('Mundra');
+      expect(results.length).toBeGreaterThan(0);
+      const mundra = results.find((r) => r.city?.toLowerCase() === 'mundra' || r.locationName?.toLowerCase() === 'mundra');
+      expect(mundra).toBeDefined();
+      expect(mundra?.postalCode).toBe('370421');
+    });
+
+    it('should return verified localities when searching within Mundra city context', async () => {
+      const results = await NominatimLocationProvider.search('Samaghoga', 'Mundra');
+      expect(results.length).toBeGreaterThan(0);
+      const samaghoga = results.find((r) => (r.locality || r.locationName).toLowerCase().includes('samaghoga'));
+      expect(samaghoga).toBeDefined();
+      expect(samaghoga?.city?.toLowerCase()).toBe('mundra');
+    });
+
+    it('should return multiple verified areas when searching all areas in Mundra', async () => {
+      const results = await NominatimLocationProvider.search('Mundra', 'Mundra');
+      const areas = results.map((r) => (r.locality || r.locationName || r.formattedAddress || '').toLowerCase());
+      expect(areas.some((a) => a.includes('samaghoga') || a.includes('baroi') || a.includes('port'))).toBe(true);
+    });
+
+    it('should normalize Mundra pincode 370421 correctly', () => {
+      const norm = FuzzyNormalizer.normalize('Mundra 370421');
+      expect(norm.extractedPostalCode).toBe('370421');
+      expect(norm.normalizedQuery.toLowerCase()).toContain('mundra');
+    });
+  });
 });
+
