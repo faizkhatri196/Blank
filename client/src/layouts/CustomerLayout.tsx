@@ -39,20 +39,20 @@ export const CustomerLayout: React.FC = () => {
           {/* Location Quick Pill */}
           <button
             onClick={() => navigate('/customer')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold transition-colors border border-slate-200"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-[11px] sm:text-xs font-semibold transition-colors border border-slate-200 shrink min-w-0"
             title="Change service location"
           >
-            <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-            <span className="truncate max-w-[120px] sm:max-w-none">
+            <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-600 shrink-0" />
+            <span className="truncate max-w-[80px] xs:max-w-[120px] sm:max-w-none">
               {displayCity || 'Select Location'}
             </span>
-            <span className="text-[10px] text-indigo-600 font-bold ml-0.5 underline">
-              {displayCity ? 'Change' : 'Set Area'}
+            <span className="text-[10px] text-indigo-600 font-bold ml-0.5 underline shrink-0">
+              {displayCity ? 'Change' : 'Set'}
             </span>
           </button>
 
           {/* Portal Switcher & User Auth */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <NavLink
               to="/walkthrough"
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 transition-colors"
@@ -80,10 +80,10 @@ export const CustomerLayout: React.FC = () => {
             ) : (
               <NavLink
                 to="/login?portal=customer"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-colors"
+                className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-colors shrink-0"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Sign In</span>
+                <span className="hidden xs:inline">Sign In</span>
               </NavLink>
             )}
           </div>
@@ -91,7 +91,7 @@ export const CustomerLayout: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-5 sm:py-7 pb-24 sm:pb-12">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-5 sm:py-7 pb-36 sm:pb-12">
         <Outlet />
       </main>
 

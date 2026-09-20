@@ -145,18 +145,23 @@ export const LocationAutocompleteInput: React.FC<LocationAutocompleteInputProps>
                 selectedIndex === idx ? 'bg-emerald-50 text-emerald-900 font-semibold' : 'text-slate-700'
               }`}
             >
-              <div className="flex items-start gap-2 min-w-0">
+              <div className="flex items-start gap-2 min-w-0 flex-1">
                 <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                <div className="truncate">
+                <div className="min-w-0 flex-1">
                   <div className="font-bold text-slate-900 text-xs truncate">
                     {s.area ? `${s.area}, ${s.city}` : s.city}
                   </div>
                   <div className="text-[11px] text-slate-500 truncate">
                     {s.state}{s.pincode ? ` — Pincode: ${s.pincode}` : ''}
                   </div>
+                  {s.formattedAddress && (
+                    <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                      {s.formattedAddress}
+                    </div>
+                  )}
                 </div>
               </div>
-              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono shrink-0">
+              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-mono shrink-0 font-semibold hover:bg-emerald-600 hover:text-white transition-colors">
                 Select
               </span>
             </button>

@@ -53,7 +53,7 @@ export const CustomerServiceRequest: React.FC = () => {
   const [lng, setLng] = useState<number | undefined>(savedLoc?.longitude);
   const [address, setAddress] = useState<string>('');
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
-  const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(Boolean(initialCity));
+  const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(false);
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -404,7 +404,19 @@ export const CustomerServiceRequest: React.FC = () => {
 
             {/* Real-time Coverage Status Feedback */}
             <div className="pt-2">
-              {isCheckingAvailability ? (
+              {!city || !city.trim() ? (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+                      Select your location
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Search and select your city or locality above to verify certified technician coverage.
+                    </p>
+                  </div>
+                </div>
+              ) : isCheckingAvailability ? (
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-slate-600 text-xs animate-pulse">
                   <div className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
                   <span>Checking service coverage in {city}...</span>

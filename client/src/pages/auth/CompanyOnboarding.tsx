@@ -153,7 +153,7 @@ export const CompanyOnboarding: React.FC = () => {
       ...prev,
       {
         city: '',
-        state: 'Gujarat',
+        state: '',
         country: 'India',
         areas: [],
         pincodes: [],
@@ -172,6 +172,16 @@ export const CompanyOnboarding: React.FC = () => {
   const validateStep1 = () => {
     if (!companyName.trim() || !managerName.trim() || !email.trim() || !phone.trim() || !password) {
       setError('Please fill all required company information fields.');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please provide a valid email address.');
+      return false;
+    }
+    const phoneClean = phone.replace(/[\s\-\(\)\+]/g, '');
+    if (!/^\d{8,15}$/.test(phoneClean)) {
+      setError('Please enter a valid phone number (8 to 15 digits).');
       return false;
     }
     if (password !== confirmPassword) {
@@ -272,7 +282,11 @@ export const CompanyOnboarding: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Onboarding failed:', err);
-      setError(err.response?.data?.error?.message || 'An error occurred during company creation.');
+      const safeReason =
+        err.response?.data?.error?.message ||
+        err.message ||
+        'An error occurred during company creation.';
+      setError(safeReason);
     } finally {
       setIsLoading(false);
     }
@@ -295,8 +309,8 @@ export const CompanyOnboarding: React.FC = () => {
         </div>
 
         {/* 5-Step Indicator */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
-          <div className="grid grid-cols-5 gap-2 text-center text-xs font-bold">
+        <div className="bg-white rounded-2xl p-2.5 sm:p-5 border border-slate-200/80 shadow-xs">
+          <div className="grid grid-cols-5 gap-1 sm:gap-2 text-center text-xs font-bold">
             {[
               { num: 1, label: 'Company' },
               { num: 2, label: 'Coverage' },
@@ -306,7 +320,7 @@ export const CompanyOnboarding: React.FC = () => {
             ].map((s) => (
               <div
                 key={s.num}
-                className={`py-2 px-1 rounded-xl transition-all ${
+                className={`py-2 px-0.5 sm:px-1 rounded-xl transition-all ${
                   step === s.num
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : step > s.num
@@ -314,7 +328,9 @@ export const CompanyOnboarding: React.FC = () => {
                     : 'bg-slate-100 text-slate-400'
                 }`}
               >
-                <span className="block text-[11px] uppercase tracking-wider">{s.label}</span>
+                <span className="block text-[9px] xs:text-[10px] sm:text-[11px] uppercase tracking-wider truncate">
+                  {s.label}
+                </span>
               </div>
             ))}
           </div>
@@ -817,17 +833,17 @@ export const CompanyOnboarding: React.FC = () => {
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 text-xs">
-                <div className="flex justify-between border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-500 font-semibold">Company Name</span>
-                  <span className="font-bold text-slate-900">{companyName}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200/60 pb-2.5 gap-1">
+                  <span className="text-slate-500 font-semibold shrink-0">Company Name</span>
+                  <span className="font-bold text-slate-900 break-words min-w-0 sm:text-right">{companyName}</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-500 font-semibold">Service Manager</span>
-                  <span className="font-bold text-slate-900">{managerName} ({email})</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200/60 pb-2.5 gap-1">
+                  <span className="text-slate-500 font-semibold shrink-0">Service Manager</span>
+                  <span className="font-bold text-slate-900 break-words min-w-0 sm:text-right">{managerName} ({email})</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-200/60 pb-2">
-                  <span className="text-slate-500 font-semibold">Direct Phone</span>
-                  <span className="font-bold text-slate-900">{phone}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-slate-200/60 pb-2.5 gap-1">
+                  <span className="text-slate-500 font-semibold shrink-0">Direct Phone</span>
+                  <span className="font-bold text-slate-900 break-words min-w-0 sm:text-right">{phone}</span>
                 </div>
 
                 <div className="pt-1">
@@ -837,19 +853,19 @@ export const CompanyOnboarding: React.FC = () => {
                   <div className="space-y-2">
                     {serviceAreas.map((sa, idx) => (
                       <div key={idx} className="p-3 bg-white rounded-xl border border-slate-200">
-                        <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{sa.city}</span>
-                          <span className="text-slate-400 font-normal">({sa.state})</span>
+                        <div className="flex items-center gap-1.5 font-bold text-slate-900 mb-1 flex-wrap">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="break-words">{sa.city}</span>
+                          {sa.state && <span className="text-slate-400 font-normal">({sa.state})</span>}
                         </div>
                         {sa.areas.length > 0 && (
-                          <div className="text-[11px] text-slate-600 mb-1">
+                          <div className="text-[11px] text-slate-600 mb-1 break-words">
                             <span className="font-semibold text-slate-700">Areas: </span>
                             {sa.areas.join(', ')}
                           </div>
                         )}
                         {sa.pincodes.length > 0 && (
-                          <div className="text-[11px] text-slate-600 mb-1">
+                          <div className="text-[11px] text-slate-600 mb-1 break-words">
                             <span className="font-semibold text-slate-700">Pincodes: </span>
                             {sa.pincodes.join(', ')}
                           </div>
@@ -873,7 +889,7 @@ export const CompanyOnboarding: React.FC = () => {
           )}
 
           {/* Navigation Controls */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
             {step > 1 ? (
               <button
                 id="onboarding-back-btn"
@@ -882,14 +898,14 @@ export const CompanyOnboarding: React.FC = () => {
                   setError(null);
                   setStep((s) => s - 1);
                 }}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
             ) : (
               <Link
                 to="/login"
-                className="text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 text-center sm:text-left py-2"
               >
                 Already registered? Sign in
               </Link>
@@ -900,7 +916,7 @@ export const CompanyOnboarding: React.FC = () => {
                 id="onboarding-continue-btn"
                 type="button"
                 onClick={handleNext}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all"
               >
                 Continue <ArrowRight className="w-4 h-4" />
               </button>
@@ -910,17 +926,17 @@ export const CompanyOnboarding: React.FC = () => {
                 type="button"
                 disabled={isLoading}
                 onClick={handleCreateCompany}
-                className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creating Company Workspace...
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    <span>Creating Workspace...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Launch Company Operations
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>Launch Company Operations</span>
                   </>
                 )}
               </button>

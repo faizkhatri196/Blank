@@ -208,7 +208,12 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const cleanCity = city.toLowerCase();
+    const rawCity = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : '');
+    const cleanCity = rawCity
+      .replace(/\s*\(\d+\)\s*$/, '')
+      .split(',')[0]
+      .trim()
+      .toLowerCase();
 
     // Query active companies
     const companies = await Company.find({ active: true });
@@ -221,20 +226,46 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
       const match = areas.find((a: any) => {
         if (a.active === false) return false;
 
-        // 1. True geospatial distance check if coordinates provided
+        const aCityClean = (a.city || '')
+          .replace(/\s*\(\d+\)\s*$/, '')
+          .split(',')[0]
+          .trim()
+          .toLowerCase();
+
+        // 1. True geospatial distance check if both have valid coordinates
         if (hasCoordinates && isValidCoordinate(a.latitude, a.longitude)) {
           const distKm = calculateHaversineDistanceKm(latitude!, longitude!, a.latitude!, a.longitude!);
           const radiusKm = a.radiusKm ?? a.radius ?? 20;
-          return distKm <= radiusKm;
+          if (distKm <= radiusKm) return true;
         }
 
-        // 2. City & pincode fallback if coordinates not provided
-        if (cleanCity) {
-          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
-          if (!cityMatch) return false;
-          if (pincode && a.pincodes && a.pincodes.length > 0) {
-            return a.pincodes.includes(pincode);
+        // 2. City & locality matching with radius support
+        if (cleanCity && aCityClean) {
+          const compAreas = (a.areas || []).map((ar: string) => ar.trim().toLowerCase());
+          const cityMatches =
+            aCityClean === cleanCity ||
+            cleanCity.includes(aCityClean) ||
+            aCityClean.includes(cleanCity) ||
+            compAreas.includes(cleanCity);
+
+          if (cityMatches) {
+            if (pincode && a.pincodes && a.pincodes.length > 0) {
+              if (a.pincodes.includes(pincode)) {
+                return true;
+              }
+              // If city matches and operating radius >= 15 km, company covers broader city area
+              const radiusKm = a.radiusKm ?? a.radius ?? 20;
+              if (radiusKm >= 15) {
+                return true;
+              }
+              return false;
+            }
+            return true;
           }
+        }
+
+        // 3. Direct pincode match if explicit in company coverage
+        if (pincode && a.pincodes && a.pincodes.length > 0 && a.pincodes.includes(pincode)) {
           return true;
         }
 

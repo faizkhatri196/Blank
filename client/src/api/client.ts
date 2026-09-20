@@ -77,21 +77,30 @@ apiClient.interceptors.response.use(
       return Promise.reject(new Error('Your session has expired. Please sign in again.'));
     }
 
+    const createCustomError = (msg: string) => {
+      const err: any = new Error(msg);
+      err.response = error.response;
+      err.status = error.response?.status;
+      err.code = error.response?.data?.error?.code;
+      return err;
+    };
+
     // 403 Forbidden - Role unauthorized
     if (error.response?.status === 403) {
       const msg = error.response?.data?.error?.message || 'Access denied: Your account role is not authorized for this action.';
-      return Promise.reject(new Error(msg));
+      return Promise.reject(createCustomError(msg));
     }
 
     // 500 Internal Server Error
     if (error.response?.status >= 500) {
-      return Promise.reject(new Error('The server encountered a temporary issue. Please try again shortly.'));
+      const serverMsg = error.response?.data?.error?.message;
+      return Promise.reject(createCustomError(serverMsg || 'The server encountered a temporary issue. Please try again shortly.'));
     }
 
     // Network error or backend offline / cold start
     if (!error.response) {
       return Promise.reject(
-        new Error('Unable to reach Servora backend service. If the server was idle, it may be waking up. Please retry in 15 seconds.')
+        createCustomError('Unable to reach Servora backend service. If the server was idle, it may be waking up. Please retry in 15 seconds.')
       );
     }
 
@@ -99,6 +108,6 @@ apiClient.interceptors.response.use(
       error.response?.data?.error?.message ||
       error.message ||
       'An unexpected communication error occurred.';
-    return Promise.reject(new Error(message));
+    return Promise.reject(createCustomError(message));
   }
 );

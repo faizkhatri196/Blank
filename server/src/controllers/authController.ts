@@ -8,6 +8,8 @@ import { Company } from '../models/Company';
 import { Customer } from '../models/Customer';
 import { loginSchema, companySignupSchema, customerSignupSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators';
 import { ENV } from '../config/env';
+import { NominatimLocationProvider } from '../services/location/NominatimProvider';
+import { isValidCoordinate, createGeoPoint } from '../services/location/Geospatial';
 
 export async function signup(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -61,43 +63,82 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
       }
     }
 
-    // 1. Create client Company document (No default Ahmedabad fallback!)
-    const company = await Company.create({
-      name: data.companyName.trim(),
-      email: normalizedEmail,
-      phone: data.phone.trim(),
-      address: data.address?.trim() || '',
-      servicesSupported,
-      serviceAreas: (data.serviceAreas || []).map((sa) => ({
-        city: sa.city.trim(),
-        state: sa.state?.trim(),
-        country: sa.country?.trim() || 'India',
-        areas: sa.areas || [],
-        pincodes: sa.pincodes || [],
-        latitude: sa.latitude,
-        longitude: sa.longitude,
-        radius: sa.radius,
-        services: sa.services || servicesSupported,
-      })),
-      isPilot: false,
-      environmentContext: 'CLIENT',
-      active: true,
-    });
+    // 1. Geocode service areas if coordinates not supplied
+    const resolvedServiceAreas = await Promise.all(
+      (data.serviceAreas || []).map(async (sa) => {
+        let lat = sa.latitude;
+        let lon = sa.longitude;
+        if (!isValidCoordinate(lat, lon)) {
+          try {
+            const query = `${sa.city}${sa.state ? ', ' + sa.state : ''}, ${sa.country || 'India'}`;
+            const geoResults = await NominatimLocationProvider.search(query);
+            if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+              lat = geoResults[0].latitude;
+              lon = geoResults[0].longitude;
+            }
+          } catch {
+            // Geocoding failure non-blocking
+          }
+        }
 
-    // 2. Hash password securely
-    const passwordHash = await bcrypt.hash(data.password, 10);
+        const center = isValidCoordinate(lat, lon)
+          ? createGeoPoint(lat!, lon!)
+          : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+        const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
 
-    // 3. Create Service Manager User
-    const user = await User.create({
-      companyId: company._id,
-      name: data.managerName.trim(),
-      email: normalizedEmail,
-      phone: data.phone.trim(),
-      passwordHash,
-      role: 'SERVICE_MANAGER',
-      active: true,
-      lastLogin: new Date(),
-    });
+        return {
+          city: sa.city.trim(),
+          state: sa.state?.trim(),
+          country: sa.country?.trim() || 'India',
+          areas: sa.areas || [],
+          pincodes: sa.pincodes || [],
+          latitude: lat,
+          longitude: lon,
+          center,
+          radius: radiusKm,
+          radiusKm,
+          services: sa.services && sa.services.length > 0 ? sa.services : servicesSupported,
+          active: true,
+        };
+      })
+    );
+
+    let company: any;
+    let user: any;
+    try {
+      // 1. Create client Company document (No default Ahmedabad fallback!)
+      company = await Company.create({
+        name: data.companyName.trim(),
+        email: normalizedEmail,
+        phone: data.phone.trim(),
+        address: data.address?.trim() || '',
+        servicesSupported,
+        serviceAreas: resolvedServiceAreas,
+        isPilot: false,
+        environmentContext: 'CLIENT',
+        active: true,
+      });
+
+      // 2. Hash password securely
+      const passwordHash = await bcrypt.hash(data.password, 10);
+
+      // 3. Create Service Manager User
+      user = await User.create({
+        companyId: company._id,
+        name: data.managerName.trim(),
+        email: normalizedEmail,
+        phone: data.phone.trim(),
+        passwordHash,
+        role: 'SERVICE_MANAGER',
+        active: true,
+        lastLogin: new Date(),
+      });
+    } catch (createErr: any) {
+      if (company?._id && !user) {
+        await Company.findByIdAndDelete(company._id);
+      }
+      throw createErr;
+    }
 
     // 4. Issue standard JWT token for automatic seamless login
     const token = jwt.sign(
