@@ -298,7 +298,7 @@ export const CompanyOnboarding: React.FC = () => {
       <div className="max-w-3xl w-full mx-auto space-y-8">
         {/* Header Branding */}
         <div className="text-center space-y-2 flex flex-col items-center">
-          <ServoraLogo variant="full" size="lg" className="justify-center mb-1" />
+          <ServoraLogo variant="badge" size="lg" className="justify-center mb-1" />
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Register Your Service Enterprise
           </h1>

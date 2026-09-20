@@ -180,8 +180,8 @@ export const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col justify-center py-10 sm:px-6 lg:px-8">
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center px-4 mb-6 flex flex-col items-center">
-        <ServoraLogo variant="full" inverted size="xl" />
-        <div className="mt-3 flex items-center justify-center gap-2">
+        <ServoraLogo variant="badge" inverted size="xl" />
+        <div className="mt-4 flex items-center justify-center gap-2">
           <Link
             to="/portals"
             className="text-[11px] font-semibold text-slate-300 hover:text-white underline"

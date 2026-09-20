@@ -10,8 +10,8 @@ export const PortalsGateway: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900 text-white flex flex-col justify-between py-10 px-4 sm:px-6 lg:px-8">
       {/* Brand Header */}
       <header className="max-w-6xl mx-auto w-full text-center mb-10 sm:mb-14 flex flex-col items-center">
-        <ServoraLogo variant="full" inverted size="xl" className="justify-center mb-3" />
-        <p className="mt-3 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto font-normal">
+        <ServoraLogo variant="badge" inverted size="xl" className="justify-center mb-3" />
+        <p className="mt-4 text-slate-400 text-sm sm:text-base max-w-2xl mx-auto font-normal">
           Select your designated portal below to access your role-tailored workspace.
         </p>
       </header>
