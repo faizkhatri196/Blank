@@ -9,6 +9,7 @@ import {
   updateTechnicianSchema,
   updateTechnicianStatusSchema,
 } from '../validators';
+import { createGeoPoint, isValidCoordinate } from '../services/location/geospatial';
 
 export async function getTechnicians(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -155,15 +156,44 @@ export async function updateTechnician(req: AuthenticatedRequest, res: Response)
       return;
     }
 
-    const technician = await Technician.findOneAndUpdate(
-      { _id: req.params.id, companyId: req.companyId },
-      { $set: parseResult.data },
+    const existingTech = await Technician.findById(req.params.id);
+    if (!existingTech) {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Technician not found' } });
+      return;
+    }
+
+    if (!req.companyId || !existingTech.companyId.equals(req.companyId)) {
+      res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Cross-tenant technician access denied' } });
+      return;
+    }
+
+    const updateData: any = { ...parseResult.data };
+    if (
+      updateData.baseLocation &&
+      typeof updateData.baseLocation.latitude === 'number' &&
+      typeof updateData.baseLocation.longitude === 'number'
+    ) {
+      const lat = updateData.baseLocation.latitude;
+      const lon = updateData.baseLocation.longitude;
+      if (isValidCoordinate(lat, lon)) {
+        updateData.baseLocation.center = createGeoPoint(lat, lon);
+      }
+    }
+
+    const technician = await Technician.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
       { new: true }
     );
 
-    if (!technician) {
-      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Technician not found' } });
-      return;
+    // If name or phone changed, sync with linked User account
+    if (technician && (updateData.name || updateData.phone)) {
+      await User.findByIdAndUpdate(technician.userId, {
+        $set: {
+          ...(updateData.name ? { name: updateData.name } : {}),
+          ...(updateData.phone ? { phone: updateData.phone } : {}),
+        },
+      });
     }
 
     res.json({ success: true, data: technician });

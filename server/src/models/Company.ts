@@ -9,15 +9,25 @@ export interface ICompany extends Document {
   approvedContactNumber?: string;
   servicesSupported: ServiceType[];
   serviceAreas: Array<{
+    _id?: any;
+    locationName?: string;
+    formattedAddress?: string;
     city: string;
     state?: string;
     country?: string;
+    postalCode?: string;
     areas?: string[];
     pincodes?: string[];
     latitude?: number;
     longitude?: number;
+    center?: {
+      type: 'Point';
+      coordinates: [number, number];
+    };
     radius?: number;
+    radiusKm?: number;
     services: ServiceType[];
+    active?: boolean;
   }>;
   settings: {
     allowBlindEvaluation?: boolean;
@@ -45,15 +55,24 @@ const CompanySchema = new Schema<ICompany>(
     },
     serviceAreas: [
       {
+        locationName: { type: String, trim: true },
+        formattedAddress: { type: String, trim: true },
         city: { type: String, required: true, trim: true },
         state: { type: String, trim: true },
         country: { type: String, trim: true, default: 'India' },
+        postalCode: { type: String, trim: true },
         areas: { type: [String], default: [] },
         pincodes: { type: [String], default: [] },
         latitude: { type: Number },
         longitude: { type: Number },
-        radius: { type: Number },
+        center: {
+          type: { type: String, enum: ['Point'], default: 'Point' },
+          coordinates: { type: [Number], default: [0, 0] },
+        },
+        radius: { type: Number, default: 20 },
+        radiusKm: { type: Number, default: 20 },
         services: { type: [String], default: ['SOLAR', 'AC'] },
+        active: { type: Boolean, default: true },
       },
     ],
     settings: {
@@ -73,5 +92,7 @@ const CompanySchema = new Schema<ICompany>(
   },
   { timestamps: true }
 );
+
+CompanySchema.index({ 'serviceAreas.center': '2dsphere' });
 
 export const Company = mongoose.model<ICompany>('Company', CompanySchema);

@@ -272,6 +272,7 @@ export const Technicians: React.FC = () => {
         </div>
 
         <button
+          id="add-technician-btn"
           onClick={() => setIsAddModalOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
         >
@@ -533,6 +534,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
               <input
+                id="tech-add-name"
                 type="text"
                 required
                 value={name}
@@ -544,6 +546,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Phone Number *</label>
               <input
+                id="tech-add-phone"
                 type="text"
                 required
                 value={phone}
@@ -558,6 +561,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Email (Login) *</label>
               <input
+                id="tech-add-email"
                 type="email"
                 required
                 value={email}
@@ -569,6 +573,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Temporary Password *</label>
               <input
+                id="tech-add-password"
                 type="password"
                 required
                 value={password}
@@ -580,6 +585,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Confirm Password *</label>
               <input
+                id="tech-add-confirm-password"
                 type="password"
                 required
                 value={confirmPassword}
@@ -597,6 +603,7 @@ export const Technicians: React.FC = () => {
             <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tech-add-solar-checkbox"
                   type="checkbox"
                   checked={serviceTypes.includes('SOLAR')}
                   onChange={() => handleToggleServiceType('SOLAR')}
@@ -606,6 +613,7 @@ export const Technicians: React.FC = () => {
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tech-add-ac-checkbox"
                   type="checkbox"
                   checked={serviceTypes.includes('AC')}
                   onChange={() => handleToggleServiceType('AC')}
@@ -630,6 +638,7 @@ export const Technicians: React.FC = () => {
             <div>
               <label className="block font-bold text-slate-700 mb-1">Coverage Radius (km)</label>
               <input
+                id="tech-add-radius"
                 type="number"
                 min="1"
                 value={radiusInput}
@@ -670,6 +679,7 @@ export const Technicians: React.FC = () => {
                 Service Areas (comma separated)
               </label>
               <input
+                id="tech-add-areas"
                 type="text"
                 value={serviceAreasInput}
                 onChange={(e) => setServiceAreasInput(e.target.value)}
@@ -682,6 +692,7 @@ export const Technicians: React.FC = () => {
                 Pincodes (comma separated)
               </label>
               <input
+                id="tech-add-pincodes"
                 type="text"
                 value={pincodesInput}
                 onChange={(e) => setPincodesInput(e.target.value)}
@@ -700,6 +711,7 @@ export const Technicians: React.FC = () => {
               Cancel
             </button>
             <button
+              id="tech-add-submit-btn"
               type="submit"
               disabled={isSubmitting}
               className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50"

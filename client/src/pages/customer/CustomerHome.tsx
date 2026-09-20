@@ -70,6 +70,9 @@ export const CustomerHome: React.FC = () => {
         const res = await apiClient.post('/customer-portal/services/available', {
           city: location.city.trim(),
           pincode: location.pincode ? location.pincode.trim() : undefined,
+          latitude: location.latitude,
+          longitude: location.longitude,
+          query: location.formattedAddress || location.city,
         });
 
         if (res.data.success) {

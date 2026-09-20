@@ -32,3 +32,6 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
+scratch/
+client/public/*.webp
+client/public/*.mp4

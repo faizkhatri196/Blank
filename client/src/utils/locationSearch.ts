@@ -1,8 +1,11 @@
 /**
  * SERVORA Location Search & Geocoding Service
- * Uses OpenStreetMap Nominatim with India country bounds and contextual filtering.
- * Zero hardcoded lists, zero silent city defaulting.
+ * Uses server-side location provider abstraction first (/api/location/search),
+ * with OpenStreetMap Nominatim fallback.
+ * Generic, global, zero hardcoded lists, zero silent city/state defaulting.
  */
+
+import { apiClient } from '../api/client';
 
 export interface StructuredLocationSuggestion {
   city: string;
@@ -15,10 +18,6 @@ export interface StructuredLocationSuggestion {
   formattedAddress: string;
 }
 
-const NOMINATIM_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEOCODING_API_URL) ||
-  'https://nominatim.openstreetmap.org';
-
 let activeAbortController: AbortController | null = null;
 
 export async function searchLocations(
@@ -30,14 +29,40 @@ export async function searchLocations(
     return [];
   }
 
-  // Cancel any in-flight request
+  // Cancel previous in-flight request
   if (activeAbortController) {
     activeAbortController.abort();
   }
   activeAbortController = new AbortController();
 
+  // 1. Try server-side location provider abstraction
   try {
-    // Construct query: if a contextual city is provided, bias with that city
+    const res = await apiClient.get('/location/search', {
+      params: { q: trimmed },
+      signal: activeAbortController.signal,
+    });
+
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      return res.data.data.map((item: any) => ({
+        city: item.city || item.locationName || '',
+        state: item.state || '',
+        country: item.country || '',
+        area: item.rawType === 'suburb' ? item.locationName : undefined,
+        pincode: item.postalCode || undefined,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        formattedAddress: item.formattedAddress || item.locationName,
+      }));
+    }
+  } catch (err: any) {
+    if (err.name === 'CanceledError' || err.name === 'AbortError') {
+      return [];
+    }
+    // Fall back to direct Nominatim query below
+  }
+
+  // 2. Direct Nominatim fallback
+  try {
     const searchQuery = cityContext && !trimmed.toLowerCase().includes(cityContext.toLowerCase())
       ? `${trimmed}, ${cityContext}`
       : trimmed;
@@ -47,10 +72,9 @@ export async function searchLocations(
       format: 'json',
       addressdetails: '1',
       limit: '6',
-      countrycodes: 'in',
     });
 
-    const url = `${NOMINATIM_BASE_URL}/search?${params.toString()}`;
+    const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
     const res = await fetch(url, {
       signal: activeAbortController.signal,
@@ -75,13 +99,16 @@ export async function searchLocations(
       const city =
         addr.city ||
         addr.town ||
+        addr.village ||
+        addr.municipality ||
         addr.district ||
         addr.state_district ||
         addr.county ||
+        item.display_name.split(',')[0].trim() ||
         '';
 
-      const state = addr.state || 'Gujarat';
-      const country = addr.country || 'India';
+      const state = addr.state || '';
+      const country = addr.country || '';
       const area =
         addr.suburb ||
         addr.neighbourhood ||
@@ -95,25 +122,22 @@ export async function searchLocations(
       const latitude = parseFloat(item.lat);
       const longitude = parseFloat(item.lon);
 
-      // Build clean formatted address e.g. "Bopal, Ahmedabad, Gujarat 380058"
-      const parts = [area, city, state].filter(Boolean);
+      const parts = [area, city, state, country].filter(Boolean);
       let formattedAddress = parts.join(', ');
       if (pincode) {
         formattedAddress += ` ${pincode}`;
       }
 
-      if (city) {
-        suggestions.push({
-          city: city.trim(),
-          state: state.trim(),
-          country: country.trim(),
-          area: area?.trim(),
-          pincode,
-          latitude: isNaN(latitude) ? 0 : latitude,
-          longitude: isNaN(longitude) ? 0 : longitude,
-          formattedAddress: formattedAddress || item.display_name,
-        });
-      }
+      suggestions.push({
+        city: city.trim(),
+        state: state.trim(),
+        country: country.trim(),
+        area: area?.trim(),
+        pincode,
+        latitude: isNaN(latitude) ? 0 : latitude,
+        longitude: isNaN(longitude) ? 0 : longitude,
+        formattedAddress: formattedAddress || item.display_name,
+      });
     }
 
     return suggestions;

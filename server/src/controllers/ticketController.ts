@@ -22,6 +22,7 @@ import {
   assignTechnicianSchema,
   aiAnalysisReviewSchema,
 } from '../validators';
+import { calculateHaversineDistanceKm } from '../services/location/geospatial';
 import mongoose from 'mongoose';
 
 export async function getTickets(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -634,8 +635,32 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
     const customerLocationSummary = [ticket.serviceLocation?.area, ticket.serviceLocation?.city || customerCity].filter(Boolean).join(', ') || 'Customer location';
     const techCoverageSummary = technician.serviceAreas && technician.serviceAreas.length > 0 ? technician.serviceAreas.join(', ') : 'Universal Company Area';
 
-    // Verify technician operational area coverage if technician has defined service areas
-    if (technician.serviceAreas && technician.serviceAreas.length > 0) {
+    // 1. Geospatial coordinate check if both technician baseLocation and ticket/customer coordinates exist
+    const ticketLat = ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
+    const ticketLng = ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
+    const techLat = technician.baseLocation?.latitude ?? (technician.baseLocation?.center?.coordinates?.[1]);
+    const techLng = technician.baseLocation?.longitude ?? (technician.baseLocation?.center?.coordinates?.[0]);
+
+    if (ticketLat !== undefined && ticketLng !== undefined && techLat !== undefined && techLng !== undefined) {
+      const distanceKm = calculateHaversineDistanceKm(ticketLat, ticketLng, techLat, techLng);
+      const allowedRadius = technician.coverageRadiusKm || 25;
+      if (distanceKm > allowedRadius) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'SERVICE_AREA_MISMATCH',
+            message: `Technician ${technician.name} is ${Math.round(distanceKm)}km away, exceeding their ${allowedRadius}km operating radius.`,
+            details: {
+              technicianName: technician.name,
+              distanceKm: Math.round(distanceKm * 10) / 10,
+              coverageRadiusKm: allowedRadius,
+              customerLocation: customerLocationSummary,
+            },
+          },
+        });
+        return;
+      }
+    } else if (technician.serviceAreas && technician.serviceAreas.length > 0) {
       if (locationContext) {
         const coversArea = technician.serviceAreas.some((area) => {
           const a = area.toLowerCase().trim();

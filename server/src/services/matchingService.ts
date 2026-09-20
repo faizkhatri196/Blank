@@ -2,6 +2,7 @@ import { ITechnician } from '../models/Technician';
 import { IServiceTicket } from '../models/ServiceTicket';
 import { IAIAnalysis } from '../models/AIAnalysis';
 import { TechnicianMatchResult } from '../types';
+import { calculateHaversineDistanceKm, isValidCoordinate } from './location/geospatial';
 
 export interface CustomerLocationContext {
   city?: string;
@@ -32,6 +33,10 @@ export function calculateTechnicianMatches(
   const ticketPincode = locationContext.pincode || ticket.serviceLocation?.pincode || '';
   const ticketAddress = locationContext.address || ticket.serviceLocation?.address || '';
 
+  const ticketLat = ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
+  const ticketLon = ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
+  const hasTicketCoords = isValidCoordinate(ticketLat, ticketLon);
+
   const locText = `${ticketCity} ${ticketArea} ${ticketAddress} ${ticketPincode}`.toLowerCase().trim();
   const customerLocDisplay = [ticketArea, ticketCity].filter(Boolean).join(', ') || ticketCity || 'Customer location';
 
@@ -52,8 +57,11 @@ export function calculateTechnicianMatches(
     if (complaint.includes('battery')) {
       requiredSkills.push('BATTERY_SYSTEMS');
     }
+    if (complaint.includes('earthing') || complaint.includes('ground')) {
+      requiredSkills.push('EARTHING_INSPECTION');
+    }
   } else if (serviceType === 'AC') {
-    requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
+    requiredSkills.push('HVAC_DIAGNOSTICS');
     const complaint = (ticket.complaint || '').toLowerCase();
     if (complaint.includes('pcb') || ticket.errorCode) {
       requiredSkills.push('PCB_REPAIR');
@@ -89,7 +97,24 @@ export function calculateTechnicianMatches(
     let coverageExplanation = 'Customer location is inside service area';
     let ineligibilityReason: string | undefined = undefined;
 
-    if (techAreas.length > 0) {
+    const techLat = tech.baseLocation?.latitude;
+    const techLon = tech.baseLocation?.longitude;
+    const hasTechCoords = isValidCoordinate(techLat, techLon);
+
+    if (hasTicketCoords && hasTechCoords) {
+      const distKm = calculateHaversineDistanceKm(ticketLat!, ticketLon!, techLat!, techLon!);
+      const radiusKm = tech.coverageRadiusKm ?? 20;
+      if (distKm <= radiusKm) {
+        coversLocation = true;
+        coverageStatus = 'COVERS_LOCATION';
+        coverageExplanation = `Customer is ${distKm.toFixed(1)} km away (within ${radiusKm} km radius)`;
+      } else {
+        coversLocation = false;
+        coverageStatus = 'OUTSIDE_SERVICE_AREA';
+        coverageExplanation = `Customer is ${distKm.toFixed(1)} km away (exceeds ${radiusKm} km coverage radius)`;
+        ineligibilityReason = `Customer location is outside technician's coverage radius (${distKm.toFixed(1)} km > ${radiusKm} km).`;
+      }
+    } else if (techAreas.length > 0) {
       const matchedArea = techAreas.some((area) => {
         const a = area.toLowerCase().trim();
         if (!a) return false;

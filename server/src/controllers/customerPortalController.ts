@@ -12,6 +12,7 @@ import { ServiceRegistry } from '../config/serviceRegistry';
 import { normalizeComplaint } from '../ai/complaintNormalizer';
 import { AIFactory } from '../ai/AIFactory';
 import { generateTicketNumber } from '../services/ticketService';
+import { calculateHaversineDistanceKm, isValidCoordinate } from '../services/location/geospatial';
 import {
   ServiceType,
   TicketStatus,
@@ -192,20 +193,24 @@ export function serializeCustomerTicket(
  */
 export async function getAvailableServices(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { city, pincode, area } = req.body;
+    const locInput = req.body.location || req.body;
+    const city = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : '');
+    const pincode = locInput.postalCode || locInput.pincode || req.body.pincode ? String(locInput.postalCode || locInput.pincode || req.body.pincode).trim() : undefined;
+    const latitude = typeof locInput.latitude === 'number' ? locInput.latitude : (typeof req.body.latitude === 'number' ? req.body.latitude : undefined);
+    const longitude = typeof locInput.longitude === 'number' ? locInput.longitude : (typeof req.body.longitude === 'number' ? req.body.longitude : undefined);
+    const hasCoordinates = isValidCoordinate(latitude, longitude);
 
-    if (!city || typeof city !== 'string') {
+    if (!city && !hasCoordinates) {
       res.status(400).json({
         success: false,
-        error: { code: 'INVALID_LOCATION', message: 'City is required to check service availability.' },
+        error: { code: 'INVALID_LOCATION', message: 'Valid location or city coordinates are required to check service availability.' },
       });
       return;
     }
 
-    const cleanCity = city.trim().toLowerCase();
-    const cleanPincode = pincode ? String(pincode).trim() : undefined;
+    const cleanCity = city.toLowerCase();
 
-    // Query active companies whose service areas match this city
+    // Query active companies
     const companies = await Company.find({ active: true });
 
     const availableServiceTypesSet = new Set<ServiceType>();
@@ -213,13 +218,27 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
 
     for (const comp of companies) {
       const areas = comp.serviceAreas || [];
-      const match = areas.find((a) => {
-        const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
-        if (!cityMatch) return false;
-        if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
-          return a.pincodes.includes(cleanPincode);
+      const match = areas.find((a: any) => {
+        if (a.active === false) return false;
+
+        // 1. True geospatial distance check if coordinates provided
+        if (hasCoordinates && isValidCoordinate(a.latitude, a.longitude)) {
+          const distKm = calculateHaversineDistanceKm(latitude!, longitude!, a.latitude!, a.longitude!);
+          const radiusKm = a.radiusKm ?? a.radius ?? 20;
+          return distKm <= radiusKm;
         }
-        return true;
+
+        // 2. City & pincode fallback if coordinates not provided
+        if (cleanCity) {
+          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
+          if (!cityMatch) return false;
+          if (pincode && a.pincodes && a.pincodes.length > 0) {
+            return a.pincodes.includes(pincode);
+          }
+          return true;
+        }
+
+        return false;
       });
 
       if (match) {
@@ -240,7 +259,9 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
         success: true,
         data: {
           coverageAvailable: false,
-          city,
+          city: city || undefined,
+          latitude,
+          longitude,
           pincode,
           services: [],
           availableServices: [],
@@ -356,41 +377,67 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
 
     const rawInput = complaint.trim();
     const cleanCity = location.city.trim().toLowerCase();
-    const cleanPincode = location.pincode ? String(location.pincode).trim() : undefined;
+    const cleanPincode = location.pincode ? String(location.pincode).trim() : (location.postalCode ? String(location.postalCode).trim() : undefined);
+    const custLat = location.coordinates?.latitude ?? location.latitude;
+    const custLon = location.coordinates?.longitude ?? location.longitude;
+    const hasCustCoords = isValidCoordinate(custLat, custLon);
 
-    // Determine covering company based on authoritative service-area configuration
-    // Determine covering company based on authoritative service-area configuration
+    // Determine covering company based on authoritative geospatial service-area configuration
     const requestedCompanyId = req.body.companyId || req.companyId;
     const companies = await Company.find({ active: true });
 
-    // Match company whose configured serviceAreas explicitly cover this city, pincode, and serviceType
-    let targetCompany = companies.find((c) => {
-      // If a specific provider was chosen, verify it
+    const matchCompanyCoverage = (c: any) => {
       if (requestedCompanyId && !c._id.equals(requestedCompanyId)) return false;
       const areas = c.serviceAreas || [];
-      return areas.some((a) => {
-        const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
-        if (!cityMatch) return false;
-        if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
-          if (!a.pincodes.includes(cleanPincode)) return false;
-        }
+      return areas.some((a: any) => {
+        if (a.active === false) return false;
         const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
-        return servicesForArea.includes(serviceType);
+        if (!servicesForArea.includes(serviceType)) return false;
+
+        // 1. Coordinates-based distance check
+        if (hasCustCoords && isValidCoordinate(a.latitude, a.longitude)) {
+          const distKm = calculateHaversineDistanceKm(custLat!, custLon!, a.latitude!, a.longitude!);
+          const radiusKm = a.radiusKm ?? a.radius ?? 20;
+          return distKm <= radiusKm;
+        }
+
+        // 2. City & pincode fallback if coordinates unavailable
+        if (cleanCity) {
+          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
+          if (!cityMatch) return false;
+          if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
+            return a.pincodes.includes(cleanPincode);
+          }
+          return true;
+        }
+
+        return false;
       });
-    });
+    };
+
+    let targetCompany = companies.find((c) => matchCompanyCoverage(c));
 
     // If requestedCompanyId was specified but did not match, check other active companies covering this location
     if (!targetCompany) {
       targetCompany = companies.find((c) => {
         const areas = c.serviceAreas || [];
-        return areas.some((a) => {
+        return areas.some((a: any) => {
+          if (a.active === false) return false;
+          const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
+          if (!servicesForArea.includes(serviceType)) return false;
+
+          if (hasCustCoords && isValidCoordinate(a.latitude, a.longitude)) {
+            const distKm = calculateHaversineDistanceKm(custLat!, custLon!, a.latitude!, a.longitude!);
+            const radiusKm = a.radiusKm ?? a.radius ?? 20;
+            return distKm <= radiusKm;
+          }
+
           const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
           if (!cityMatch) return false;
           if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
-            if (!a.pincodes.includes(cleanPincode)) return false;
+            return a.pincodes.includes(cleanPincode);
           }
-          const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
-          return servicesForArea.includes(serviceType);
+          return true;
         });
       });
     }
@@ -428,7 +475,7 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         address: location.address,
         city: location.city,
         pincode: location.pincode,
-        coordinates: location.coordinates,
+        coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
       });
     }
 
@@ -439,13 +486,27 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     const ticketNumber = await generateTicketNumber(companyId, serviceType);
 
     // Snapshot service location
-    const serviceLocationSnapshot = {
+    const legacyLocationSnapshot = {
       address: location.address,
       city: location.city,
       area: location.area || '',
       pincode: location.pincode || '',
-      coordinates: location.coordinates,
+      coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
       locationSource: location.locationSource || 'MANUAL',
+    };
+
+    const richLocationSnapshot = {
+      inputText: location.inputText || location.formattedAddress || location.address,
+      formattedAddress: location.formattedAddress || location.address,
+      city: location.city,
+      state: location.state,
+      country: location.country || 'India',
+      postalCode: cleanPincode,
+      latitude: custLat,
+      longitude: custLon,
+      provider: location.provider || 'nominatim',
+      placeId: location.placeId,
+      resolvedAt: new Date(),
     };
 
     const finalIsUnknown = Boolean(isUnknownTriage || normalizedResult.isUnknownTriage);
@@ -468,7 +529,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         : [],
       priority: 'MEDIUM',
       status: 'NEW',
-      serviceLocation: serviceLocationSnapshot,
+      serviceLocation: legacyLocationSnapshot,
+      serviceLocationSnapshot: richLocationSnapshot,
       isDemoData: targetCompany.environmentContext === 'DEMO' || !targetCompany.isPilot,
       createdBy: req.userId || customerDoc._id,
       statusHistory: [

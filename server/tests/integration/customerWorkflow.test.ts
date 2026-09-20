@@ -92,7 +92,7 @@ describe('SERVORA V2 End-to-End Customer Lifecycle Integration Tests', () => {
       active: true,
     });
     technicianAId = techA._id as mongoose.Types.ObjectId;
-  });
+  }, 30000);
 
   afterAll(async () => {
     await Promise.all([

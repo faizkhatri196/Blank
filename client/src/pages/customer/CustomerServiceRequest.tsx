@@ -49,6 +49,8 @@ export const CustomerServiceRequest: React.FC = () => {
 
   const [city, setCity] = useState<string>(initialCity);
   const [pincode, setPincode] = useState<string>(initialPincode);
+  const [lat, setLat] = useState<number | undefined>(savedLoc?.latitude);
+  const [lng, setLng] = useState<number | undefined>(savedLoc?.longitude);
   const [address, setAddress] = useState<string>('');
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
   const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(Boolean(initialCity));
@@ -86,6 +88,8 @@ export const CustomerServiceRequest: React.FC = () => {
   const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
     setCity(selectedLoc.city);
     setPincode(selectedLoc.pincode || '');
+    setLat(selectedLoc.latitude);
+    setLng(selectedLoc.longitude);
     if (selectedLoc.area || selectedLoc.formattedAddress) {
       setAddress((prev) => prev ? prev : (selectedLoc.formattedAddress || selectedLoc.area || ''));
     }
@@ -98,13 +102,15 @@ export const CustomerServiceRequest: React.FC = () => {
     setAvailableServices([]);
 
     saveCustomerLocation(selectedLoc, user?.id);
-    checkServiceAvailability(selectedLoc.city, selectedLoc.pincode || '');
+    checkServiceAvailability(selectedLoc.city, selectedLoc.pincode || '', selectedLoc.latitude, selectedLoc.longitude);
   };
 
   // Location Change Handler (Rule 8 & 9: Clear downstream state when location changes)
   const handleLocationChange = (newCity: string, newPincode: string) => {
     setCity(newCity);
     setPincode(newPincode);
+    setLat(undefined);
+    setLng(undefined);
     setServiceType('');
     setSelectedProblem(null);
     setComplaint('');
@@ -122,7 +128,12 @@ export const CustomerServiceRequest: React.FC = () => {
   };
 
   // Query service availability whenever city or pincode changes
-  const checkServiceAvailability = async (checkCity: string, checkPincode: string) => {
+  const checkServiceAvailability = async (
+    checkCity: string,
+    checkPincode: string,
+    checkLat?: number,
+    checkLng?: number
+  ) => {
     if (!checkCity || !checkCity.trim()) {
       setIsLocationAvailable(false);
       setAvailableServices([]);
@@ -135,6 +146,9 @@ export const CustomerServiceRequest: React.FC = () => {
       const res = await apiClient.post('/customer-portal/services/available', {
         city: checkCity.trim(),
         pincode: checkPincode ? checkPincode.trim() : undefined,
+        latitude: checkLat ?? lat,
+        longitude: checkLng ?? lng,
+        query: checkCity.trim(),
       });
 
       if (res.data.success) {
@@ -260,7 +274,11 @@ export const CustomerServiceRequest: React.FC = () => {
           address: address.trim() || 'Service Site Address',
           city: city.trim(),
           pincode: pincode.trim(),
+          latitude: lat,
+          longitude: lng,
         },
+        latitude: lat,
+        longitude: lng,
         customerDetails: {
           name: customerName.trim() || user?.name || 'Customer',
           phone: customerPhone.trim() || user?.phone || '+91 98765 00000',

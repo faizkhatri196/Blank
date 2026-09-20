@@ -27,6 +27,19 @@ export interface IServiceTicket extends Document {
     };
     locationSource?: string;
   };
+  serviceLocationSnapshot?: {
+    inputText?: string;
+    formattedAddress: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    latitude: number;
+    longitude: number;
+    provider?: string;
+    placeId?: string;
+    resolvedAt: Date;
+  };
   customerFeedback?: {
     rating: number;
     comment?: string;
@@ -83,6 +96,19 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
         longitude: { type: Number },
       },
       locationSource: { type: String, default: 'MANUAL' },
+    },
+    serviceLocationSnapshot: {
+      inputText: { type: String },
+      formattedAddress: { type: String },
+      city: { type: String },
+      state: { type: String },
+      country: { type: String },
+      postalCode: { type: String },
+      latitude: { type: Number },
+      longitude: { type: Number },
+      provider: { type: String, default: 'nominatim' },
+      placeId: { type: String },
+      resolvedAt: { type: Date, default: Date.now },
     },
     problemCategory: { type: String, trim: true },
     problemCode: { type: String, trim: true },

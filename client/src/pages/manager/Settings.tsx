@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../api/client';
 import { ServiceAreaConfig } from '../../types';
+import { LocationMapPicker } from '../../components/common/LocationMapPicker';
 import {
   Settings as SettingsIcon,
   Database,
@@ -16,21 +17,13 @@ import {
   Edit2,
   Check,
   X,
-  Wrench,
   Sun,
   Wind,
-  Zap,
-  Droplet,
-  Tv,
 } from 'lucide-react';
 
 const SERVICE_OPTIONS = [
   { type: 'SOLAR', label: 'Solar Energy', icon: Sun, color: 'amber' },
   { type: 'AC', label: 'AC & HVAC', icon: Wind, color: 'sky' },
-  { type: 'ELECTRICAL', label: 'Electrical', icon: Zap, color: 'yellow' },
-  { type: 'PLUMBING', label: 'Plumbing', icon: Wrench, color: 'blue' },
-  { type: 'RO_PURIFIER', label: 'RO Water Purifier', icon: Droplet, color: 'teal' },
-  { type: 'APPLIANCE_REPAIR', label: 'Appliance Repair', icon: Tv, color: 'purple' },
 ];
 
 export const Settings: React.FC = () => {
@@ -47,11 +40,16 @@ export const Settings: React.FC = () => {
   // Add/Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [modalLocationName, setModalLocationName] = useState('');
+  const [modalFormattedAddress, setModalFormattedAddress] = useState('');
+  const [modalLat, setModalLat] = useState<number | null>(null);
+  const [modalLng, setModalLng] = useState<number | null>(null);
+  const [modalRadius, setModalRadius] = useState<number>(25);
   const [modalCity, setModalCity] = useState('');
-  const [modalState, setModalState] = useState('Gujarat');
+  const [modalState, setModalState] = useState('');
   const [modalAreasText, setModalAreasText] = useState('');
   const [modalPincodesText, setModalPincodesText] = useState('');
-  const [modalRadiusInput, setModalRadiusInput] = useState<string>('20');
+  const [modalRadiusInput, setModalRadiusInput] = useState<string>('25');
   const [modalServices, setModalServices] = useState<string[]>(['SOLAR', 'AC']);
   const [modalError, setModalError] = useState<string | null>(null);
   const [isSavingModal, setIsSavingModal] = useState(false);
@@ -103,10 +101,15 @@ export const Settings: React.FC = () => {
   const openAddModal = () => {
     setEditingIndex(null);
     setModalCity('');
-    setModalState('Gujarat');
+    setModalState('');
+    setModalLocationName('');
+    setModalFormattedAddress('');
+    setModalLat(null);
+    setModalLng(null);
+    setModalRadius(25);
     setModalAreasText('');
     setModalPincodesText('');
-    setModalRadiusInput('20');
+    setModalRadiusInput('25');
     setModalServices(servicesSupported.length > 0 ? [...servicesSupported] : ['SOLAR', 'AC']);
     setModalError(null);
     setIsModalOpen(true);
@@ -116,24 +119,31 @@ export const Settings: React.FC = () => {
     const area = coverageAreas[idx];
     if (!area) return;
     setEditingIndex(idx);
-    setModalCity(area.city);
-    setModalState(area.state || 'Gujarat');
+    setModalCity(area.city || '');
+    setModalState(area.state || '');
+    setModalLocationName((area as any).locationName || area.city || '');
+    setModalFormattedAddress((area as any).formattedAddress || '');
+    setModalLat((area as any).latitude ?? ((area as any).center?.coordinates?.[1] || null));
+    setModalLng((area as any).longitude ?? ((area as any).center?.coordinates?.[0] || null));
+    const r = (area as any).radiusKm || area.radius || 25;
+    setModalRadius(r);
+    setModalRadiusInput(String(r));
     setModalAreasText((area.areas || []).join(', '));
     setModalPincodesText((area.pincodes || []).join(', '));
-    setModalRadiusInput(String(area.radius ?? 20));
-    setModalServices(area.services.length > 0 ? [...area.services] : ['SOLAR']);
+    setModalServices(area.services && area.services.length > 0 ? [...area.services] : ['SOLAR', 'AC']);
     setModalError(null);
     setIsModalOpen(true);
   };
 
   const handleSaveModal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!modalCity.trim()) {
-      setModalError('City name is required.');
+    const effectiveCity = modalCity.trim() || modalLocationName.trim();
+    if (!effectiveCity) {
+      setModalError('Location or city name is required.');
       return;
     }
-    const cleanRadius = Number(modalRadiusInput.trim());
-    if (!modalRadiusInput.trim() || isNaN(cleanRadius) || cleanRadius <= 0) {
+    const cleanRadius = Number(modalRadiusInput.trim()) || modalRadius || 25;
+    if (cleanRadius <= 0) {
       setModalError('Operating radius must be a valid number greater than 0 km.');
       return;
     }
@@ -155,14 +165,20 @@ export const Settings: React.FC = () => {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const newArea: ServiceAreaConfig = {
-      city: modalCity.trim(),
+    const newArea: any = {
+      locationName: modalLocationName.trim() || effectiveCity,
+      formattedAddress: modalFormattedAddress.trim() || effectiveCity,
+      latitude: modalLat,
+      longitude: modalLng,
+      city: effectiveCity,
       state: modalState.trim(),
       country: 'India',
       areas: parsedAreas,
       pincodes: parsedPincodes,
       radius: cleanRadius,
+      radiusKm: cleanRadius,
       services: modalServices,
+      active: true,
     };
 
     try {
@@ -497,12 +513,12 @@ export const Settings: React.FC = () => {
 
       {/* ADD / EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-100 animate-fadeIn">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-100 animate-fadeIn my-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-emerald-600" />
-                {editingIndex !== null ? `Edit ${modalCity} Coverage` : 'Add New Service Area'}
+                {editingIndex !== null ? `Edit Coverage Area: ${modalCity || modalLocationName}` : 'Add New Service Area'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -519,10 +535,35 @@ export const Settings: React.FC = () => {
             )}
 
             <form onSubmit={handleSaveModal} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              {/* Interactive Location Map Picker */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                  Pin Service Area & Radius on Map
+                </label>
+                <LocationMapPicker
+                  latitude={modalLat}
+                  longitude={modalLng}
+                  radiusKm={modalRadius}
+                  locationName={modalLocationName || modalCity}
+                  formattedAddress={modalFormattedAddress}
+                  onChange={(loc) => {
+                    setModalLat(loc.latitude);
+                    setModalLng(loc.longitude);
+                    setModalRadius(loc.radiusKm);
+                    setModalRadiusInput(String(loc.radiusKm));
+                    setModalLocationName(loc.locationName);
+                    setModalFormattedAddress(loc.formattedAddress);
+                    if (loc.city) setModalCity(loc.city);
+                    if (loc.state) setModalState(loc.state);
+                    if (loc.postalCode && !modalPincodesText) setModalPincodesText(loc.postalCode);
+                  }}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    City Name *
+                    City / Locality Name *
                   </label>
                   <input
                     type="text"
@@ -536,7 +577,7 @@ export const Settings: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                    State
+                    State / Region
                   </label>
                   <input
                     type="text"
@@ -550,7 +591,7 @@ export const Settings: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Localities / Areas (Comma-separated)
+                  Localities / Sub-areas (Comma-separated)
                 </label>
                 <input
                   type="text"
@@ -559,7 +600,7 @@ export const Settings: React.FC = () => {
                   placeholder="e.g. Kalawad Road, Yagnik Road, Gondal Road"
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
-                <span className="text-[11px] text-slate-400 mt-0.5 block">Leave empty to cover the entire city.</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Leave empty to cover the entire radius perimeter.</span>
               </div>
 
               <div>
@@ -573,7 +614,7 @@ export const Settings: React.FC = () => {
                   placeholder="e.g. 360001, 360005"
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
-                <span className="text-[11px] text-slate-400 mt-0.5 block">Leave empty to cover all pincodes.</span>
+                <span className="text-[11px] text-slate-400 mt-0.5 block">Leave empty to cover all pincodes in radius.</span>
               </div>
 
               <div>
@@ -584,12 +625,16 @@ export const Settings: React.FC = () => {
                   type="text"
                   inputMode="numeric"
                   value={modalRadiusInput}
-                  onChange={(e) => setModalRadiusInput(e.target.value)}
-                  placeholder="e.g. 20"
+                  onChange={(e) => {
+                    setModalRadiusInput(e.target.value);
+                    const n = Number(e.target.value);
+                    if (!isNaN(n) && n > 0) setModalRadius(n);
+                  }}
+                  placeholder="e.g. 25"
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium"
                 />
                 <span className="text-[11px] text-slate-400 mt-0.5 block">
-                  Service dispatch perimeter from city center. Must be greater than 0 km.
+                  Service dispatch perimeter from center. Must be greater than 0 km.
                 </span>
               </div>
 

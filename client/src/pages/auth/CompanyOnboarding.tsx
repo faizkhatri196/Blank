@@ -49,37 +49,13 @@ const AVAILABLE_SERVICES: ServiceOption[] = [
     icon: Wind,
     color: 'sky',
   },
-  {
-    type: 'ELECTRICAL',
-    name: 'Electrical',
-    description: 'Wiring, MCB tripping, switchboard, sparks & short circuits',
-    icon: Zap,
-    color: 'yellow',
-  },
-  {
-    type: 'PLUMBING',
-    name: 'Plumbing',
-    description: 'Pipe leaks, tap repair, drainage blockage & pressure issues',
-    icon: Wrench,
-    color: 'blue',
-  },
-  {
-    type: 'RO_PURIFIER',
-    name: 'Water Purifier / RO',
-    description: 'Filter replacement, membrane cleaning & pump repairs',
-    icon: Droplet,
-    color: 'teal',
-  },
-  {
-    type: 'APPLIANCE_REPAIR',
-    name: 'Appliance Repair',
-    description: 'Refrigerator, washing machine, microwave & home appliances',
-    icon: Tv,
-    color: 'purple',
-  },
 ];
 
 interface CoverageAreaInput {
+  locationName?: string;
+  formattedAddress?: string;
+  latitude?: number;
+  longitude?: number;
   city: string;
   state: string;
   country: string;
@@ -110,13 +86,15 @@ export const CompanyOnboarding: React.FC = () => {
   // Step 2 & 4: Service Areas with assigned services
   const [serviceAreas, setServiceAreas] = useState<CoverageAreaInput[]>([
     {
+      locationName: '',
+      formattedAddress: '',
       city: '',
-      state: 'Gujarat',
-      country: 'India',
+      state: '',
+      country: '',
       areas: [],
       pincodes: [],
-      radius: 20,
-      services: [],
+      radius: 25,
+      services: ['SOLAR', 'AC'],
     },
   ]);
 
@@ -371,11 +349,12 @@ export const CompanyOnboarding: React.FC = () => {
                     Company Name *
                   </label>
                   <input
+                    id="onboarding-company-name"
                     type="text"
                     required
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="e.g. Apex Energy & Climate Services"
+                    placeholder="e.g. Apex Climate & Solar Services"
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                   />
                 </div>
@@ -385,6 +364,7 @@ export const CompanyOnboarding: React.FC = () => {
                     Service Manager Name *
                   </label>
                   <input
+                    id="onboarding-manager-name"
                     type="text"
                     required
                     value={managerName}
@@ -401,6 +381,7 @@ export const CompanyOnboarding: React.FC = () => {
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
+                      id="onboarding-email"
                       type="email"
                       required
                       value={email}
@@ -418,6 +399,7 @@ export const CompanyOnboarding: React.FC = () => {
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
+                      id="onboarding-phone"
                       type="text"
                       required
                       value={phone}
@@ -435,6 +417,7 @@ export const CompanyOnboarding: React.FC = () => {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
+                      id="onboarding-password"
                       type="password"
                       required
                       value={password}
@@ -452,6 +435,7 @@ export const CompanyOnboarding: React.FC = () => {
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
+                      id="onboarding-confirm-password"
                       type="password"
                       required
                       value={confirmPassword}
@@ -515,6 +499,7 @@ export const CompanyOnboarding: React.FC = () => {
                           City *
                         </label>
                         <input
+                          id={`onboarding-city-${idx}`}
                           type="text"
                           required
                           value={area.city}
@@ -536,6 +521,7 @@ export const CompanyOnboarding: React.FC = () => {
                           State
                         </label>
                         <input
+                          id={`onboarding-state-${idx}`}
                           type="text"
                           value={area.state}
                           onChange={(e) => {
@@ -556,6 +542,7 @@ export const CompanyOnboarding: React.FC = () => {
                           Service Radius (km)
                         </label>
                         <input
+                          id={`onboarding-radius-${idx}`}
                           type="text"
                           inputMode="numeric"
                           value={radiusInputs[idx] !== undefined ? radiusInputs[idx] : String(area.radius ?? 20)}
@@ -598,6 +585,7 @@ export const CompanyOnboarding: React.FC = () => {
                       </label>
                       <div className="flex gap-2 mb-2">
                         <input
+                          id={`onboarding-locality-input-${idx}`}
                           type="text"
                           value={tempAreaInput[idx] || ''}
                           onChange={(e) => setTempAreaInput((prev) => ({ ...prev, [idx]: e.target.value }))}
@@ -611,6 +599,7 @@ export const CompanyOnboarding: React.FC = () => {
                           className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500"
                         />
                         <button
+                          id={`onboarding-add-locality-btn-${idx}`}
                           type="button"
                           onClick={() => addAreaChip(idx)}
                           className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl"
@@ -645,6 +634,7 @@ export const CompanyOnboarding: React.FC = () => {
                       </label>
                       <div className="flex gap-2 mb-2">
                         <input
+                          id={`onboarding-pincode-input-${idx}`}
                           type="text"
                           value={tempPincodeInput[idx] || ''}
                           onChange={(e) => setTempPincodeInput((prev) => ({ ...prev, [idx]: e.target.value }))}
@@ -658,6 +648,7 @@ export const CompanyOnboarding: React.FC = () => {
                           className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500"
                         />
                         <button
+                          id={`onboarding-add-pincode-btn-${idx}`}
                           type="button"
                           onClick={() => addPincodeChip(idx)}
                           className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl"
@@ -718,6 +709,7 @@ export const CompanyOnboarding: React.FC = () => {
                   return (
                     <div
                       key={srv.type}
+                      id={`service-card-${srv.type}`}
                       onClick={() => {
                         setSelectedGlobalServices((prev) =>
                           isSelected ? prev.filter((s) => s !== srv.type) : [...prev, srv.type]
@@ -781,6 +773,7 @@ export const CompanyOnboarding: React.FC = () => {
                           <button
                             type="button"
                             key={srvType}
+                            id={`service-toggle-${aIdx}-${srvType}`}
                             onClick={() => {
                               setServiceAreas((prev) => {
                                 const copy = [...prev];
@@ -883,6 +876,7 @@ export const CompanyOnboarding: React.FC = () => {
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             {step > 1 ? (
               <button
+                id="onboarding-back-btn"
                 type="button"
                 onClick={() => {
                   setError(null);
@@ -903,6 +897,7 @@ export const CompanyOnboarding: React.FC = () => {
 
             {step < 5 ? (
               <button
+                id="onboarding-continue-btn"
                 type="button"
                 onClick={handleNext}
                 className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all"
@@ -911,6 +906,7 @@ export const CompanyOnboarding: React.FC = () => {
               </button>
             ) : (
               <button
+                id="onboarding-launch-btn"
                 type="button"
                 disabled={isLoading}
                 onClick={handleCreateCompany}

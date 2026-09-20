@@ -15,15 +15,31 @@ export const customerSignupSchema = z.object({
 });
 
 export const serviceAreaSchema = z.object({
-  city: z.string().min(1, 'City is required'),
+  _id: z.string().optional(),
+  locationName: z.string().optional(),
+  formattedAddress: z.string().optional(),
+  city: z.string().min(1, 'City or location is required'),
   state: z.string().optional(),
   country: z.string().optional().default('India'),
+  postalCode: z.string().optional(),
   areas: z.array(z.string()).optional().default([]),
   pincodes: z.array(z.string()).optional().default([]),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   radius: z.number().optional(),
+  radiusKm: z.number().optional(),
   services: z.array(z.string()).min(1, 'At least one service is required for this area'),
+  active: z.boolean().optional().default(true),
+});
+
+export const baseLocationSchema = z.object({
+  formattedAddress: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postalCode: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 export const companySignupSchema = z
@@ -60,6 +76,7 @@ export const createTechnicianSchema = z
     tools: z.array(z.string()).default([]),
     certifications: z.array(z.string()).default([]),
     serviceAreas: z.array(z.string()).min(1, 'At least one service area is required'),
+    baseLocation: baseLocationSchema.optional(),
     coverageRadiusKm: z.number().min(0).default(20),
     pincodes: z.array(z.string()).default([]),
     availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).default('AVAILABLE'),
@@ -92,6 +109,7 @@ export const updateTechnicianSchema = z.object({
   tools: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),
   serviceAreas: z.array(z.string()).min(1).optional(),
+  baseLocation: baseLocationSchema.optional(),
   coverageRadiusKm: z.number().min(0).optional(),
   pincodes: z.array(z.string()).optional(),
   availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']).optional(),
