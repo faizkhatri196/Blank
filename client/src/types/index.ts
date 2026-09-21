@@ -117,6 +117,15 @@ export interface Technician {
   tools: string[];
   certifications: string[];
   serviceAreas: string[];
+  baseLocation?: {
+    formattedAddress?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   coverageRadiusKm?: number;
   pincodes?: string[];
   availability: TechnicianAvailability;

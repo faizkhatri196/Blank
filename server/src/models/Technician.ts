@@ -15,8 +15,10 @@ export interface ITechnician extends Document {
   certifications: string[];
   serviceAreas: string[];
   baseLocation?: {
+    placeId?: string;
     formattedAddress?: string;
     city?: string;
+    area?: string;
     state?: string;
     country?: string;
     postalCode?: string;
@@ -62,8 +64,10 @@ const TechnicianSchema = new Schema<ITechnician>(
     certifications: { type: [String], default: [] },
     serviceAreas: { type: [String], default: [] },
     baseLocation: {
+      placeId: { type: String, trim: true },
       formattedAddress: { type: String, trim: true },
       city: { type: String, trim: true },
+      area: { type: String, trim: true },
       state: { type: String, trim: true },
       country: { type: String, trim: true, default: 'India' },
       postalCode: { type: String, trim: true },
@@ -71,7 +75,7 @@ const TechnicianSchema = new Schema<ITechnician>(
       longitude: { type: Number },
       center: {
         type: { type: String, enum: ['Point'], default: 'Point' },
-        coordinates: { type: [Number], default: [0, 0] },
+        coordinates: { type: [Number] },
       },
     },
     coverageRadiusKm: { type: Number, default: 20 },

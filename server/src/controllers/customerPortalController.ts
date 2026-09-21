@@ -13,6 +13,8 @@ import { normalizeComplaint } from '../ai/complaintNormalizer';
 import { AIFactory } from '../ai/AIFactory';
 import { generateTicketNumber } from '../services/ticketService';
 import { calculateHaversineDistanceKm, isValidCoordinate } from '../services/location/geospatial';
+import { NominatimLocationProvider } from '../services/location/NominatimProvider';
+import { CoverageService } from '../services/coverageService';
 import {
   ServiceType,
   TicketStatus,
@@ -189,136 +191,77 @@ export function serializeCustomerTicket(
 
 /**
  * POST /api/customer-portal/services/available
- * Location-based service discovery (City + Pincode)
+ * Location-based service discovery (Real Coordinates & Coverage)
  */
 export async function getAvailableServices(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const locInput = req.body.location || req.body;
-    const city = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : '');
+    let latitude = typeof locInput.latitude === 'number' ? locInput.latitude : (typeof req.body.latitude === 'number' ? req.body.latitude : undefined);
+    let longitude = typeof locInput.longitude === 'number' ? locInput.longitude : (typeof req.body.longitude === 'number' ? req.body.longitude : undefined);
+    const city = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : undefined);
     const pincode = locInput.postalCode || locInput.pincode || req.body.pincode ? String(locInput.postalCode || locInput.pincode || req.body.pincode).trim() : undefined;
-    const latitude = typeof locInput.latitude === 'number' ? locInput.latitude : (typeof req.body.latitude === 'number' ? req.body.latitude : undefined);
-    const longitude = typeof locInput.longitude === 'number' ? locInput.longitude : (typeof req.body.longitude === 'number' ? req.body.longitude : undefined);
-    const hasCoordinates = isValidCoordinate(latitude, longitude);
 
-    if (!city && !hasCoordinates) {
-      res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_LOCATION', message: 'Valid location or city coordinates are required to check service availability.' },
-      });
-      return;
-    }
-
-    const rawCity = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : '');
-    const cleanCity = rawCity
-      .replace(/\s*\(\d+\)\s*$/, '')
-      .split(',')[0]
-      .trim()
-      .toLowerCase();
-
-    // Query active companies
-    const companies = await Company.find({ active: true });
-
-    const availableServiceTypesSet = new Set<ServiceType>();
-    const serviceProvidersMap = new Map<ServiceType, Array<{ companyId: string; companyName: string }>>();
-
-    for (const comp of companies) {
-      const areas = comp.serviceAreas || [];
-      const match = areas.find((a: any) => {
-        if (a.active === false) return false;
-
-        const aCityClean = (a.city || '')
-          .replace(/\s*\(\d+\)\s*$/, '')
-          .split(',')[0]
-          .trim()
-          .toLowerCase();
-
-        // 1. True geospatial distance check if both have valid coordinates
-        if (hasCoordinates && isValidCoordinate(a.latitude, a.longitude)) {
-          const distKm = calculateHaversineDistanceKm(latitude!, longitude!, a.latitude!, a.longitude!);
-          const radiusKm = a.radiusKm ?? a.radius ?? 20;
-          if (distKm <= radiusKm) return true;
-        }
-
-        // 2. City & locality matching with radius support
-        if (cleanCity && aCityClean) {
-          const compAreas = (a.areas || []).map((ar: string) => ar.trim().toLowerCase());
-          const cityMatches =
-            aCityClean === cleanCity ||
-            cleanCity.includes(aCityClean) ||
-            aCityClean.includes(cleanCity) ||
-            compAreas.includes(cleanCity);
-
-          if (cityMatches) {
-            if (pincode && a.pincodes && a.pincodes.length > 0) {
-              if (a.pincodes.includes(pincode)) {
-                return true;
-              }
-              // If city matches and operating radius >= 15 km, company covers broader city area
-              const radiusKm = a.radiusKm ?? a.radius ?? 20;
-              if (radiusKm >= 15) {
-                return true;
-              }
-              return false;
-            }
-            return true;
+    // If coordinates missing or invalid, attempt reverse geocoding/geocoding if query or address is available
+    if (!isValidCoordinate(latitude, longitude)) {
+      const queryStr = locInput.formattedAddress || locInput.inputText || locInput.address || city;
+      if (queryStr && typeof queryStr === 'string' && queryStr.trim().length >= 2) {
+        try {
+          const geoResults = await NominatimLocationProvider.search(queryStr.trim());
+          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+            latitude = geoResults[0].latitude;
+            longitude = geoResults[0].longitude;
           }
-        }
-
-        // 3. Direct pincode match if explicit in company coverage
-        if (pincode && a.pincodes && a.pincodes.length > 0 && a.pincodes.includes(pincode)) {
-          return true;
-        }
-
-        return false;
-      });
-
-      if (match) {
-        const servicesForArea = match.services || comp.servicesSupported || ['SOLAR', 'AC'];
-        servicesForArea.forEach((s: ServiceType) => {
-          availableServiceTypesSet.add(s);
-          const providers = serviceProvidersMap.get(s) || [];
-          providers.push({ companyId: comp._id.toString(), companyName: comp.name });
-          serviceProvidersMap.set(s, providers);
-        });
+        } catch {}
       }
     }
 
-    const availableServiceTypes = Array.from(availableServiceTypesSet);
-
-    if (availableServiceTypes.length === 0) {
-      res.json({
-        success: true,
-        data: {
-          coverageAvailable: false,
-          city: city || undefined,
-          latitude,
-          longitude,
-          pincode,
-          services: [],
-          availableServices: [],
-          message: 'Servora services are not currently available in this area.',
+    if (!isValidCoordinate(latitude, longitude)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'LOCATION_COORDINATES_REQUIRED',
+          message: 'Valid latitude (-90..90) and longitude (-180..180) coordinates are required to check service availability.',
         },
       });
       return;
     }
 
-    const serviceDefinitions = availableServiceTypes
-      .map((st) => {
-        const def = ServiceRegistry.getService(st);
-        if (!def) return null;
-        const providers = serviceProvidersMap.get(st) || [];
-        return {
-          serviceType: def.serviceType,
-          displayName: def.displayName,
-          shortDescription: def.shortDescription,
-          icon: def.icon,
-          heroImage: def.heroImage,
-          providerCount: providers.length,
-          primaryCompanyId: providers[0]?.companyId,
-          providers,
-        };
-      })
-      .filter((s): s is NonNullable<typeof s> => Boolean(s));
+    const evaluation = await CoverageService.evaluateCoverage(latitude!, longitude!);
+
+    if (!evaluation.coverageAvailable) {
+      res.json({
+        success: true,
+        data: {
+          coverageAvailable: false,
+          city,
+          latitude,
+          longitude,
+          pincode,
+          services: [],
+          availableServices: [],
+          coverageAreas: evaluation.coverageAreas,
+          distances: evaluation.distances,
+          message: 'No active service coverage was found at this location.',
+        },
+      });
+      return;
+    }
+
+    const serviceDefinitions = evaluation.services.map((group) => {
+      const def = ServiceRegistry.getService(group.serviceType);
+      return {
+        serviceType: group.serviceType,
+        displayName: def?.displayName || group.name,
+        shortDescription: def?.shortDescription || group.description,
+        icon: def?.icon,
+        heroImage: def?.heroImage,
+        providerCount: group.companies.length,
+        primaryCompanyId: group.companies[0]?.companyId,
+        providers: group.companies,
+        distanceKm: group.companies[0]?.distanceKm,
+        radiusKm: group.companies[0]?.radiusKm,
+      };
+    });
 
     res.json({
       success: true,
@@ -326,9 +269,13 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
         coverageAvailable: true,
         city,
         pincode,
+        latitude,
+        longitude,
         companyId: serviceDefinitions[0]?.primaryCompanyId,
         services: serviceDefinitions,
         availableServices: serviceDefinitions,
+        coverageAreas: evaluation.coverageAreas,
+        distances: evaluation.distances,
       },
     });
   } catch (error: any) {
@@ -407,90 +354,126 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     }
 
     const rawInput = complaint.trim();
-    const cleanCity = location.city.trim().toLowerCase();
     const cleanPincode = location.pincode ? String(location.pincode).trim() : (location.postalCode ? String(location.postalCode).trim() : undefined);
-    const custLat = location.coordinates?.latitude ?? location.latitude;
-    const custLon = location.coordinates?.longitude ?? location.longitude;
-    const hasCustCoords = isValidCoordinate(custLat, custLon);
+    let custLat = location.coordinates?.latitude ?? location.latitude;
+    let custLon = location.coordinates?.longitude ?? location.longitude;
 
-    // Determine covering company based on authoritative geospatial service-area configuration
-    const requestedCompanyId = req.body.companyId || req.companyId;
-    const companies = await Company.find({ active: true });
-
-    const matchCompanyCoverage = (c: any) => {
-      if (requestedCompanyId && !c._id.equals(requestedCompanyId)) return false;
-      const areas = c.serviceAreas || [];
-      return areas.some((a: any) => {
-        if (a.active === false) return false;
-        const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
-        if (!servicesForArea.includes(serviceType)) return false;
-
-        // 1. Coordinates-based distance check
-        if (hasCustCoords && isValidCoordinate(a.latitude, a.longitude)) {
-          const distKm = calculateHaversineDistanceKm(custLat!, custLon!, a.latitude!, a.longitude!);
-          const radiusKm = a.radiusKm ?? a.radius ?? 20;
-          return distKm <= radiusKm;
-        }
-
-        // 2. City & pincode fallback if coordinates unavailable
-        if (cleanCity) {
-          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
-          if (!cityMatch) return false;
-          if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
-            return a.pincodes.includes(cleanPincode);
+    if (!isValidCoordinate(custLat, custLon)) {
+      const queryStr = location.formattedAddress || location.inputText || location.address || location.city;
+      if (queryStr && typeof queryStr === 'string' && queryStr.trim().length >= 2) {
+        try {
+          const geoResults = await NominatimLocationProvider.search(queryStr.trim());
+          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+            custLat = geoResults[0].latitude;
+            custLon = geoResults[0].longitude;
           }
-          return true;
-        }
-
-        return false;
-      });
-    };
-
-    let targetCompany = companies.find((c) => matchCompanyCoverage(c));
-
-    // If requestedCompanyId was specified but did not match, check other active companies covering this location
-    if (!targetCompany) {
-      targetCompany = companies.find((c) => {
-        const areas = c.serviceAreas || [];
-        return areas.some((a: any) => {
-          if (a.active === false) return false;
-          const servicesForArea = a.services || c.servicesSupported || ['SOLAR', 'AC'];
-          if (!servicesForArea.includes(serviceType)) return false;
-
-          if (hasCustCoords && isValidCoordinate(a.latitude, a.longitude)) {
-            const distKm = calculateHaversineDistanceKm(custLat!, custLon!, a.latitude!, a.longitude!);
-            const radiusKm = a.radiusKm ?? a.radius ?? 20;
-            return distKm <= radiusKm;
-          }
-
-          const cityMatch = a.city && a.city.trim().toLowerCase() === cleanCity;
-          if (!cityMatch) return false;
-          if (cleanPincode && a.pincodes && a.pincodes.length > 0) {
-            return a.pincodes.includes(cleanPincode);
-          }
-          return true;
-        });
-      });
+        } catch {}
+      }
     }
 
-    if (!targetCompany) {
+    if (!isValidCoordinate(custLat, custLon)) {
       res.status(400).json({
         success: false,
         error: {
-          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
-          message: `Servora ${serviceType} service is not currently available in ${location.city}${cleanPincode ? ' (' + cleanPincode + ')' : ''}.`,
+          code: 'LOCATION_COORDINATES_REQUIRED',
+          message: 'Valid geographic coordinates are required to schedule service.',
         },
       });
       return;
     }
 
-    const companyId = targetCompany._id as mongoose.Types.ObjectId;
+    // Determine covering company based on authoritative geospatial service-area configuration
+    const requestedCompanyId = req.body.companyId || req.companyId;
+    let coverageResult = await CoverageService.evaluateCoverage(custLat!, custLon!, serviceType, requestedCompanyId);
+
+    // If requestedCompanyId was not covering, try across all active companies
+    if (!coverageResult.coverageAvailable && requestedCompanyId) {
+      coverageResult = await CoverageService.evaluateCoverage(custLat!, custLon!, serviceType);
+    }
+
+    if (!coverageResult.coverageAvailable || coverageResult.services.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
+          message: `Servora ${serviceType} service is not currently available at this location.`,
+        },
+      });
+      return;
+    }
+
+    const matchingServiceGroup = coverageResult.services.find((s) => s.serviceType === serviceType);
+    if (!matchingServiceGroup || matchingServiceGroup.companies.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
+          message: `Servora ${serviceType} service is not currently available at this location.`,
+        },
+      });
+      return;
+    }
+
+    const winningProvider = matchingServiceGroup.companies[0];
+    const companyId = new mongoose.Types.ObjectId(winningProvider.companyId);
+    const targetCompany = await Company.findById(companyId);
+    if (!targetCompany) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
+          message: 'Service provider not found.',
+        },
+      });
+      return;
+    }
+
+    const winningAreaEval = coverageResult.coverageAreas.find(
+      (a) => a.companyId === winningProvider.companyId && a.withinRadius && a.active && a.services.includes(serviceType)
+    );
+
+    // Authoritative Unified Technician Coverage Validation (Single Source of Truth)
+    const techValidation = await CoverageService.validateTechnicianCoverage({
+      customerLatitude: custLat!,
+      customerLongitude: custLon!,
+      serviceType,
+      companyId,
+      customerAddress: location.address,
+    });
+
+    const hasCompanyTechs = await Technician.exists({ companyId, active: true, serviceTypes: serviceType });
+    if (hasCompanyTechs && !techValidation.eligible) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'TECHNICIAN_OUTSIDE_COVERAGE',
+          message:
+            techValidation.reason ||
+            `No certified technician is currently available within operating radius of this location.`,
+          details: {
+            customerLatitude: custLat,
+            customerLongitude: custLon,
+            distanceKm: techValidation.distanceKm,
+            radiusKm: techValidation.radiusKm,
+            customerAddress: location.address,
+            diagnostics: techValidation,
+          },
+        },
+      });
+      return;
+    }
 
     // Resolve customer entity
     let customerDoc: any = null;
     if (req.userId) {
       customerDoc = await Customer.findOne({ userId: req.userId, companyId });
     }
+
+    const effectiveLat = isValidCoordinate(custLat, custLon) ? custLat : winningAreaEval?.centerLatitude;
+    const effectiveLon = isValidCoordinate(custLat, custLon) ? custLon : winningAreaEval?.centerLongitude;
+    const resolvedCoords = isValidCoordinate(effectiveLat, effectiveLon)
+      ? { latitude: effectiveLat!, longitude: effectiveLon! }
+      : undefined;
 
     if (!customerDoc) {
       const custName = customerDetails?.name || req.user?.name || 'Customer';
@@ -506,8 +489,16 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         address: location.address,
         city: location.city,
         pincode: location.pincode,
-        coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
+        coordinates: resolvedCoords,
       });
+    } else {
+      customerDoc.address = location.address || customerDoc.address;
+      customerDoc.city = location.city || customerDoc.city;
+      customerDoc.pincode = location.pincode || customerDoc.pincode;
+      if (resolvedCoords) {
+        customerDoc.coordinates = resolvedCoords;
+      }
+      await customerDoc.save();
     }
 
     // AI Complaint Normalization
@@ -522,7 +513,7 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       city: location.city,
       area: location.area || '',
       pincode: location.pincode || '',
-      coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
+      coordinates: resolvedCoords,
       locationSource: location.locationSource || 'MANUAL',
     };
 
@@ -533,8 +524,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       state: location.state,
       country: location.country || 'India',
       postalCode: cleanPincode,
-      latitude: custLat,
-      longitude: custLon,
+      latitude: effectiveLat,
+      longitude: effectiveLon,
       provider: location.provider || 'nominatim',
       placeId: location.placeId,
       resolvedAt: new Date(),
@@ -562,6 +553,19 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       status: 'NEW',
       serviceLocation: legacyLocationSnapshot,
       serviceLocationSnapshot: richLocationSnapshot,
+      coverageSnapshot: winningAreaEval
+        ? {
+            coverageId: winningAreaEval.areaId,
+            coverageLocationName: winningAreaEval.areaName,
+            coverageCoordinates: {
+              latitude: winningAreaEval.centerLatitude,
+              longitude: winningAreaEval.centerLongitude,
+            },
+            configuredRadiusKm: winningAreaEval.radiusKm,
+            calculatedDistanceKm: Math.round(winningAreaEval.distanceKm * 100) / 100,
+            covered: true,
+          }
+        : undefined,
       isDemoData: targetCompany.environmentContext === 'DEMO' || !targetCompany.isPilot,
       createdBy: req.userId || customerDoc._id,
       statusHistory: [

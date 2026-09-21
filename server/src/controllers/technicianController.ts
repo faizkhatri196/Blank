@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { Technician } from '../models/Technician';
 import { User } from '../models/User';
+import { Company } from '../models/Company';
 import { AuditLog } from '../models/AuditLog';
 import {
   createTechnicianSchema,
@@ -10,6 +11,98 @@ import {
   updateTechnicianStatusSchema,
 } from '../validators';
 import { createGeoPoint, isValidCoordinate } from '../services/location/geospatial';
+import { NominatimLocationProvider } from '../services/location/NominatimProvider';
+
+/**
+ * Auto-resolves technician baseLocation and center coordinates.
+ * Inherits from matching company service area or geocodes via Nominatim.
+ */
+async function resolveTechnicianBaseLocation(
+  baseLocationInput: any,
+  serviceAreasInput?: string[],
+  companyId?: string
+) {
+  let baseLocation = baseLocationInput ? { ...baseLocationInput } : undefined;
+  const lat = baseLocation?.latitude;
+  const lon = baseLocation?.longitude;
+
+  // If already valid coordinates, build GeoPoint
+  if (isValidCoordinate(lat, lon)) {
+    baseLocation.center = createGeoPoint(lat, lon);
+    return baseLocation;
+  }
+
+  // Look for search query from base address, city, or first service area
+  const query = (
+    baseLocation?.formattedAddress ||
+    baseLocation?.city ||
+    (serviceAreasInput && serviceAreasInput[0]) ||
+    ''
+  ).trim();
+
+  if (!query) {
+    return baseLocation;
+  }
+
+  // 1. Check company's existing service areas first
+  if (companyId) {
+    try {
+      const company = await Company.findById(companyId);
+      if (company && company.serviceAreas && company.serviceAreas.length > 0) {
+        const match = company.serviceAreas.find((sa: any) => {
+          const name = (sa.locationName || sa.city || sa.formattedAddress || '').toLowerCase();
+          return name.includes(query.toLowerCase()) || query.toLowerCase().includes(name);
+        });
+
+        const saLat = match?.latitude ?? match?.center?.coordinates?.[1];
+        const saLon = match?.longitude ?? match?.center?.coordinates?.[0];
+
+        if (isValidCoordinate(saLat, saLon)) {
+          return {
+            formattedAddress: match?.formattedAddress || match?.locationName || query,
+            city: match?.city || query,
+            state: match?.state || '',
+            country: match?.country || 'India',
+            postalCode: match?.postalCode || '',
+            latitude: saLat,
+            longitude: saLon,
+            center: createGeoPoint(saLat!, saLon!),
+          };
+        }
+      }
+    } catch (cErr) {
+      console.warn('[Technician] Error looking up company service areas:', cErr);
+    }
+  }
+
+  // 2. Geocode via Nominatim
+  try {
+    const geo = await NominatimLocationProvider.search(query);
+    if (geo && geo.length > 0 && isValidCoordinate(geo[0].latitude, geo[0].longitude)) {
+      const top = geo[0];
+      return {
+        formattedAddress: top.formattedAddress || query,
+        city: top.city || query,
+        state: top.state || '',
+        country: 'India',
+        postalCode: top.postalCode || '',
+        latitude: top.latitude,
+        longitude: top.longitude,
+        center: createGeoPoint(top.latitude, top.longitude),
+      };
+    }
+  } catch (err) {
+    console.warn('[Technician] Could not auto-resolve coordinates:', err);
+  }
+
+  if (baseLocation && !isValidCoordinate(baseLocation.latitude, baseLocation.longitude)) {
+    delete baseLocation.center;
+    baseLocation.latitude = undefined;
+    baseLocation.longitude = undefined;
+  }
+
+  return baseLocation;
+}
 
 export async function getTechnicians(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -111,6 +204,13 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
       active: true,
     });
 
+    // Auto-resolve baseLocation and coordinates from company area or city
+    const resolvedBaseLocation = await resolveTechnicianBaseLocation(
+      data.baseLocation,
+      data.serviceAreas,
+      req.companyId ? req.companyId.toString() : undefined
+    );
+
     const technician = await Technician.create({
       userId: user._id,
       companyId: req.companyId,
@@ -123,7 +223,8 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
       tools: data.tools,
       certifications: data.certifications,
       serviceAreas: data.serviceAreas,
-      coverageRadiusKm: data.coverageRadiusKm ?? 20,
+      baseLocation: resolvedBaseLocation,
+      coverageRadiusKm: data.coverageRadiusKm ?? 25,
       pincodes: data.pincodes ?? [],
       availability: data.availability,
       active: true,
@@ -168,16 +269,13 @@ export async function updateTechnician(req: AuthenticatedRequest, res: Response)
     }
 
     const updateData: any = { ...parseResult.data };
-    if (
-      updateData.baseLocation &&
-      typeof updateData.baseLocation.latitude === 'number' &&
-      typeof updateData.baseLocation.longitude === 'number'
-    ) {
-      const lat = updateData.baseLocation.latitude;
-      const lon = updateData.baseLocation.longitude;
-      if (isValidCoordinate(lat, lon)) {
-        updateData.baseLocation.center = createGeoPoint(lat, lon);
-      }
+
+    if (updateData.baseLocation || updateData.serviceAreas) {
+      updateData.baseLocation = await resolveTechnicianBaseLocation(
+        updateData.baseLocation || existingTech.baseLocation,
+        updateData.serviceAreas || existingTech.serviceAreas,
+        req.companyId.toString()
+      );
     }
 
     const technician = await Technician.findByIdAndUpdate(
@@ -186,12 +284,13 @@ export async function updateTechnician(req: AuthenticatedRequest, res: Response)
       { new: true }
     );
 
-    // If name or phone changed, sync with linked User account
-    if (technician && (updateData.name || updateData.phone)) {
+    // If name, phone, or email changed, sync with linked User account
+    if (technician && (updateData.name || updateData.phone || updateData.email)) {
       await User.findByIdAndUpdate(technician.userId, {
         $set: {
           ...(updateData.name ? { name: updateData.name } : {}),
           ...(updateData.phone ? { phone: updateData.phone } : {}),
+          ...(updateData.email ? { email: updateData.email.toLowerCase() } : {}),
         },
       });
     }

@@ -67,7 +67,7 @@ const CompanySchema = new Schema<ICompany>(
         longitude: { type: Number },
         center: {
           type: { type: String, enum: ['Point'], default: 'Point' },
-          coordinates: { type: [Number], default: [0, 0] },
+          coordinates: { type: [Number] },
         },
         radius: { type: Number, default: 20 },
         radiusKm: { type: Number, default: 20 },

@@ -16,6 +16,31 @@ export interface StructuredLocationSuggestion {
   latitude: number;
   longitude: number;
   formattedAddress: string;
+  placeId?: string;
+}
+
+export function getStoredGoogleMapsKey(): string {
+  try {
+    return (
+      localStorage.getItem('servora_google_maps_key') ||
+      (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY ||
+      ''
+    ).trim();
+  } catch {
+    return '';
+  }
+}
+
+export function setStoredGoogleMapsKey(key: string): void {
+  try {
+    if (key.trim()) {
+      localStorage.setItem('servora_google_maps_key', key.trim());
+    } else {
+      localStorage.removeItem('servora_google_maps_key');
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
 }
 
 let activeAbortController: AbortController | null = null;
@@ -42,8 +67,15 @@ export async function searchLocations(
       params.city = cityContext;
     }
 
+    const apiKey = getStoredGoogleMapsKey();
+    const headers: Record<string, string> = {};
+    if (apiKey) {
+      headers['x-google-maps-api-key'] = apiKey;
+    }
+
     const res = await apiClient.get('/location/search', {
       params,
+      headers,
       signal: activeAbortController.signal,
     });
 
@@ -187,3 +219,252 @@ export async function fetchCityLocalities(city: string): Promise<StructuredLocat
     return [];
   }
 }
+
+/**
+ * Reverse geocodes coordinates via internal server endpoint to avoid CORS and browser rate-limits.
+ * Guarantees that live GPS coordinates are NEVER dropped.
+ */
+export async function reverseGeocodeCoords(
+  latitude: number,
+  longitude: number
+): Promise<StructuredLocationSuggestion> {
+  try {
+    const apiKey = getStoredGoogleMapsKey();
+    const headers: Record<string, string> = {};
+    if (apiKey) {
+      headers['x-google-maps-api-key'] = apiKey;
+    }
+
+    const res = await apiClient.get('/location/reverse', {
+      params: { lat: latitude, lon: longitude },
+      headers,
+    });
+
+    if (res.data?.success && res.data.data) {
+      const d = res.data.data;
+      const city = d.city || d.locationName || 'Current Location';
+      const area = d.area || d.locality;
+      const pincode = d.postalCode || undefined;
+      return {
+        city: city.trim(),
+        state: d.state || '',
+        country: d.country || 'India',
+        area: area?.trim(),
+        pincode,
+        latitude,
+        longitude,
+        formattedAddress: d.formattedAddress || `${city}, India`,
+      };
+    }
+  } catch (e) {
+    console.warn('Backend reverse geocode failed, keeping live coordinates:', e);
+  }
+
+  // Fallback: retain real live GPS coordinates
+  return {
+    city: 'Current Location',
+    state: '',
+    country: 'India',
+    latitude,
+    longitude,
+    formattedAddress: `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`,
+  };
+}
+
+export interface LiveLocationResult {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  source: 'gps' | 'google_maps' | 'ip';
+  suggestion: StructuredLocationSuggestion;
+}
+
+/**
+ * Authoritative live location acquirer:
+ * 1. Attempts HTML5 Geolocation (browser GPS / WiFi) with maximumAge: 0 for fresh location
+ * 2. If blocked, denied, or unavailable, falls back to Google Maps Geolocation API via server
+ * 3. Falls back to network IP geolocation if available
+ * 4. Enriches coordinates with reverse geocoding
+ */
+export async function acquireLiveLocation(
+  timeoutMs: number = 8000
+): Promise<LiveLocationResult | null> {
+  // 1. Try Browser HTML5 Geolocation
+  if (typeof window !== 'undefined' && navigator.geolocation) {
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: timeoutMs,
+          maximumAge: 0,
+        });
+      });
+
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const accuracy = pos.coords.accuracy;
+      const suggestion = await reverseGeocodeCoords(lat, lon);
+
+      return {
+        latitude: lat,
+        longitude: lon,
+        accuracy,
+        source: 'gps',
+        suggestion,
+      };
+    } catch (err: any) {
+      console.warn('HTML5 geolocation not available or denied, trying fallbacks:', err.message);
+    }
+  }
+
+  // 2. Try Google Maps Geolocation endpoint on server
+  try {
+    const apiKey = getStoredGoogleMapsKey();
+    const headers: Record<string, string> = {};
+    if (apiKey) {
+      headers['x-google-maps-api-key'] = apiKey;
+    }
+
+    const res = await apiClient.post('/location/geolocate', {}, { headers, timeout: 6000 });
+    if (res.data?.success && res.data.data) {
+      const d = res.data.data;
+      const lat = d.latitude;
+      const lon = d.longitude;
+      const suggestion: StructuredLocationSuggestion = {
+        city: d.city || 'Current Location',
+        area: d.area,
+        state: d.state || '',
+        country: d.country || 'India',
+        pincode: d.pincode,
+        latitude: lat,
+        longitude: lon,
+        formattedAddress: d.address || `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`,
+      };
+
+      return {
+        latitude: lat,
+        longitude: lon,
+        accuracy: d.accuracy,
+        source: 'google_maps',
+        suggestion,
+      };
+    }
+  } catch (err: any) {
+    console.warn('Google Maps Geolocation fallback unavailable:', err.message);
+  }
+
+  // 3. Try IP-based network geolocation as last live fallback
+  try {
+    const ipRes = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+    if (ipRes.ok) {
+      const ipData = await ipRes.json();
+      if (ipData && typeof ipData.latitude === 'number' && typeof ipData.longitude === 'number') {
+        const lat = ipData.latitude;
+        const lon = ipData.longitude;
+        const suggestion = await reverseGeocodeCoords(lat, lon);
+        return {
+          latitude: lat,
+          longitude: lon,
+          accuracy: 5000,
+          source: 'ip',
+          suggestion: {
+            ...suggestion,
+            city: ipData.city || suggestion.city,
+            state: ipData.region || suggestion.state,
+            pincode: ipData.postal || suggestion.pincode,
+          },
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn('Network IP geolocation fallback unavailable:', err.message);
+  }
+
+  return null;
+}
+
+/**
+ * Checks server location provider status (Google Maps vs Nominatim)
+ */
+export async function fetchLocationStatus(): Promise<{
+  activeProvider: string;
+  googleMapsConfigured: boolean;
+}> {
+  try {
+    const apiKey = getStoredGoogleMapsKey();
+    const headers: Record<string, string> = {};
+    if (apiKey) {
+      headers['x-google-maps-api-key'] = apiKey;
+    }
+    const res = await apiClient.get('/location/status', { headers });
+    if (res.data?.success && res.data.data) {
+      return res.data.data;
+    }
+  } catch (err) {
+    console.warn('Failed to query location status:', err);
+  }
+  return { activeProvider: 'nominatim', googleMapsConfigured: false };
+}
+
+/**
+ * Forward geocodes an address or city query to obtain authoritative latitude & longitude
+ */
+export async function geocodeAddressOrCity(
+  query: string,
+  cityContext?: string
+): Promise<{
+  latitude: number;
+  longitude: number;
+  city?: string;
+  area?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  formattedAddress?: string;
+} | null> {
+  if (!query || query.trim().length < 2) return null;
+  try {
+    const results = await searchLocations(query, cityContext);
+    if (results && results.length > 0) {
+      const top = results[0];
+      if (typeof top.latitude === 'number' && typeof top.longitude === 'number' && !isNaN(top.latitude) && !isNaN(top.longitude)) {
+        return {
+          latitude: top.latitude,
+          longitude: top.longitude,
+          city: top.city,
+          area: top.area,
+          state: top.state,
+          country: top.country,
+          pincode: top.pincode,
+          formattedAddress: top.formattedAddress,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Geocoding query failed:', query, err);
+  }
+  return null;
+}
+
+/**
+ * Standard Haversine distance calculator in kilometers for client-side diagnostics
+ */
+export function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+

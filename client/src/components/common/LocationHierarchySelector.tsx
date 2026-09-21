@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2, X, Check, Compass, Building, ChevronRight, CornerDownRight } from 'lucide-react';
-import { searchLocations, fetchCityLocalities, StructuredLocationSuggestion } from '../../utils/locationSearch';
+import { searchLocations, fetchCityLocalities, reverseGeocodeCoords, StructuredLocationSuggestion } from '../../utils/locationSearch';
 import { CustomerLocation } from '../../utils/customerLocation';
 
 interface LocationHierarchySelectorProps {
@@ -159,10 +159,13 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
     return () => clearTimeout(timer);
   }, [areaQuery, selectedCity, mode]);
 
-  // Handler: City selected
+  // Handler: Location selected from search suggestions
   const handleSelectCity = (item: StructuredLocationSuggestion) => {
-    const cityData = {
-      city: item.city || item.formattedAddress.split(',')[0].trim(),
+    const finalCity = item.city || item.formattedAddress.split(',')[0].trim();
+    const finalArea = item.area || '';
+    const finalLocation: CustomerLocation = {
+      city: finalCity,
+      area: finalArea || undefined,
       state: item.state,
       country: item.country || 'India',
       pincode: item.pincode,
@@ -170,14 +173,22 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
       longitude: item.longitude,
       formattedAddress: item.formattedAddress,
     };
-    setSelectedCity(cityData);
-    setCityQuery(cityData.city);
+
+    setSelectedCity({
+      city: finalCity,
+      state: item.state,
+      country: item.country || 'India',
+      pincode: item.pincode,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      formattedAddress: item.formattedAddress,
+    });
+    setCityQuery(finalCity);
+    setAreaQuery(finalArea);
     setIsCityOpen(false);
     setCitySuggestions([]);
-    setAreaQuery('');
-
-    // Transition to Area selection stage
-    setMode('select_area');
+    setMode('confirmed');
+    onLocationSelected(finalLocation);
   };
 
   // Handler: Area selected
@@ -243,42 +254,32 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
         try {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const addr = data.address || {};
-            const city = addr.city || addr.town || addr.village || addr.municipality || 'Rajkot';
-            const state = addr.state || 'Gujarat';
-            const area = addr.suburb || addr.neighbourhood || addr.residential;
-            const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
+          const geo = await reverseGeocodeCoords(lat, lon);
 
-            const finalLoc: CustomerLocation = {
-              city,
-              area,
-              state,
-              country: addr.country || 'India',
-              pincode,
-              latitude: lat,
-              longitude: lon,
-              formattedAddress: data.display_name,
-            };
+          const finalLoc: CustomerLocation = {
+            city: geo.city,
+            area: geo.area,
+            state: geo.state,
+            country: geo.country || 'India',
+            pincode: geo.pincode,
+            latitude: lat,
+            longitude: lon,
+            formattedAddress: geo.formattedAddress,
+          };
 
-            setSelectedCity({
-              city,
-              state,
-              country: addr.country || 'India',
-              pincode,
-              latitude: lat,
-              longitude: lon,
-              formattedAddress: data.display_name,
-            });
-            setAreaQuery(area || '');
-            setMode('confirmed');
-            onLocationSelected(finalLoc);
-          }
+          setSelectedCity({
+            city: geo.city,
+            state: geo.state,
+            country: geo.country || 'India',
+            pincode: geo.pincode,
+            latitude: lat,
+            longitude: lon,
+            formattedAddress: geo.formattedAddress,
+          });
+          setAreaQuery(geo.area || '');
+          setCityQuery(geo.city);
+          setMode('confirmed');
+          onLocationSelected(finalLoc);
         } catch (err) {
           console.error('Reverse geocode failed:', err);
         } finally {
@@ -289,7 +290,7 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
         setIsLocating(false);
         console.warn('Geolocation denied or failed:', err);
       },
-      { timeout: 8000 }
+      { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
     );
   };
 
@@ -320,9 +321,13 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
                 ) : null}
               </p>
               <p className="text-xs text-slate-500 truncate">
-                {selectedCity.state}
-                {selectedCity.pincode ? ` — Pincode: ${selectedCity.pincode}` : ''}
+                {selectedCity.formattedAddress || `${selectedCity.state || ''}${selectedCity.pincode ? ` — Pincode: ${selectedCity.pincode}` : ''}`}
               </p>
+              {typeof selectedCity.latitude === 'number' && typeof selectedCity.longitude === 'number' && (
+                <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                  Coordinates: {selectedCity.latitude.toFixed(4)}°N, {selectedCity.longitude.toFixed(4)}°E
+                </p>
+              )}
             </div>
           </div>
 
@@ -382,7 +387,7 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
               onFocus={() => {
                 if (citySuggestions.length > 0) setIsCityOpen(true);
               }}
-              placeholder="Type city name (e.g. Mundra, Ahmedabad, Rajkot, Surat)..."
+              placeholder="Search city, town, village, area, or pincode..."
               className="w-full pl-10 pr-9 py-2.5 text-sm border border-slate-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white text-slate-900 font-medium shadow-2xs"
               autoFocus
             />
@@ -434,25 +439,6 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 pt-1">
-            <span className="text-slate-400 font-medium">Quick Select:</span>
-            {['Mundra', 'Ahmedabad', 'Rajkot', 'Surat'].map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => {
-                  setCityQuery(c);
-                  searchLocations(c).then((res) => {
-                    if (res.length > 0) handleSelectCity(res[0]);
-                  });
-                }}
-                className="px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-md font-semibold text-slate-700 transition-colors text-[11px]"
-              >
-                {c}
-              </button>
-            ))}
           </div>
         </div>
       )}

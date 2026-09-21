@@ -227,6 +227,32 @@ const KNOWN_PLACES: Record<string, LocationSearchResult[]> = {
       provider: 'nominatim',
     },
   ],
+  koday: [
+    {
+      formattedAddress: 'Koday, Mandvi, Gujarat 370460, India',
+      city: 'Koday',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370460',
+      latitude: 22.868,
+      longitude: 69.525,
+      provider: 'nominatim',
+    },
+  ],
+  mandvi: [
+    {
+      formattedAddress: 'Mandvi, Gujarat 370465, India',
+      city: 'Mandvi',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.833,
+      longitude: 69.355,
+      provider: 'nominatim',
+    },
+  ],
 };
 
 export class NominatimLocationProvider {
@@ -289,9 +315,10 @@ export class NominatimLocationProvider {
       // Network timeout or blocked — seamlessly fallback to known offline places
     }
 
-    // Offline / fallback lookup
+    // Offline / fallback lookup across KNOWN_PLACES dictionary
+    const lowerKey = effectiveQuery.toLowerCase().trim();
     for (const [key, results] of Object.entries(KNOWN_PLACES)) {
-      if (cacheKey.includes(key) || key.includes(cacheKey)) {
+      if (lowerKey.includes(key) || key.includes(lowerKey)) {
         if (query && query.trim().length >= 2 && query.toLowerCase() !== key) {
           const matchedSub = results.filter(
             (r) =>
@@ -303,16 +330,11 @@ export class NominatimLocationProvider {
         }
         return results;
       }
-    }
-
-    if (norm.extractedPostalCode === '360005' || cacheKey.includes('360005')) {
-      return KNOWN_PLACES.rajkot.filter((r) => r.postalCode === '360005' || r.city === 'Rajkot');
-    }
-    if (norm.extractedPostalCode === '380015' || cacheKey.includes('380015')) {
-      return KNOWN_PLACES.ahmedabad.filter((r) => r.postalCode === '380015' || r.locality === 'Satellite');
-    }
-    if (norm.extractedPostalCode === '370421' || norm.extractedPostalCode === '370415' || cacheKey.includes('370421') || cacheKey.includes('370415')) {
-      return KNOWN_PLACES.mundra;
+      // Generic postal code lookup across all fixture entries
+      if (norm.extractedPostalCode) {
+        const pinMatch = results.filter((r) => r.postalCode === norm.extractedPostalCode);
+        if (pinMatch.length > 0) return pinMatch;
+      }
     }
 
     return [];
@@ -341,15 +363,16 @@ export class NominatimLocationProvider {
         return this.mapNominatimItem(item, false);
       }
     } catch {
-      // Fallback
+      // Fallback to offline match or generic coordinate representation
     }
 
-    // Approximate fallback for known test areas
-    if (Math.abs(latitude - 22.3) < 0.2 && Math.abs(longitude - 70.8) < 0.2) {
-      return KNOWN_PLACES.rajkot[0];
-    }
-    if (Math.abs(latitude - 23.0) < 0.2 && Math.abs(longitude - 72.5) < 0.2) {
-      return KNOWN_PLACES.ahmedabad[0];
+    // Exact coordinate match from offline test fixtures if network unavailable
+    for (const results of Object.values(KNOWN_PLACES)) {
+      for (const place of results) {
+        if (Math.abs(place.latitude - latitude) < 0.005 && Math.abs(place.longitude - longitude) < 0.005) {
+          return place;
+        }
+      }
     }
 
     return {

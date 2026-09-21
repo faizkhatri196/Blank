@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { companySignupSchema, serviceAreaSchema } from '../../src/validators';
-import { calculateHaversineDistanceKm } from '../../src/services/location/Geospatial';
+import { calculateHaversineDistanceKm } from '../../src/services/location/geospatial';
 import { FuzzyNormalizer } from '../../src/services/location/FuzzyNormalizer';
+import { CoverageService } from '../../src/services/coverageService';
 
 describe('BUG A & B Regression Test Suite', () => {
   describe('Bug A: Customer Location & Service Discovery', () => {
@@ -31,35 +32,25 @@ describe('BUG A & B Regression Test Suite', () => {
       expect(cleanUnsupported).not.toContain('ahmedabad');
     });
 
-    it('4. Real coverage lookup logic matches city with operating radius even with neighboring pincodes', () => {
+    it('4. Authoritative CoverageService determines coverage strictly by coordinates and radius', () => {
       const companyArea = {
         city: 'Mundra',
-        pincodes: ['370415'],
-        radiusKm: 25,
-        services: ['SOLAR', 'AC'],
+        latitude: 22.8393,
+        longitude: 69.7249,
+        radiusKm: 23,
+        services: ['SOLAR', 'AC'] as any,
+        active: true,
       };
 
-      const customerLoc = {
-        city: 'Mundra',
-        pincode: '370421',
-      };
+      // Koday coordinates (22.8680, 69.5250) ~20.72 km from Mundra center
+      const evalKoday = CoverageService.checkAreaCoverage(22.8680, 69.5250, companyArea);
+      expect(evalKoday.withinRadius).toBe(true);
+      expect(evalKoday.distanceKm).toBeLessThanOrEqual(companyArea.radiusKm);
 
-      const cleanCity = customerLoc.city.toLowerCase();
-      const compCity = companyArea.city.toLowerCase();
-      const cityMatches = compCity === cleanCity;
-
-      let isCovered = false;
-      if (cityMatches) {
-        if (customerLoc.pincode && companyArea.pincodes.length > 0) {
-          if (companyArea.pincodes.includes(customerLoc.pincode)) {
-            isCovered = true;
-          } else if (companyArea.radiusKm >= 15) {
-            isCovered = true;
-          }
-        }
-      }
-
-      expect(isCovered).toBe(true);
+      // Mandvi coordinates (22.8330, 69.3550) ~38.12 km from Mundra center
+      const evalMandvi = CoverageService.checkAreaCoverage(22.8330, 69.3550, companyArea);
+      expect(evalMandvi.withinRadius).toBe(false);
+      expect(evalMandvi.distanceKm).toBeGreaterThan(companyArea.radiusKm);
     });
 
     it('5. Location fuzzy normalization corrects common typos without inventing Ahmedabad', () => {
@@ -163,4 +154,113 @@ describe('BUG A & B Regression Test Suite', () => {
       }
     });
   });
+
+  describe('Bug C: Customer Dashboard Service Application & Live Location Technician Assignment', () => {
+    it('1. Computes local distance accurately for live customer location against technician base location', () => {
+      // Live GPS from customer in Mundra area (~22.8400, 69.7200)
+      const customerLat = 22.8400;
+      const customerLon = 69.7200;
+
+      // Technician Adil with base in Mundra (22.8393, 69.7249)
+      const technicianAdil = {
+        id: 'tech-101',
+        name: 'Adil',
+        baseLocation: {
+          city: 'Mundra',
+          latitude: 22.8393,
+          longitude: 69.7249,
+          center: {
+            type: 'Point',
+            coordinates: [69.7249, 22.8393] as [number, number],
+          },
+        },
+        coverageRadiusKm: 25,
+        serviceTypes: ['SOLAR', 'AC'] as any,
+        active: true,
+      };
+
+      const evalResult = CoverageService.checkTechnicianCoverage(
+        customerLat,
+        customerLon,
+        technicianAdil,
+        'SOLAR'
+      );
+
+      expect(evalResult.calculation.covered).toBe(true);
+      expect(evalResult.calculation.calculatedDistanceKm).toBeLessThan(1.0); // ~0.5 km
+      expect(evalResult.calculation.calculatedDistanceKm).toBeGreaterThanOrEqual(0);
+      expect(evalResult.coordinateOrderWarning).toBeUndefined();
+    });
+
+    it('2. Technician in 25km radius covers all nearby villages (e.g. Koday 20.7km)', () => {
+      // Village customer in Koday (~22.8680, 69.5250)
+      const customerLat = 22.8680;
+      const customerLon = 69.5250;
+
+      const technicianAdil = {
+        id: 'tech-101',
+        name: 'Adil',
+        baseLocation: {
+          city: 'Mundra',
+          latitude: 22.8393,
+          longitude: 69.7249,
+          center: {
+            type: 'Point',
+            coordinates: [69.7249, 22.8393] as [number, number],
+          },
+        },
+        coverageRadiusKm: 25,
+        serviceTypes: ['SOLAR', 'AC'] as any,
+        active: true,
+      };
+
+      const evalResult = CoverageService.checkTechnicianCoverage(
+        customerLat,
+        customerLon,
+        technicianAdil,
+        'SOLAR'
+      );
+
+      expect(evalResult.calculation.covered).toBe(true);
+      expect(evalResult.calculation.calculatedDistanceKm).toBeCloseTo(20.7, 0);
+      expect(evalResult.calculation.calculatedDistanceKm).toBeLessThanOrEqual(25);
+    });
+
+    it('3. Outside operating radius (e.g. Mandvi 38km from Mundra base with 25km radius) is correctly flagged without large 7000km error', () => {
+      // Mandvi (~22.8330, 69.3550) ~38km away
+      const customerLat = 22.8330;
+      const customerLon = 69.3550;
+
+      const technicianAdil = {
+        id: 'tech-101',
+        name: 'Adil',
+        baseLocation: {
+          city: 'Mundra',
+          latitude: 22.8393,
+          longitude: 69.7249,
+          center: {
+            type: 'Point',
+            coordinates: [69.7249, 22.8393] as [number, number],
+          },
+        },
+        coverageRadiusKm: 25,
+        serviceTypes: ['SOLAR', 'AC'] as any,
+        active: true,
+      };
+
+      const evalResult = CoverageService.checkTechnicianCoverage(
+        customerLat,
+        customerLon,
+        technicianAdil,
+        'SOLAR'
+      );
+
+      expect(evalResult.calculation.covered).toBe(false);
+      expect(evalResult.calculation.calculatedDistanceKm).toBeCloseTo(38.1, 0);
+      // Real distance ~38km, NEVER 7937 km or Null Island!
+      expect(evalResult.calculation.calculatedDistanceKm).toBeLessThan(100);
+      expect(evalResult.calculation.reason).toContain('OUTSIDE_OPERATING_RADIUS');
+    });
+  });
 });
+

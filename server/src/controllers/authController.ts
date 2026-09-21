@@ -83,7 +83,7 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
 
         const center = isValidCoordinate(lat, lon)
           ? createGeoPoint(lat!, lon!)
-          : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+          : undefined;
         const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
 
         return {

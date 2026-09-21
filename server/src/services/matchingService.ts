@@ -3,6 +3,7 @@ import { IServiceTicket } from '../models/ServiceTicket';
 import { IAIAnalysis } from '../models/AIAnalysis';
 import { TechnicianMatchResult } from '../types';
 import { calculateHaversineDistanceKm, isValidCoordinate } from './location/geospatial';
+import { CoverageService } from './coverageService';
 
 export interface CustomerLocationContext {
   city?: string;
@@ -33,8 +34,24 @@ export function calculateTechnicianMatches(
   const ticketPincode = locationContext.pincode || ticket.serviceLocation?.pincode || '';
   const ticketAddress = locationContext.address || ticket.serviceLocation?.address || '';
 
-  const ticketLat = ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
-  const ticketLon = ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
+  let ticketLat = (locationContext as any)?.latitude ?? ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
+  let ticketLon = (locationContext as any)?.longitude ?? ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
+
+  if (!isValidCoordinate(ticketLat, ticketLon) && (ticket.customerId as any)?.coordinates) {
+    const custCoords = (ticket.customerId as any).coordinates;
+    if (isValidCoordinate(custCoords.latitude, custCoords.longitude)) {
+      ticketLat = custCoords.latitude;
+      ticketLon = custCoords.longitude;
+    }
+  }
+
+  if (!isValidCoordinate(ticketLat, ticketLon) && (ticket as any).coverageSnapshot?.coverageCoordinates) {
+    const snapCoords = (ticket as any).coverageSnapshot.coverageCoordinates;
+    if (isValidCoordinate(snapCoords.latitude, snapCoords.longitude)) {
+      ticketLat = snapCoords.latitude;
+      ticketLon = snapCoords.longitude;
+    }
+  }
   const hasTicketCoords = isValidCoordinate(ticketLat, ticketLon);
 
   const locText = `${ticketCity} ${ticketArea} ${ticketAddress} ${ticketPincode}`.toLowerCase().trim();
@@ -91,20 +108,29 @@ export function calculateTechnicianMatches(
     const techPincodes = tech.pincodes || [];
     const techCoverageDisplay = techAreas.length > 0 ? techAreas.join(', ') : 'Universal Company Area';
 
-    // Verify service area coverage
-    let coversLocation = true;
-    let coverageStatus: 'COVERS_LOCATION' | 'OUTSIDE_SERVICE_AREA' | 'NO_COVERAGE_CONFIGURED' = 'COVERS_LOCATION';
-    let coverageExplanation = 'Customer location is inside service area';
+    // Verify service area coverage strictly via real coordinates
+    let coversLocation = false;
+    let coverageStatus: 'COVERS_LOCATION' | 'OUTSIDE_SERVICE_AREA' | 'NO_COVERAGE_CONFIGURED' = 'NO_COVERAGE_CONFIGURED';
+    let coverageExplanation = 'Evaluating coverage coordinates...';
     let ineligibilityReason: string | undefined = undefined;
 
-    const techLat = tech.baseLocation?.latitude;
-    const techLon = tech.baseLocation?.longitude;
-    const hasTechCoords = isValidCoordinate(techLat, techLon);
+    const hasTechCoords =
+      isValidCoordinate(tech.baseLocation?.latitude, tech.baseLocation?.longitude) ||
+      (Array.isArray(tech.baseLocation?.center?.coordinates) &&
+        isValidCoordinate(tech.baseLocation.center.coordinates[1], tech.baseLocation.center.coordinates[0]));
 
     if (hasTicketCoords && hasTechCoords) {
-      const distKm = calculateHaversineDistanceKm(ticketLat!, ticketLon!, techLat!, techLon!);
-      const radiusKm = tech.coverageRadiusKm ?? 20;
-      if (distKm <= radiusKm) {
+      const evaluation = CoverageService.checkTechnicianCoverage(
+        ticketLat!,
+        ticketLon!,
+        tech,
+        serviceType,
+        customerLocDisplay
+      );
+
+      const distKm = evaluation.calculation.calculatedDistanceKm;
+      const radiusKm = evaluation.technician.coverageRadiusKm;
+      if (evaluation.calculation.covered) {
         coversLocation = true;
         coverageStatus = 'COVERS_LOCATION';
         coverageExplanation = `Customer is ${distKm.toFixed(1)} km away (within ${radiusKm} km radius)`;
@@ -114,24 +140,16 @@ export function calculateTechnicianMatches(
         coverageExplanation = `Customer is ${distKm.toFixed(1)} km away (exceeds ${radiusKm} km coverage radius)`;
         ineligibilityReason = `Customer location is outside technician's coverage radius (${distKm.toFixed(1)} km > ${radiusKm} km).`;
       }
-    } else if (techAreas.length > 0) {
-      const matchedArea = techAreas.some((area) => {
-        const a = area.toLowerCase().trim();
-        if (!a) return false;
-        return locText.includes(a) || (ticketCity && a.includes(ticketCity.toLowerCase()));
-      });
-
-      const matchedPincode = ticketPincode && techPincodes.length > 0 && techPincodes.includes(ticketPincode);
-
-      if (locText && !matchedArea && !matchedPincode) {
-        coversLocation = false;
-        coverageStatus = 'OUTSIDE_SERVICE_AREA';
-        coverageExplanation = `Customer location (${customerLocDisplay}) is outside technician coverage (${techCoverageDisplay})`;
-        ineligibilityReason = 'Technician service area does not cover this customer location.';
-      }
+    } else if (!hasTicketCoords) {
+      coversLocation = false;
+      coverageStatus = 'OUTSIDE_SERVICE_AREA';
+      coverageExplanation = 'Customer location coordinates missing';
+      ineligibilityReason = 'Customer service location coordinates are required for geospatial coverage matching.';
     } else {
+      coversLocation = false;
       coverageStatus = 'NO_COVERAGE_CONFIGURED';
-      coverageExplanation = 'Covers all company service areas';
+      coverageExplanation = 'Technician base location coordinates missing';
+      ineligibilityReason = 'Technician base location coordinates are not configured.';
     }
 
     if (!supportsService) {

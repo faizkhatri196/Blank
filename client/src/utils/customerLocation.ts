@@ -1,4 +1,5 @@
 export interface CustomerLocation {
+  placeId?: string;
   city: string;
   state?: string;
   country?: string;
@@ -52,6 +53,7 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed.city === 'string' && parsed.city.trim().length > 0) {
       return {
+        placeId: parsed.placeId ? String(parsed.placeId).trim() : undefined,
         city: parsed.city.trim(),
         state: parsed.state ? String(parsed.state).trim() : undefined,
         country: parsed.country ? String(parsed.country).trim() : undefined,
@@ -78,6 +80,7 @@ export function saveCustomerLocation(location: CustomerLocation, userId?: string
   try {
     if (!location || !location.city || !location.city.trim()) return;
     const cleanLocation: CustomerLocation = {
+      placeId: location.placeId ? String(location.placeId).trim() : undefined,
       city: location.city.trim(),
       state: location.state ? String(location.state).trim() : undefined,
       country: location.country ? String(location.country).trim() : undefined,

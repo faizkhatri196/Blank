@@ -4,6 +4,8 @@ import { Company } from '../models/Company';
 import { AuditLog } from '../models/AuditLog';
 import { serviceAreaSchema } from '../validators';
 import { createGeoPoint, isValidCoordinate } from '../services/location/geospatial';
+import { NominatimLocationProvider } from '../services/location/NominatimProvider';
+import { CoverageService } from '../services/coverageService';
 import { z } from 'zod';
 
 export async function getCompanyCoverage(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -63,7 +65,7 @@ export async function updateCompanyCoverage(req: AuthenticatedRequest, res: Resp
       const lat = sa.latitude;
       const lon = sa.longitude;
       const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
-      const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+      const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
       return {
         _id: sa._id,
         locationName: sa.locationName?.trim(),
@@ -141,10 +143,38 @@ export async function addServiceArea(req: AuthenticatedRequest, res: Response): 
     }
 
     const sa = parseResult.data;
-    const lat = sa.latitude;
-    const lon = sa.longitude;
-    const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
-    const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+    let lat = sa.latitude;
+    let lon = sa.longitude;
+
+    if (!isValidCoordinate(lat, lon)) {
+      const queryStr = sa.formattedAddress || `${sa.city}${sa.state ? ', ' + sa.state : ''}, ${sa.country || 'India'}`;
+      try {
+        const geoResults = await NominatimLocationProvider.search(queryStr);
+        if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+          lat = geoResults[0].latitude;
+          lon = geoResults[0].longitude;
+        }
+      } catch {}
+    }
+
+    if (!isValidCoordinate(lat, lon)) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'LOCATION_COORDINATES_REQUIRED', message: 'Valid geographic coordinates are required for service coverage.' },
+      });
+      return;
+    }
+
+    const radiusKm = sa.radiusKm ?? sa.radius;
+    if (typeof radiusKm !== 'number' || radiusKm <= 0) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_RADIUS', message: 'Coverage radius must be a positive number of kilometers.' },
+      });
+      return;
+    }
+
+    const center = createGeoPoint(lat!, lon!);
 
     const newArea = {
       locationName: sa.locationName?.trim(),
@@ -233,10 +263,40 @@ export async function updateSingleServiceArea(req: AuthenticatedRequest, res: Re
     }
 
     const sa = parseResult.data;
-    const lat = sa.latitude ?? company.serviceAreas[targetIndex].latitude;
-    const lon = sa.longitude ?? company.serviceAreas[targetIndex].longitude;
-    const radiusKm = sa.radiusKm ?? sa.radius ?? company.serviceAreas[targetIndex].radiusKm ?? 20;
-    const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : company.serviceAreas[targetIndex].center;
+    let lat = sa.latitude ?? company.serviceAreas[targetIndex].latitude;
+    let lon = sa.longitude ?? company.serviceAreas[targetIndex].longitude;
+
+    if (!isValidCoordinate(lat, lon)) {
+      const queryStr = sa.formattedAddress || sa.city || company.serviceAreas[targetIndex].formattedAddress;
+      if (queryStr) {
+        try {
+          const geoResults = await NominatimLocationProvider.search(queryStr);
+          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+            lat = geoResults[0].latitude;
+            lon = geoResults[0].longitude;
+          }
+        } catch {}
+      }
+    }
+
+    if (!isValidCoordinate(lat, lon)) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'LOCATION_COORDINATES_REQUIRED', message: 'Valid geographic coordinates are required for service coverage.' },
+      });
+      return;
+    }
+
+    const radiusKm = sa.radiusKm ?? sa.radius ?? company.serviceAreas[targetIndex].radiusKm ?? company.serviceAreas[targetIndex].radius;
+    if (typeof radiusKm !== 'number' || radiusKm <= 0) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_RADIUS', message: 'Coverage radius must be a positive number of kilometers.' },
+      });
+      return;
+    }
+
+    const center = createGeoPoint(lat!, lon!);
 
     company.serviceAreas[targetIndex] = {
       ...company.serviceAreas[targetIndex],
@@ -332,3 +392,74 @@ export async function deleteServiceArea(req: AuthenticatedRequest, res: Response
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
   }
 }
+
+export async function diagnoseCoverage(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const lat = typeof req.body.latitude === 'number' ? req.body.latitude : parseFloat(req.body.latitude);
+    const lon = typeof req.body.longitude === 'number' ? req.body.longitude : parseFloat(req.body.longitude);
+    const serviceType = req.body.serviceType;
+    const companyId = req.companyId ? req.companyId.toString() : undefined;
+
+    if (!isValidCoordinate(lat, lon)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'LOCATION_COORDINATES_REQUIRED',
+          message: 'Valid customer latitude (-90..90) and longitude (-180..180) are required for diagnostic check.',
+        },
+      });
+      return;
+    }
+
+    const technicianId = req.body.technicianId;
+    const customerAddress = req.body.customerAddress || req.body.address;
+
+    const diagnostic = await CoverageService.diagnoseCoverage(
+      lat,
+      lon,
+      companyId,
+      serviceType,
+      technicianId,
+      customerAddress
+    );
+    res.json({
+      success: true,
+      data: diagnostic,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+}
+
+export async function validateTechnicianCoverageEndpoint(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const lat = typeof req.body.customerLatitude === 'number'
+      ? req.body.customerLatitude
+      : (typeof req.body.latitude === 'number' ? req.body.latitude : parseFloat(req.body.customerLatitude || req.body.latitude));
+    const lon = typeof req.body.customerLongitude === 'number'
+      ? req.body.customerLongitude
+      : (typeof req.body.longitude === 'number' ? req.body.longitude : parseFloat(req.body.customerLongitude || req.body.longitude));
+
+    const serviceType = req.body.serviceType || req.body.serviceId;
+    const companyId = req.companyId ? req.companyId.toString() : req.body.companyId;
+    const technicianId = req.body.technicianId;
+    const customerAddress = req.body.customerAddress || req.body.address;
+
+    const validation = await CoverageService.validateTechnicianCoverage({
+      technicianId,
+      customerLatitude: lat,
+      customerLongitude: lon,
+      serviceType,
+      companyId,
+      customerAddress,
+    });
+
+    res.json({
+      success: true,
+      data: validation,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+}
+

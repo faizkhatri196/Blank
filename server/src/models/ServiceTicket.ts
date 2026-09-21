@@ -40,6 +40,17 @@ export interface IServiceTicket extends Document {
     placeId?: string;
     resolvedAt: Date;
   };
+  coverageSnapshot?: {
+    coverageId?: string;
+    coverageLocationName?: string;
+    coverageCoordinates?: {
+      latitude: number;
+      longitude: number;
+    };
+    configuredRadiusKm: number;
+    calculatedDistanceKm: number;
+    covered: boolean;
+  };
   customerFeedback?: {
     rating: number;
     comment?: string;
@@ -109,6 +120,17 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
       provider: { type: String, default: 'nominatim' },
       placeId: { type: String },
       resolvedAt: { type: Date, default: Date.now },
+    },
+    coverageSnapshot: {
+      coverageId: { type: String },
+      coverageLocationName: { type: String },
+      coverageCoordinates: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+      },
+      configuredRadiusKm: { type: Number },
+      calculatedDistanceKm: { type: Number },
+      covered: { type: Boolean },
     },
     problemCategory: { type: String, trim: true },
     problemCode: { type: String, trim: true },

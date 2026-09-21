@@ -28,6 +28,11 @@ import {
   saveCustomerLocation,
   clearCustomerLocation,
 } from '../../utils/customerLocation';
+import {
+  reverseGeocodeCoords,
+  acquireLiveLocation,
+  geocodeAddressOrCity,
+} from '../../utils/locationSearch';
 
 export const CustomerHome: React.FC = () => {
   const navigate = useNavigate();
@@ -53,6 +58,47 @@ export const CustomerHome: React.FC = () => {
 
   // Active ticket state
   const [activeTicket, setActiveTicket] = useState<CustomerSafeTicket | null>(null);
+
+  // Auto-request live GPS location when customer dashboard starts
+  useEffect(() => {
+    let isMounted = true;
+    if (!location || location.latitude === undefined || location.longitude === undefined) {
+      setIsLocating(true);
+      acquireLiveLocation(8000)
+        .then((result) => {
+          if (!isMounted || !result) return;
+          const { suggestion, latitude, longitude } = result;
+          const liveLoc: CustomerLocation = {
+            city: suggestion.city,
+            area: suggestion.area,
+            pincode: suggestion.pincode,
+            state: suggestion.state,
+            country: suggestion.country,
+            latitude,
+            longitude,
+            formattedAddress: suggestion.formattedAddress,
+          };
+          setLocation(liveLoc);
+          saveCustomerLocation(liveLoc, user?.id);
+          const isApprox = typeof result.accuracy === 'number' && result.accuracy > 1500;
+          const sourceLabel = result.source === 'google_maps' ? ' (Google Maps)' : result.source === 'ip' ? ' (Network/IP)' : isApprox ? ' (Approximate)' : '';
+          const feedbackMsg = isApprox
+            ? `📍 Detected location${sourceLabel}: ${suggestion.city || suggestion.formattedAddress}. Tap "Change Location" if inaccurate.`
+            : `📍 Live location active${sourceLabel}: ${suggestion.formattedAddress || suggestion.city}`;
+          setLocationFeedback(feedbackMsg);
+          setTimeout(() => setLocationFeedback(null), isApprox ? 8000 : 4000);
+        })
+        .catch((err) => {
+          console.warn('Auto live location detection failed:', err);
+        })
+        .finally(() => {
+          if (isMounted) setIsLocating(false);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   // Fetch available services whenever an explicit location is present
   useEffect(() => {
@@ -137,7 +183,7 @@ export const CustomerHome: React.FC = () => {
   };
 
   // Submit explicit location
-  const handleApplyLocation = (e: React.FormEvent) => {
+  const handleApplyLocation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cityInput.trim()) {
       setLocationFeedback('Please enter a valid city name.');
@@ -151,9 +197,17 @@ export const CustomerHome: React.FC = () => {
     setAvailableServices([]);
     setIsCoverageAvailable(true);
 
+    const geocoded = await geocodeAddressOrCity(`${cleanCity} ${cleanPin}`.trim());
+
     const newLoc: CustomerLocation = {
-      city: cleanCity,
-      pincode: cleanPin || undefined,
+      city: geocoded?.city || cleanCity,
+      area: geocoded?.area,
+      state: geocoded?.state,
+      country: geocoded?.country || 'India',
+      pincode: geocoded?.pincode || cleanPin || undefined,
+      latitude: geocoded?.latitude,
+      longitude: geocoded?.longitude,
+      formattedAddress: geocoded?.formattedAddress || `${cleanCity}, India`,
     };
 
     setLocation(newLoc);
@@ -175,66 +229,46 @@ export const CustomerHome: React.FC = () => {
     setLocationFeedback(null);
   };
 
-  // Browser Geolocation (strictly user-initiated, NO fallback to Ahmedabad!)
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationFeedback(
-        'Geolocation is not supported by your browser. Please enter your city manually.'
-      );
-      return;
-    }
-
+  // Authoritative Geolocation (Browser GPS with Google Maps fallback)
+  const handleUseCurrentLocation = async () => {
     setIsLocating(true);
     setLocationFeedback(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-            { headers: { Accept: 'application/json' } }
-          );
+    try {
+      const result = await acquireLiveLocation(10000);
+      if (result) {
+        const { suggestion, latitude, longitude } = result;
+        const newLoc: CustomerLocation = {
+          city: suggestion.city,
+          area: suggestion.area,
+          state: suggestion.state,
+          country: suggestion.country,
+          pincode: suggestion.pincode,
+          latitude,
+          longitude,
+          formattedAddress: suggestion.formattedAddress,
+        };
 
-          if (geoRes.ok) {
-            const data = await geoRes.json();
-            const detectedCity =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.district ||
-              data.address?.state_district;
-            const detectedPin = data.address?.postcode;
-
-            if (detectedCity && typeof detectedCity === 'string') {
-              const newLoc: CustomerLocation = {
-                city: detectedCity.trim(),
-                pincode: detectedPin ? String(detectedPin).trim() : undefined,
-              };
-
-              // Reset downstream state
-              setAvailableServices([]);
-              setLocation(newLoc);
-              saveCustomerLocation(newLoc, user?.id);
-              setIsLocating(false);
-              setIsEditingLocation(false);
-              return;
-            }
-          }
-          // If reverse geocoding cannot determine city, prompt manual entry (NEVER fallback to Ahmedabad)
-          setLocationFeedback('Could not determine city from GPS. Please enter your city or area manually.');
-        } catch (e) {
-          setLocationFeedback('Unable to reach location service. Please enter your city manually.');
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (_err) => {
-        setIsLocating(false);
-        setLocationFeedback('Location permission denied. Please enter your city or area manually.');
-      },
-      { timeout: 8000 }
-    );
+        setAvailableServices([]);
+        setLocation(newLoc);
+        saveCustomerLocation(newLoc, user?.id);
+        setIsEditingLocation(false);
+        const isApprox = typeof result.accuracy === 'number' && result.accuracy > 1500;
+        const sourceLabel = result.source === 'google_maps' ? ' (Google Maps)' : result.source === 'ip' ? ' (Network/IP)' : isApprox ? ' (Approximate)' : '';
+        const feedbackMsg = isApprox
+          ? `📍 Detected location${sourceLabel}: ${suggestion.city || suggestion.formattedAddress}. Tap "Change Location" if inaccurate.`
+          : `📍 Live location active${sourceLabel}: ${suggestion.formattedAddress || suggestion.city}`;
+        setLocationFeedback(feedbackMsg);
+        setTimeout(() => setLocationFeedback(null), isApprox ? 8000 : 4000);
+      } else {
+        setLocationFeedback('Unable to detect live location. Please enter your city or area manually.');
+      }
+    } catch (err: any) {
+      console.warn('Geolocation detection error:', err);
+      setLocationFeedback('Location detection failed. Please enter your city or area manually.');
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   return (
@@ -372,6 +406,37 @@ export const CustomerHome: React.FC = () => {
               </div>
             )}
 
+            <div className="flex items-center gap-1.5 flex-wrap text-xs pt-2 border-t border-slate-100">
+              <span className="text-slate-400 font-medium text-[11px]">Quick Selection:</span>
+              {[
+                { city: 'Mundra', lat: 22.8393, lon: 69.7249, pin: '370421' },
+                { city: 'Mandvi', lat: 22.8330, lon: 69.3550, pin: '370465' },
+                { city: 'Koday', lat: 22.8680, lon: 69.5250, pin: '370460' },
+                { city: 'Bhuj', lat: 23.2420, lon: 69.6669, pin: '370001' },
+                { city: 'Rajkot', lat: 22.3039, lon: 70.8022, pin: '360001' },
+                { city: 'Ahmedabad', lat: 23.0225, lon: 72.5714, pin: '380001' },
+              ].map((loc) => (
+                <button
+                  key={loc.city}
+                  type="button"
+                  onClick={() =>
+                    handleStructuredLocationSelect({
+                      city: loc.city,
+                      state: 'Gujarat',
+                      country: 'India',
+                      pincode: loc.pin,
+                      latitude: loc.lat,
+                      longitude: loc.lon,
+                      formattedAddress: `${loc.city}, Gujarat ${loc.pin}, India`,
+                    })
+                  }
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg font-semibold text-slate-700 text-xs transition-colors"
+                >
+                  📍 {loc.city}
+                </button>
+              ))}
+            </div>
+
             <div className="flex justify-end pt-1">
               <button
                 type="button"
@@ -475,13 +540,18 @@ export const CustomerHome: React.FC = () => {
                 return (
                   <div
                     key={service.serviceType}
-                    onClick={() =>
-                      navigate(
-                        `/customer/request?service=${service.serviceType}&city=${encodeURIComponent(
-                          location.city
-                        )}`
-                      )
-                    }
+                    onClick={() => {
+                      const q = new URLSearchParams({
+                        service: service.serviceType,
+                        city: location.city,
+                      });
+                      if (location.latitude !== undefined) q.set('lat', String(location.latitude));
+                      if (location.longitude !== undefined) q.set('lng', String(location.longitude));
+                      if (location.pincode) q.set('pincode', location.pincode);
+                      if (location.area) q.set('area', location.area);
+                      if (location.formattedAddress) q.set('address', location.formattedAddress);
+                      navigate(`/customer/request?${q.toString()}`);
+                    }}
                     className="group bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden"
                   >
                     <div>
