@@ -9,7 +9,7 @@ import { Customer } from '../models/Customer';
 import { loginSchema, companySignupSchema, customerSignupSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators';
 import { ENV } from '../config/env';
 import { NominatimLocationProvider } from '../services/location/NominatimProvider';
-import { isValidCoordinate, createGeoPoint } from '../services/location/Geospatial';
+import { isValidCoordinate, createGeoPoint } from '../services/location/geospatial';
 
 export async function signup(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
