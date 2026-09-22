@@ -69,6 +69,20 @@ apiClient.interceptors.response.use(
         return Promise.reject(new Error(msg));
       }
 
+      // Customer portal routes support both guest and authenticated access.
+      // A 401 here means the server requires auth but user is a guest — return empty result
+      // gracefully rather than force-logging them out or destroying the session.
+      const isCustomerPortalRoute = url.includes('/customer-portal/');
+      if (isCustomerPortalRoute) {
+        return Promise.resolve({
+          data: { success: true, data: [], isGuest: true },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: error.config,
+        });
+      }
+
       localStorage.removeItem('copilot_token');
       localStorage.removeItem('copilot_user');
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {

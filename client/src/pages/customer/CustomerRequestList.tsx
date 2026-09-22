@@ -18,7 +18,7 @@ import { CustomerSafeTicket } from '../../types';
 
 export const CustomerRequestList: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   const [tickets, setTickets] = useState<CustomerSafeTicket[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -26,21 +26,30 @@ export const CustomerRequestList: React.FC = () => {
 
   useEffect(() => {
     async function loadRequests() {
+      // Wait for auth to resolve before fetching to avoid race condition
+      if (isAuthLoading) return;
+
       setIsLoading(true);
       try {
-        const res = await apiClient.get('/customer-portal/requests');
-        if (res.data.success) {
+        const storedIds = JSON.parse(localStorage.getItem('servora_customer_ticket_ids') || '[]');
+        const queryParams = new URLSearchParams();
+        if (storedIds.length > 0) {
+          queryParams.set('ticketIds', storedIds.join(','));
+        }
+        const url = `/customer-portal/requests${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        const res = await apiClient.get(url);
+        if (res.data.success && Array.isArray(res.data.data)) {
           setTickets(res.data.data);
         }
-      } catch (err) {
-        console.error('Failed to load customer requests:', err);
+      } catch (err: any) {
+        console.error('[CustomerRequestList] Failed to load requests:', err?.message || err);
       } finally {
         setIsLoading(false);
       }
     }
 
     loadRequests();
-  }, []);
+  }, [user?.id, isAuthLoading]);
 
   const filteredTickets = tickets.filter((t) => {
     if (filterTab === 'ACTIVE') return t.status !== 'COMPLETED' && t.status !== 'CANCELLED';

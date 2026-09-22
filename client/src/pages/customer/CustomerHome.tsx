@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,7 +33,7 @@ import {
 
 export const CustomerHome: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const { location, setLocation, clearLocation } = useCustomerLocation();
 
   // Form input state for location selection
@@ -55,7 +55,8 @@ export const CustomerHome: React.FC = () => {
   // Fetch available services whenever an explicit location is present
   useEffect(() => {
     async function fetchServices() {
-      if (!location || !location.city || !location.city.trim()) {
+      // Guard against invalid placeholder city (e.g., when GPS fires but geocoding fails)
+      if (!location || !location.city || !location.city.trim() || location.city === 'Current Location') {
         setAvailableServices([]);
         setIsCoverageAvailable(true);
         setIsLoadingServices(false);
@@ -101,26 +102,36 @@ export const CustomerHome: React.FC = () => {
     fetchServices();
   }, [location]);
 
-  // Fetch active ticket if user is logged in
-  useEffect(() => {
-    async function fetchUserActiveTicket() {
-      if (!user) return;
-      try {
-        const res = await apiClient.get('/customer-portal/requests');
-        if (res.data.success && res.data.data.length > 0) {
-          const active = res.data.data.find(
-            (t: CustomerSafeTicket) => t.status !== 'COMPLETED' && t.status !== 'CANCELLED'
-          );
-          if (active) {
-            setActiveTicket(active);
-          }
-        }
-      } catch (e) {
-        // Silently ignore
+  // Fetch active ticket - supports both logged-in users and guests with localStorage ticket IDs
+  const fetchUserActiveTicket = useCallback(async () => {
+    // Wait for auth to fully resolve to avoid race condition
+    if (isAuthLoading) return;
+
+    try {
+      const storedIds = JSON.parse(localStorage.getItem('servora_customer_ticket_ids') || '[]');
+      const queryParams = new URLSearchParams();
+      if (storedIds.length > 0) {
+        queryParams.set('ticketIds', storedIds.join(','));
       }
+
+      const url = `/customer-portal/requests${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      const res = await apiClient.get(url);
+      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        const active = res.data.data.find(
+          (t: CustomerSafeTicket) => t.status !== 'COMPLETED' && t.status !== 'CANCELLED'
+        );
+        if (active) {
+          setActiveTicket(active);
+        }
+      }
+    } catch (e: any) {
+      console.error('[CustomerHome] Failed to load service history:', e?.message || e);
     }
+  }, [isAuthLoading, user?.id]);
+
+  useEffect(() => {
     fetchUserActiveTicket();
-  }, [user]);
+  }, [fetchUserActiveTicket]);
 
   // Select structured location from autocomplete
   const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
