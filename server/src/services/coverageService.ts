@@ -49,8 +49,8 @@ export interface TechnicianCoverageValidationResult {
   technician?: {
     id: string;
     name: string;
-    latitude: number;
-    longitude: number;
+    latitude?: number;
+    longitude?: number;
     baseAddress?: string;
     coverageRadiusKm: number;
     serviceTypes: ServiceType[];
@@ -845,8 +845,8 @@ export class CoverageService {
           technician: {
             id: tech._id.toString(),
             name: tech.name,
-            latitude: tech.baseLocation?.latitude ?? 0,
-            longitude: tech.baseLocation?.longitude ?? 0,
+            latitude: tech.baseLocation?.latitude,
+            longitude: tech.baseLocation?.longitude,
             baseAddress: tech.baseLocation?.formattedAddress || tech.baseLocation?.city,
             coverageRadiusKm: tech.coverageRadiusKm || 20,
             serviceTypes: tech.serviceTypes,
@@ -868,8 +868,8 @@ export class CoverageService {
           technician: {
             id: tech._id.toString(),
             name: tech.name,
-            latitude: tech.baseLocation?.latitude ?? 0,
-            longitude: tech.baseLocation?.longitude ?? 0,
+            latitude: tech.baseLocation?.latitude,
+            longitude: tech.baseLocation?.longitude,
             baseAddress: tech.baseLocation?.formattedAddress || tech.baseLocation?.city,
             coverageRadiusKm: tech.coverageRadiusKm || 20,
             serviceTypes: tech.serviceTypes,
@@ -984,8 +984,8 @@ export class CoverageService {
           technician: {
             id: tech._id.toString(),
             name: tech.name,
-            latitude: 0,
-            longitude: 0,
+            latitude: undefined,
+            longitude: undefined,
             baseAddress: baseLoc?.formattedAddress || baseLoc?.city,
             coverageRadiusKm: techRadius,
             serviceTypes: tech.serviceTypes,
@@ -1140,4 +1140,3 @@ export class CoverageService {
     };
   }
 }
-

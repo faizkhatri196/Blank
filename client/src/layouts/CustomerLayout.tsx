@@ -4,15 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut, PlayCircle } from 'lucide-react';
 import { ServoraLogo } from '../components/common/ServoraLogo';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
-import { getCustomerSavedLocation } from '../utils/customerLocation';
+import { useCustomerLocation } from '../contexts/LocationContext';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
+  const { location } = useCustomerLocation();
   const navigate = useNavigate();
 
   // Retrieve user-scoped selected location (null for new customer)
-  const savedLocation = getCustomerSavedLocation(user?.id);
-  const displayCity = savedLocation ? savedLocation.city : null;
+  const displayCity = location?.city || null;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">

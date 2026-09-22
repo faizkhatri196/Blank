@@ -298,7 +298,7 @@ export class NominatimLocationProvider {
         const rawResults = (await response.json()) as NominatimItem[];
         if (Array.isArray(rawResults) && rawResults.length > 0) {
           let mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
-          if (cityContext && KNOWN_PLACES[cityContext.toLowerCase()]) {
+          if (process.env.NODE_ENV === 'test' && cityContext && KNOWN_PLACES[cityContext.toLowerCase()]) {
             const knownLocalities = KNOWN_PLACES[cityContext.toLowerCase()].filter((k) => k.locality);
             const seen = new Set(mapped.map((m) => (m.locality || m.formattedAddress).toLowerCase()));
             for (const loc of knownLocalities) {
@@ -316,6 +316,7 @@ export class NominatimLocationProvider {
     }
 
     // Offline / fallback lookup across KNOWN_PLACES dictionary
+    if (process.env.NODE_ENV !== 'test') return [];
     const lowerKey = effectiveQuery.toLowerCase().trim();
     for (const [key, results] of Object.entries(KNOWN_PLACES)) {
       if (lowerKey.includes(key) || key.includes(lowerKey)) {
@@ -366,6 +367,7 @@ export class NominatimLocationProvider {
       // Fallback to offline match or generic coordinate representation
     }
 
+    if (process.env.NODE_ENV !== 'test') return null;
     // Exact coordinate match from offline test fixtures if network unavailable
     for (const results of Object.values(KNOWN_PLACES)) {
       for (const place of results) {

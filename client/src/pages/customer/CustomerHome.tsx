@@ -24,12 +24,9 @@ import { LocationHierarchySelector } from '../../components/common/LocationHiera
 import { FAQAccordion } from '../../components/common/FAQAccordion';
 import {
   CustomerLocation,
-  getCustomerSavedLocation,
-  saveCustomerLocation,
-  clearCustomerLocation,
 } from '../../utils/customerLocation';
+import { useCustomerLocation } from '../../contexts/LocationContext';
 import {
-  reverseGeocodeCoords,
   acquireLiveLocation,
   geocodeAddressOrCity,
 } from '../../utils/locationSearch';
@@ -37,11 +34,7 @@ import {
 export const CustomerHome: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  // Location State: Starts strictly as NULL for any brand-new customer
-  const [location, setLocation] = useState<CustomerLocation | null>(() =>
-    getCustomerSavedLocation(user?.id)
-  );
+  const { location, setLocation, clearLocation } = useCustomerLocation();
 
   // Form input state for location selection
   const [cityInput, setCityInput] = useState('');
@@ -58,47 +51,6 @@ export const CustomerHome: React.FC = () => {
 
   // Active ticket state
   const [activeTicket, setActiveTicket] = useState<CustomerSafeTicket | null>(null);
-
-  // Auto-request live GPS location when customer dashboard starts
-  useEffect(() => {
-    let isMounted = true;
-    if (!location || location.latitude === undefined || location.longitude === undefined) {
-      setIsLocating(true);
-      acquireLiveLocation(8000)
-        .then((result) => {
-          if (!isMounted || !result) return;
-          const { suggestion, latitude, longitude } = result;
-          const liveLoc: CustomerLocation = {
-            city: suggestion.city,
-            area: suggestion.area,
-            pincode: suggestion.pincode,
-            state: suggestion.state,
-            country: suggestion.country,
-            latitude,
-            longitude,
-            formattedAddress: suggestion.formattedAddress,
-          };
-          setLocation(liveLoc);
-          saveCustomerLocation(liveLoc, user?.id);
-          const isApprox = typeof result.accuracy === 'number' && result.accuracy > 1500;
-          const sourceLabel = result.source === 'google_maps' ? ' (Google Maps)' : result.source === 'ip' ? ' (Network/IP)' : isApprox ? ' (Approximate)' : '';
-          const feedbackMsg = isApprox
-            ? `📍 Detected location${sourceLabel}: ${suggestion.city || suggestion.formattedAddress}. Tap "Change Location" if inaccurate.`
-            : `📍 Live location active${sourceLabel}: ${suggestion.formattedAddress || suggestion.city}`;
-          setLocationFeedback(feedbackMsg);
-          setTimeout(() => setLocationFeedback(null), isApprox ? 8000 : 4000);
-        })
-        .catch((err) => {
-          console.warn('Auto live location detection failed:', err);
-        })
-        .finally(() => {
-          if (isMounted) setIsLocating(false);
-        });
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id]);
 
   // Fetch available services whenever an explicit location is present
   useEffect(() => {
@@ -176,8 +128,7 @@ export const CustomerHome: React.FC = () => {
     setAvailableServices([]);
     setIsCoverageAvailable(true);
     setCoverageMessage('');
-    setLocation(selectedLoc);
-    saveCustomerLocation(selectedLoc, user?.id);
+    setLocation({ ...selectedLoc, source: 'MANUAL' });
     setIsEditingLocation(false);
     setLocationFeedback(null);
   };
@@ -198,20 +149,24 @@ export const CustomerHome: React.FC = () => {
     setIsCoverageAvailable(true);
 
     const geocoded = await geocodeAddressOrCity(`${cleanCity} ${cleanPin}`.trim());
+    if (!geocoded) {
+      setLocationFeedback('Unable to verify that location. Please select a verified search result.');
+      return;
+    }
 
     const newLoc: CustomerLocation = {
-      city: geocoded?.city || cleanCity,
+      city: geocoded.city || cleanCity,
       area: geocoded?.area,
       state: geocoded?.state,
-      country: geocoded?.country || 'India',
-      pincode: geocoded?.pincode || cleanPin || undefined,
-      latitude: geocoded?.latitude,
-      longitude: geocoded?.longitude,
-      formattedAddress: geocoded?.formattedAddress || `${cleanCity}, India`,
+      country: geocoded.country,
+      pincode: geocoded.pincode || cleanPin || undefined,
+      latitude: geocoded.latitude,
+      longitude: geocoded.longitude,
+      formattedAddress: geocoded.formattedAddress,
+      source: 'MANUAL',
     };
 
     setLocation(newLoc);
-    saveCustomerLocation(newLoc, user?.id);
     setIsEditingLocation(false);
     setLocationFeedback(null);
   };
@@ -224,7 +179,7 @@ export const CustomerHome: React.FC = () => {
     setAvailableServices([]);
     setIsCoverageAvailable(true);
     setCoverageMessage('');
-    clearCustomerLocation(user?.id);
+    clearLocation();
     setIsEditingLocation(false);
     setLocationFeedback(null);
   };
@@ -247,14 +202,16 @@ export const CustomerHome: React.FC = () => {
           latitude,
           longitude,
           formattedAddress: suggestion.formattedAddress,
+          source: 'GPS',
+          accuracy: result.accuracy,
+          timestamp: new Date().toISOString(),
         };
 
         setAvailableServices([]);
         setLocation(newLoc);
-        saveCustomerLocation(newLoc, user?.id);
         setIsEditingLocation(false);
         const isApprox = typeof result.accuracy === 'number' && result.accuracy > 1500;
-        const sourceLabel = result.source === 'google_maps' ? ' (Google Maps)' : result.source === 'ip' ? ' (Network/IP)' : isApprox ? ' (Approximate)' : '';
+        const sourceLabel = isApprox ? ' (Approximate)' : '';
         const feedbackMsg = isApprox
           ? `📍 Detected location${sourceLabel}: ${suggestion.city || suggestion.formattedAddress}. Tap "Change Location" if inaccurate.`
           : `📍 Live location active${sourceLabel}: ${suggestion.formattedAddress || suggestion.city}`;
@@ -405,37 +362,6 @@ export const CustomerHome: React.FC = () => {
                 <span>{locationFeedback}</span>
               </div>
             )}
-
-            <div className="flex items-center gap-1.5 flex-wrap text-xs pt-2 border-t border-slate-100">
-              <span className="text-slate-400 font-medium text-[11px]">Quick Selection:</span>
-              {[
-                { city: 'Mundra', lat: 22.8393, lon: 69.7249, pin: '370421' },
-                { city: 'Mandvi', lat: 22.8330, lon: 69.3550, pin: '370465' },
-                { city: 'Koday', lat: 22.8680, lon: 69.5250, pin: '370460' },
-                { city: 'Bhuj', lat: 23.2420, lon: 69.6669, pin: '370001' },
-                { city: 'Rajkot', lat: 22.3039, lon: 70.8022, pin: '360001' },
-                { city: 'Ahmedabad', lat: 23.0225, lon: 72.5714, pin: '380001' },
-              ].map((loc) => (
-                <button
-                  key={loc.city}
-                  type="button"
-                  onClick={() =>
-                    handleStructuredLocationSelect({
-                      city: loc.city,
-                      state: 'Gujarat',
-                      country: 'India',
-                      pincode: loc.pin,
-                      latitude: loc.lat,
-                      longitude: loc.lon,
-                      formattedAddress: `${loc.city}, Gujarat ${loc.pin}, India`,
-                    })
-                  }
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg font-semibold text-slate-700 text-xs transition-colors"
-                >
-                  📍 {loc.city}
-                </button>
-              ))}
-            </div>
 
             <div className="flex justify-end pt-1">
               <button

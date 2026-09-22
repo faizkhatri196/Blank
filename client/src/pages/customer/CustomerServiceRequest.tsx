@@ -4,10 +4,11 @@ import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
-import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
+import { CustomerLocation, getCustomerSavedLocation } from '../../utils/customerLocation';
 import { reverseGeocodeCoords, geocodeAddressOrCity, acquireLiveLocation } from '../../utils/locationSearch';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
+import { useCustomerLocation } from '../../contexts/LocationContext';
 import {
   Sun,
   Wind,
@@ -35,6 +36,7 @@ export const CustomerServiceRequest: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { setLocation } = useCustomerLocation();
 
   // Step state:
   // 1: Location Check ("Where do you need service?")
@@ -62,6 +64,9 @@ export const CustomerServiceRequest: React.FC = () => {
   const [lat, setLat] = useState<number | undefined>(initialLat);
   const [lng, setLng] = useState<number | undefined>(initialLng);
   const [address, setAddress] = useState<string>(initialAddress);
+  const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
+  const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
+  const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
   const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(false);
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);
@@ -96,37 +101,6 @@ export const CustomerServiceRequest: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Auto-request live location when starting the service request flow if coordinates not present
-  useEffect(() => {
-    let isMounted = true;
-    if (lat === undefined || lng === undefined) {
-      setIsLocating(true);
-      acquireLiveLocation(8000)
-        .then((result) => {
-          if (!isMounted || !result) return;
-          const { suggestion, latitude, longitude } = result;
-          setLat(latitude);
-          setLng(longitude);
-          if (suggestion.city && (!city || city === 'Current Location')) {
-            setCity(suggestion.city);
-            if (suggestion.area) setArea(suggestion.area);
-            if (suggestion.pincode) setPincode(suggestion.pincode);
-            if (suggestion.formattedAddress) setAddress(suggestion.formattedAddress);
-            checkServiceAvailability(suggestion.city, suggestion.pincode || '', latitude, longitude);
-          }
-        })
-        .catch((e) => {
-          console.warn('Auto live location detection failed on mount:', e);
-        })
-        .finally(() => {
-          if (isMounted) setIsLocating(false);
-        });
-    }
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const handleUseLiveLocation = async () => {
     setIsLocating(true);
     setLocationError(null);
@@ -136,10 +110,27 @@ export const CustomerServiceRequest: React.FC = () => {
         const { suggestion, latitude, longitude } = result;
         setLat(latitude);
         setLng(longitude);
+        setLocationSource('GPS');
+        setLocationAccuracy(result.accuracy);
+        setLocationTimestamp(new Date().toISOString());
         setCity(suggestion.city);
         if (suggestion.area) setArea(suggestion.area);
         if (suggestion.pincode) setPincode(suggestion.pincode);
         if (suggestion.formattedAddress) setAddress(suggestion.formattedAddress);
+        const selectedLocation: CustomerLocation = {
+          city: suggestion.city,
+          area: suggestion.area,
+          state: suggestion.state,
+          country: suggestion.country,
+          pincode: suggestion.pincode,
+          latitude,
+          longitude,
+          formattedAddress: suggestion.formattedAddress,
+          source: 'GPS',
+          accuracy: result.accuracy,
+          timestamp: new Date().toISOString(),
+        };
+        setLocation(selectedLocation);
         await checkServiceAvailability(suggestion.city, suggestion.pincode || '', latitude, longitude);
       } else {
         setLocationError('Unable to detect live location. Please select your city manually.');
@@ -159,6 +150,9 @@ export const CustomerServiceRequest: React.FC = () => {
     setPincode(selectedLoc.pincode || '');
     setLat(selectedLoc.latitude);
     setLng(selectedLoc.longitude);
+    setLocationSource(selectedLoc.source === 'GPS' ? 'GPS' : 'MANUAL');
+    setLocationAccuracy(selectedLoc.accuracy);
+    setLocationTimestamp(selectedLoc.timestamp || new Date().toISOString());
     if (selectedLoc.area || selectedLoc.formattedAddress) {
       setAddress((prev) => prev ? prev : (selectedLoc.formattedAddress || selectedLoc.area || ''));
     }
@@ -170,7 +164,7 @@ export const CustomerServiceRequest: React.FC = () => {
     setPhotos([]);
     setAvailableServices([]);
 
-    saveCustomerLocation(selectedLoc, user?.id);
+    setLocation(selectedLoc.source === 'GPS' ? selectedLoc : { ...selectedLoc, source: 'MANUAL' });
     checkServiceAvailability(selectedLoc.city, selectedLoc.pincode || '', selectedLoc.latitude, selectedLoc.longitude);
   };
 
@@ -190,15 +184,16 @@ export const CustomerServiceRequest: React.FC = () => {
     setAvailableServices([]);
 
     if (newCity && newCity.trim()) {
-      saveCustomerLocation(
-        {
+      setLocation({
           city: newCity.trim(),
           pincode: newPincode?.trim() || undefined,
           latitude: newLat,
           longitude: newLng,
-        },
-        user?.id
-      );
+          source: 'MANUAL',
+        });
+      setLocationSource('MANUAL');
+      setLocationAccuracy(undefined);
+      setLocationTimestamp(new Date().toISOString());
       checkServiceAvailability(newCity, newPincode, newLat, newLng);
     } else {
       setIsLocationAvailable(false);
@@ -295,15 +290,12 @@ export const CustomerServiceRequest: React.FC = () => {
             latitude,
             longitude,
             formattedAddress: geo.formattedAddress,
+            source: 'GPS',
+            accuracy: pos.coords.accuracy,
+            timestamp: new Date().toISOString(),
           });
         } catch {
-          // Even if reverse geocoding fails, NEVER drop real GPS coordinates
-          handleStructuredLocationSelect({
-            city: 'Current Location',
-            latitude,
-            longitude,
-            formattedAddress: `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`,
-          });
+          setLocationError('Unable to determine your location. Please select your location manually.');
         } finally {
           setIsLocating(false);
         }
@@ -400,6 +392,9 @@ export const CustomerServiceRequest: React.FC = () => {
           formattedAddress: cleanAddress !== 'Service Site Address'
             ? `${cleanAddress}, ${cleanCity}${cleanPincode ? ' ' + cleanPincode : ''}`
             : `${cleanCity}${cleanPincode ? ' ' + cleanPincode : ''}`,
+          locationSource,
+          accuracy: locationAccuracy,
+          timestamp: locationTimestamp || new Date().toISOString(),
         },
         latitude: resolvedLat,
         longitude: resolvedLng,
@@ -509,37 +504,6 @@ export const CustomerServiceRequest: React.FC = () => {
               onLocationSelected={handleStructuredLocationSelect}
               onClearLocation={() => handleLocationChange('', '')}
             />
-
-            {/* Quick Presets for Convenient Testing & One-Click Selection */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs pt-1">
-              <span className="text-slate-400 font-medium text-[11px]">Quick Selection:</span>
-              {[
-                { city: 'Mundra', lat: 22.8393, lon: 69.7249, pin: '370421' },
-                { city: 'Mandvi', lat: 22.8330, lon: 69.3550, pin: '370465' },
-                { city: 'Koday', lat: 22.8680, lon: 69.5250, pin: '370460' },
-                { city: 'Bhuj', lat: 23.2420, lon: 69.6669, pin: '370001' },
-                { city: 'Rajkot', lat: 22.3039, lon: 70.8022, pin: '360001' },
-              ].map((loc) => (
-                <button
-                  key={loc.city}
-                  type="button"
-                  onClick={() =>
-                    handleStructuredLocationSelect({
-                      city: loc.city,
-                      state: 'Gujarat',
-                      country: 'India',
-                      pincode: loc.pin,
-                      latitude: loc.lat,
-                      longitude: loc.lon,
-                      formattedAddress: `${loc.city}, Gujarat ${loc.pin}, India`,
-                    })
-                  }
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg font-semibold text-slate-700 text-xs transition-colors"
-                >
-                  📍 {loc.city}
-                </button>
-              ))}
-            </div>
 
             {/* Street / Building Address */}
             <div>
