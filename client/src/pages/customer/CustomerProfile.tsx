@@ -2,15 +2,15 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, Mail, MapPin, LogOut, ShieldCheck, HelpCircle } from 'lucide-react';
-import { getCustomerSavedLocation } from '../../utils/customerLocation';
+import { useCustomerLocation } from '../../contexts/LocationContext';
 
 export const CustomerProfile: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const savedLoc = getCustomerSavedLocation(user?.id);
-  const savedCity = savedLoc ? savedLoc.city : null;
-  const savedPincode = savedLoc ? savedLoc.pincode : null;
+  const { location } = useCustomerLocation();
+  const savedCity = location?.city || null;
+  const savedPincode = location?.pincode || null;
 
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-fadeIn">

@@ -53,7 +53,8 @@ export async function searchLocations(req: Request, res: Response): Promise<void
       for (const comp of companies) {
         for (const sa of comp.serviceAreas) {
           if (sa.city.toLowerCase() === cityContext.toLowerCase()) {
-            for (const areaName of sa.areas || []) {
+          if (!isValidCoordinate(sa.latitude, sa.longitude)) continue;
+          for (const areaName of sa.areas || []) {
               const lower = areaName.toLowerCase();
               if (!seenAreas.has(lower) && (!query || lower.includes(query.toLowerCase()))) {
                 seenAreas.add(lower);
@@ -64,8 +65,8 @@ export async function searchLocations(req: Request, res: Response): Promise<void
                   locality: areaName,
                   area: areaName,
                   postalCode: (sa.pincodes && sa.pincodes[0]) || '',
-                  latitude: sa.latitude || 0,
-                  longitude: sa.longitude || 0,
+                  latitude: sa.latitude,
+                  longitude: sa.longitude,
                   formattedAddress: `${areaName}, ${sa.city}, ${sa.state || ''} ${(sa.pincodes && sa.pincodes[0]) || ''}, India`.trim(),
                   provider: 'company_coverage',
                 });
@@ -193,4 +194,3 @@ export async function getLocationStatus(req: Request, res: Response): Promise<vo
     res.status(500).json({ success: false, error: { message: error.message } });
   }
 }
-

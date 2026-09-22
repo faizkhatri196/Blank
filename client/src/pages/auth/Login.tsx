@@ -17,7 +17,6 @@ import {
   MapPin,
   Phone,
 } from 'lucide-react';
-import { saveCustomerLocation } from '../../utils/customerLocation';
 import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 type PortalRole = 'customer' | 'technician' | 'manager';
@@ -134,7 +133,6 @@ export const Login: React.FC = () => {
 
       const { token, user } = res.data.data;
       login(token, user);
-      saveCustomerLocation({ city: customerCity.trim(), area: customerAddress.trim() }, user.id);
       navigate('/customer');
     } catch (err: any) {
       setError(err.message || 'Unable to create customer account. Please try again.');

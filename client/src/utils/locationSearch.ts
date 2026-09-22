@@ -44,6 +44,7 @@ export function setStoredGoogleMapsKey(key: string): void {
 }
 
 let activeAbortController: AbortController | null = null;
+let searchSequence = 0;
 
 export async function searchLocations(
   query: string,
@@ -59,6 +60,7 @@ export async function searchLocations(
     activeAbortController.abort();
   }
   activeAbortController = new AbortController();
+  const requestSequence = ++searchSequence;
 
   // 1. Try server-side location provider abstraction
   try {
@@ -79,7 +81,7 @@ export async function searchLocations(
       signal: activeAbortController.signal,
     });
 
-    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+    if (requestSequence === searchSequence && res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
       return res.data.data.map((item: any) => ({
         city: item.city || item.locationName || '',
         state: item.state || '',
@@ -125,7 +127,7 @@ export async function searchLocations(
     }
 
     const data: any[] = await res.json();
-    if (!Array.isArray(data)) {
+    if (requestSequence !== searchSequence || !Array.isArray(data)) {
       return [];
     }
 
@@ -158,6 +160,8 @@ export async function searchLocations(
       const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
       const latitude = parseFloat(item.lat);
       const longitude = parseFloat(item.lon);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+          (Math.abs(latitude) < 0.0001 && Math.abs(longitude) < 0.0001)) continue;
 
       const parts = [area, city, state, country].filter(Boolean);
       let formattedAddress = parts.join(', ');
@@ -171,8 +175,8 @@ export async function searchLocations(
         country: country.trim(),
         area: area?.trim(),
         pincode,
-        latitude: isNaN(latitude) ? 0 : latitude,
-        longitude: isNaN(longitude) ? 0 : longitude,
+        latitude,
+        longitude,
         formattedAddress: formattedAddress || item.display_name,
       });
     }
@@ -242,7 +246,8 @@ export async function reverseGeocodeCoords(
 
     if (res.data?.success && res.data.data) {
       const d = res.data.data;
-      const city = d.city || d.locationName || 'Current Location';
+      const city = d.city || d.locationName;
+      if (!city) throw new Error('Reverse geocoding did not identify a city');
       const area = d.area || d.locality;
       const pincode = d.postalCode || undefined;
       return {
@@ -260,22 +265,14 @@ export async function reverseGeocodeCoords(
     console.warn('Backend reverse geocode failed, keeping live coordinates:', e);
   }
 
-  // Fallback: retain real live GPS coordinates
-  return {
-    city: 'Current Location',
-    state: '',
-    country: 'India',
-    latitude,
-    longitude,
-    formattedAddress: `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`,
-  };
+  throw new Error('Unable to determine your location. Please select your location manually.');
 }
 
 export interface LiveLocationResult {
   latitude: number;
   longitude: number;
   accuracy?: number;
-  source: 'gps' | 'google_maps' | 'ip';
+  source: 'gps';
   suggestion: StructuredLocationSuggestion;
 }
 
@@ -315,69 +312,6 @@ export async function acquireLiveLocation(
     } catch (err: any) {
       console.warn('HTML5 geolocation not available or denied, trying fallbacks:', err.message);
     }
-  }
-
-  // 2. Try Google Maps Geolocation endpoint on server
-  try {
-    const apiKey = getStoredGoogleMapsKey();
-    const headers: Record<string, string> = {};
-    if (apiKey) {
-      headers['x-google-maps-api-key'] = apiKey;
-    }
-
-    const res = await apiClient.post('/location/geolocate', {}, { headers, timeout: 6000 });
-    if (res.data?.success && res.data.data) {
-      const d = res.data.data;
-      const lat = d.latitude;
-      const lon = d.longitude;
-      const suggestion: StructuredLocationSuggestion = {
-        city: d.city || 'Current Location',
-        area: d.area,
-        state: d.state || '',
-        country: d.country || 'India',
-        pincode: d.pincode,
-        latitude: lat,
-        longitude: lon,
-        formattedAddress: d.address || `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`,
-      };
-
-      return {
-        latitude: lat,
-        longitude: lon,
-        accuracy: d.accuracy,
-        source: 'google_maps',
-        suggestion,
-      };
-    }
-  } catch (err: any) {
-    console.warn('Google Maps Geolocation fallback unavailable:', err.message);
-  }
-
-  // 3. Try IP-based network geolocation as last live fallback
-  try {
-    const ipRes = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
-    if (ipRes.ok) {
-      const ipData = await ipRes.json();
-      if (ipData && typeof ipData.latitude === 'number' && typeof ipData.longitude === 'number') {
-        const lat = ipData.latitude;
-        const lon = ipData.longitude;
-        const suggestion = await reverseGeocodeCoords(lat, lon);
-        return {
-          latitude: lat,
-          longitude: lon,
-          accuracy: 5000,
-          source: 'ip',
-          suggestion: {
-            ...suggestion,
-            city: ipData.city || suggestion.city,
-            state: ipData.region || suggestion.state,
-            pincode: ipData.postal || suggestion.pincode,
-          },
-        };
-      }
-    }
-  } catch (err: any) {
-    console.warn('Network IP geolocation fallback unavailable:', err.message);
   }
 
   return null;
@@ -467,4 +401,3 @@ export function calculateHaversineDistanceKm(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
 }
-

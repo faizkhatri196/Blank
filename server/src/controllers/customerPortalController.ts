@@ -515,6 +515,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       pincode: location.pincode || '',
       coordinates: resolvedCoords,
       locationSource: location.locationSource || 'MANUAL',
+      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
+      timestamp: location.timestamp ? new Date(location.timestamp) : new Date(),
     };
 
     const richLocationSnapshot = {
@@ -529,6 +531,9 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       provider: location.provider || 'nominatim',
       placeId: location.placeId,
       resolvedAt: new Date(),
+      source: location.locationSource || 'MANUAL',
+      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
+      timestamp: location.timestamp ? new Date(location.timestamp) : new Date(),
     };
 
     const finalIsUnknown = Boolean(isUnknownTriage || normalizedResult.isUnknownTriage);

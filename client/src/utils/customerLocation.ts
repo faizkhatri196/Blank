@@ -8,6 +8,9 @@ export interface CustomerLocation {
   latitude?: number;
   longitude?: number;
   formattedAddress?: string;
+  source?: 'MANUAL' | 'GPS' | 'SAVED';
+  accuracy?: number;
+  timestamp?: string;
 }
 
 const GUEST_STORAGE_KEY = 'servora.customer.guest_location';
@@ -62,6 +65,9 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
         latitude: typeof parsed.latitude === 'number' ? parsed.latitude : undefined,
         longitude: typeof parsed.longitude === 'number' ? parsed.longitude : undefined,
         formattedAddress: parsed.formattedAddress ? String(parsed.formattedAddress).trim() : undefined,
+        source: 'SAVED',
+        accuracy: typeof parsed.accuracy === 'number' ? parsed.accuracy : undefined,
+        timestamp: parsed.timestamp ? String(parsed.timestamp) : undefined,
       };
     }
     return null;
@@ -89,6 +95,9 @@ export function saveCustomerLocation(location: CustomerLocation, userId?: string
       latitude: typeof location.latitude === 'number' ? location.latitude : undefined,
       longitude: typeof location.longitude === 'number' ? location.longitude : undefined,
       formattedAddress: location.formattedAddress ? String(location.formattedAddress).trim() : undefined,
+      source: location.source || 'MANUAL',
+      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
+      timestamp: location.timestamp || new Date().toISOString(),
     };
     const key = getScopedLocationKey(userId);
     localStorage.setItem(key, JSON.stringify(cleanLocation));

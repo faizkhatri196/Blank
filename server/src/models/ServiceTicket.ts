@@ -26,6 +26,8 @@ export interface IServiceTicket extends Document {
       longitude?: number;
     };
     locationSource?: string;
+    accuracy?: number;
+    timestamp?: Date;
   };
   serviceLocationSnapshot?: {
     inputText?: string;
@@ -39,6 +41,9 @@ export interface IServiceTicket extends Document {
     provider?: string;
     placeId?: string;
     resolvedAt: Date;
+    source?: string;
+    accuracy?: number;
+    timestamp?: Date;
   };
   coverageSnapshot?: {
     coverageId?: string;
@@ -107,6 +112,8 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
         longitude: { type: Number },
       },
       locationSource: { type: String, default: 'MANUAL' },
+      accuracy: { type: Number },
+      timestamp: { type: Date },
     },
     serviceLocationSnapshot: {
       inputText: { type: String },
@@ -120,6 +127,9 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
       provider: { type: String, default: 'nominatim' },
       placeId: { type: String },
       resolvedAt: { type: Date, default: Date.now },
+      source: { type: String },
+      accuracy: { type: Number },
+      timestamp: { type: Date },
     },
     coverageSnapshot: {
       coverageId: { type: String },
