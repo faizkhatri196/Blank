@@ -26,6 +26,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { ServoraLogo } from '../../components/common/ServoraLogo';
+import { searchLocations } from '../../utils/locationSearch';
 
 interface ServiceOption {
   type: string;
@@ -252,6 +253,44 @@ export const CompanyOnboarding: React.FC = () => {
     setError(null);
 
     try {
+      const resolvedServiceAreas = await Promise.all(
+        serviceAreas.map(async (sa) => {
+          let lat = sa.latitude;
+          let lon = sa.longitude;
+          if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) {
+            const queries = [
+              [sa.city, sa.state, sa.country || 'India'].filter(Boolean).join(', '),
+              [sa.city, sa.country || 'India'].filter(Boolean).join(', '),
+              sa.city.trim(),
+            ];
+            for (const q of queries) {
+              try {
+                const results = await searchLocations(q);
+                if (results && results.length > 0 && typeof results[0].latitude === 'number') {
+                  lat = results[0].latitude;
+                  lon = results[0].longitude;
+                  break;
+                }
+              } catch {
+                // Continue to next query
+              }
+            }
+          }
+          return {
+            city: sa.city.trim(),
+            state: sa.state.trim(),
+            country: sa.country.trim(),
+            areas: sa.areas,
+            pincodes: sa.pincodes,
+            latitude: lat,
+            longitude: lon,
+            radius: sa.radius || 20,
+            radiusKm: sa.radius || 20,
+            services: sa.services,
+          };
+        })
+      );
+
       const payload = {
         companyName: companyName.trim(),
         managerName: managerName.trim(),
@@ -262,15 +301,7 @@ export const CompanyOnboarding: React.FC = () => {
         address: address.trim(),
         website: website.trim(),
         servicesSupported: selectedGlobalServices,
-        serviceAreas: serviceAreas.map((sa) => ({
-          city: sa.city.trim(),
-          state: sa.state.trim(),
-          country: sa.country.trim(),
-          areas: sa.areas,
-          pincodes: sa.pincodes,
-          radius: sa.radius || 20,
-          services: sa.services,
-        })),
+        serviceAreas: resolvedServiceAreas,
       };
 
       const res = await apiClient.post('/auth/signup', payload);
