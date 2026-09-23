@@ -66,8 +66,8 @@ const CompanySchema = new Schema<ICompany>(
         latitude: { type: Number },
         longitude: { type: Number },
         center: {
-          type: { type: String, enum: ['Point'], default: 'Point' },
-          coordinates: { type: [Number], default: [0, 0] },
+          type: Schema.Types.Mixed,
+          default: undefined,
         },
         radius: { type: Number, default: 20 },
         radiusKm: { type: Number, default: 20 },
@@ -92,6 +92,21 @@ const CompanySchema = new Schema<ICompany>(
   },
   { timestamps: true }
 );
+
+// Clean up invalid or empty center coordinates before MongoDB 2dsphere indexing
+CompanySchema.pre('validate', function (next) {
+  if (this.serviceAreas && Array.isArray(this.serviceAreas)) {
+    for (const sa of this.serviceAreas) {
+      if (sa.center) {
+        const coords = sa.center.coordinates;
+        if (!Array.isArray(coords) || coords.length !== 2 || typeof coords[0] !== 'number' || typeof coords[1] !== 'number' || (coords[0] === 0 && coords[1] === 0)) {
+          sa.center = undefined;
+        }
+      }
+    }
+  }
+  next();
+});
 
 CompanySchema.index({ 'serviceAreas.center': '2dsphere' });
 

@@ -70,8 +70,8 @@ const TechnicianSchema = new Schema<ITechnician>(
       latitude: { type: Number },
       longitude: { type: Number },
       center: {
-        type: { type: String, enum: ['Point'], default: 'Point' },
-        coordinates: { type: [Number], default: [0, 0] },
+        type: Schema.Types.Mixed,
+        default: undefined,
       },
     },
     coverageRadiusKm: { type: Number, default: 20 },
@@ -94,5 +94,16 @@ const TechnicianSchema = new Schema<ITechnician>(
   },
   { timestamps: true }
 );
+
+// Clean up invalid or empty center coordinates
+TechnicianSchema.pre('validate', function (next) {
+  if (this.baseLocation?.center) {
+    const coords = this.baseLocation.center.coordinates;
+    if (!Array.isArray(coords) || coords.length !== 2 || typeof coords[0] !== 'number' || typeof coords[1] !== 'number' || (coords[0] === 0 && coords[1] === 0)) {
+      this.baseLocation.center = undefined;
+    }
+  }
+  next();
+});
 
 export const Technician = mongoose.model<ITechnician>('Technician', TechnicianSchema);
