@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { companySignupSchema, serviceAreaSchema } from '../../src/validators';
-import { calculateHaversineDistanceKm } from '../../src/services/location/Geospatial';
+import { calculateHaversineDistanceKm, isValidApplicationCoordinate, createGeoPoint } from '../../src/services/location/geospatial';
 import { FuzzyNormalizer } from '../../src/services/location/FuzzyNormalizer';
 
 describe('BUG A & B Regression Test Suite', () => {
@@ -66,6 +66,20 @@ describe('BUG A & B Regression Test Suite', () => {
       const norm = FuzzyNormalizer.normalize('Mundra');
       expect(norm.normalizedQuery.toLowerCase()).toContain('mundra');
       expect(norm.normalizedQuery.toLowerCase()).not.toContain('ahmedabad');
+    });
+
+    it('8. Company signup accepts valid coordinates through the application validator', () => {
+      expect(isValidApplicationCoordinate(22.8314482, 69.35081)).toBe(true);
+      expect(createGeoPoint(22.8314482, 69.35081).coordinates).toEqual([69.35081, 22.8314482]);
+    });
+
+    it('9. Company signup treats missing coordinates as unresolved', () => {
+      expect(isValidApplicationCoordinate(undefined, undefined)).toBe(false);
+      expect(isValidApplicationCoordinate(null, null)).toBe(false);
+    });
+
+    it('10. Company signup treats (0,0) as invalid coordinates', () => {
+      expect(isValidApplicationCoordinate(0, 0)).toBe(false);
     });
   });
 

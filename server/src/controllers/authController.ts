@@ -9,7 +9,7 @@ import { Customer } from '../models/Customer';
 import { loginSchema, companySignupSchema, customerSignupSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators';
 import { ENV } from '../config/env';
 import { NominatimLocationProvider } from '../services/location/NominatimProvider';
-import { isValidCoordinate, createGeoPoint } from '../services/location/geospatial';
+import { isValidApplicationCoordinate, createGeoPoint } from '../services/location/geospatial';
 
 export async function signup(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -68,11 +68,11 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
       (data.serviceAreas || []).map(async (sa) => {
         let lat = sa.latitude;
         let lon = sa.longitude;
-        if (!isValidCoordinate(lat, lon)) {
+        if (!isValidApplicationCoordinate(lat, lon)) {
           try {
             const query = `${sa.city}${sa.state ? ', ' + sa.state : ''}, ${sa.country || 'India'}`;
             const geoResults = await NominatimLocationProvider.search(query);
-            if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+            if (geoResults && geoResults.length > 0 && isValidApplicationCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
               lat = geoResults[0].latitude;
               lon = geoResults[0].longitude;
             }
@@ -81,9 +81,8 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
           }
         }
 
-        const center = isValidCoordinate(lat, lon)
-          ? createGeoPoint(lat!, lon!)
-          : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+        // Only set center when we have valid geocoded coordinates
+        const center = isValidApplicationCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
         const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
 
         return {
