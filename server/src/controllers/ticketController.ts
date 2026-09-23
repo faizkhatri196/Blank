@@ -22,9 +22,7 @@ import {
   assignTechnicianSchema,
   aiAnalysisReviewSchema,
 } from '../validators';
-import { calculateHaversineDistanceKm, isValidCoordinate } from '../services/location/geospatial';
-import { CoverageService } from '../services/coverageService';
-import { NominatimLocationProvider } from '../services/location/NominatimProvider';
+import { calculateHaversineDistanceKm, isValidApplicationCoordinate, extractValidCoords } from '../services/location/geospatial';
 import mongoose from 'mongoose';
 
 export async function getTickets(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -543,7 +541,6 @@ export async function getRecommendedTechnicians(req: AuthenticatedRequest, res: 
     let customerArea = '';
     let customerAddress = '';
     let customerPincode = '';
-    let custCoords: any = undefined;
 
     if (ticket.customerId) {
       const cust = await Customer.findById(ticket.customerId);
@@ -551,33 +548,6 @@ export async function getRecommendedTechnicians(req: AuthenticatedRequest, res: 
         customerCity = cust.city || '';
         customerAddress = cust.address || '';
         customerPincode = cust.pincode || '';
-        custCoords = cust.coordinates;
-      }
-    }
-
-    let ticketLat = ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
-    let ticketLon = ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
-
-    if (!isValidCoordinate(ticketLat, ticketLon) && custCoords && isValidCoordinate(custCoords.latitude, custCoords.longitude)) {
-      ticketLat = custCoords.latitude;
-      ticketLon = custCoords.longitude;
-    }
-
-    if (!isValidCoordinate(ticketLat, ticketLon) && ticket.coverageSnapshot?.coverageCoordinates && isValidCoordinate(ticket.coverageSnapshot.coverageCoordinates.latitude, ticket.coverageSnapshot.coverageCoordinates.longitude)) {
-      ticketLat = ticket.coverageSnapshot.coverageCoordinates.latitude;
-      ticketLon = ticket.coverageSnapshot.coverageCoordinates.longitude;
-    }
-
-    if (!isValidCoordinate(ticketLat, ticketLon)) {
-      const queryLoc = [ticket.serviceLocation?.area, ticket.serviceLocation?.city || customerCity].filter(Boolean).join(', ');
-      if (queryLoc && queryLoc.trim().length >= 3) {
-        try {
-          const geoResults = await NominatimLocationProvider.search(queryLoc);
-          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
-            ticketLat = geoResults[0].latitude;
-            ticketLon = geoResults[0].longitude;
-          }
-        } catch {}
       }
     }
 
@@ -586,42 +556,9 @@ export async function getRecommendedTechnicians(req: AuthenticatedRequest, res: 
       area: ticket.serviceLocation?.area || customerArea,
       pincode: ticket.serviceLocation?.pincode || customerPincode,
       address: ticket.serviceLocation?.address || customerAddress,
-      latitude: isValidCoordinate(ticketLat, ticketLon) ? ticketLat : undefined,
-      longitude: isValidCoordinate(ticketLat, ticketLon) ? ticketLon : undefined,
     };
 
-    const rawRecommendations = calculateTechnicianMatches(ticket, technicians, aiAnalysis, locationContext);
-
-    const recommendations = await Promise.all(
-      rawRecommendations.map(async (rec) => {
-        if (isValidCoordinate(ticketLat, ticketLon)) {
-          const val = await CoverageService.validateTechnicianCoverage({
-            technicianId: rec.technicianId,
-            customerLatitude: ticketLat!,
-            customerLongitude: ticketLon!,
-            serviceType: ticket.serviceType,
-            companyId: req.companyId,
-            customerAddress: locationContext.address,
-            ticketId: ticket._id,
-          });
-
-          return {
-            ...rec,
-            isEligible: val.eligible,
-            distanceKm: val.distanceKm,
-            coverageRadiusKm: val.radiusKm,
-            coverageStatus: val.eligible ? ('COVERS_LOCATION' as const) : ('OUTSIDE_SERVICE_AREA' as const),
-            coverageExplanation: val.eligible
-              ? `Customer is ${val.distanceKm.toFixed(1)} km away (within ${val.radiusKm} km radius)`
-              : `Customer is ${val.distanceKm.toFixed(1)} km away (exceeds ${val.radiusKm} km coverage radius)`,
-            ineligibilityReason: val.eligible ? undefined : val.reason,
-            technicianCoverageSummary: val.coverageArea?.name || rec.technicianCoverageSummary,
-            diagnostics: val,
-          };
-        }
-        return rec;
-      })
-    );
+    const recommendations = calculateTechnicianMatches(ticket, technicians, aiAnalysis, locationContext);
 
     res.json({ success: true, data: recommendations });
   } catch (error: any) {
@@ -684,10 +621,9 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
     let customerCity = '';
     let customerAddress = '';
     let customerPincode = '';
-    let cust: any = null;
 
     if (ticket.customerId) {
-      cust = await Customer.findById(ticket.customerId);
+      const cust = await Customer.findById(ticket.customerId);
       if (cust) {
         customerCity = (cust.city || '').toLowerCase();
         customerAddress = (cust.address || '').toLowerCase();
@@ -695,89 +631,75 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
       }
     }
 
+    const locationContext = `${ticketCity} ${ticketArea} ${ticketAddress} ${customerCity} ${customerAddress}`.trim();
     const customerLocationSummary = [ticket.serviceLocation?.area, ticket.serviceLocation?.city || customerCity].filter(Boolean).join(', ') || 'Customer location';
     const techCoverageSummary = technician.serviceAreas && technician.serviceAreas.length > 0 ? technician.serviceAreas.join(', ') : 'Universal Company Area';
 
-    // 1. Resolve ticket / customer coordinates
-    let ticketLat = ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude;
-    let ticketLng = ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude;
-
-    if (!isValidCoordinate(ticketLat, ticketLng) && cust?.coordinates && isValidCoordinate(cust.coordinates.latitude, cust.coordinates.longitude)) {
-      ticketLat = cust.coordinates.latitude;
-      ticketLng = cust.coordinates.longitude;
-    }
-
-    if (!isValidCoordinate(ticketLat, ticketLng) && ticket.coverageSnapshot?.coverageCoordinates && isValidCoordinate(ticket.coverageSnapshot.coverageCoordinates.latitude, ticket.coverageSnapshot.coverageCoordinates.longitude)) {
-      ticketLat = ticket.coverageSnapshot.coverageCoordinates.latitude;
-      ticketLng = ticket.coverageSnapshot.coverageCoordinates.longitude;
-    }
-
-    if (!isValidCoordinate(ticketLat, ticketLng) && customerLocationSummary && customerLocationSummary.trim().length >= 3) {
-      try {
-        const geoResults = await NominatimLocationProvider.search(customerLocationSummary);
-        if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
-          ticketLat = geoResults[0].latitude;
-          ticketLng = geoResults[0].longitude;
-        }
-      } catch {}
-    }
-
-    if (!isValidCoordinate(ticketLat, ticketLng)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'CUSTOMER_COORDINATES_REQUIRED',
-          message: 'Customer service location coordinates are missing or invalid. Real geographic coordinates are required for assignment.',
-          details: {
-            customerLocation: customerLocationSummary,
-            ticketId: ticket._id,
-          },
-        },
-      });
-      return;
-    }
-
-    // 2. Validate technician coverage via authoritative centralized CoverageService
-    const validation = await CoverageService.validateTechnicianCoverage({
-      technicianId: technician._id,
-      customerLatitude: ticketLat!,
-      customerLongitude: ticketLng!,
-      serviceType: ticket.serviceType,
-      companyId: req.companyId,
-      customerAddress: customerLocationSummary,
-      ticketId: ticket._id,
+    // Extract validated coordinates for both ticket and technician — reject (0,0) defaults
+    const ticketCoords = extractValidCoords({
+      latitude: ticket.serviceLocationSnapshot?.latitude ?? ticket.serviceLocation?.coordinates?.latitude,
+      longitude: ticket.serviceLocationSnapshot?.longitude ?? ticket.serviceLocation?.coordinates?.longitude,
+    });
+    const techCoords = extractValidCoords({
+      latitude: technician.baseLocation?.latitude,
+      longitude: technician.baseLocation?.longitude,
+      center: technician.baseLocation?.center as any,
     });
 
-    if (!validation.eligible) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'TECHNICIAN_OUTSIDE_COVERAGE',
-          message:
-            validation.reason ||
-            `Technician ${technician.name} is ${Math.round(validation.distanceKm)}km away, exceeding their ${validation.radiusKm}km operating radius.`,
-          details: {
-            technicianId: technician._id.toString(),
-            technicianName: technician.name,
-            customerLatitude: ticketLat,
-            customerLongitude: ticketLng,
-            technicianCoverageLatitude: validation.coverageArea?.latitude ?? validation.technician?.latitude,
-            technicianCoverageLongitude: validation.coverageArea?.longitude ?? validation.technician?.longitude,
-            distanceKm: validation.distanceKm,
-            radiusKm: validation.radiusKm,
-            coverageAreaId: validation.coverageArea?.id,
-            customerAddress: customerLocationSummary,
-            technicianCoverageAddress: validation.technician?.baseAddress || validation.coverageArea?.name || 'Technician Base Location',
-            customerLocation: customerLocationSummary,
-            technicianCoverage: techCoverageSummary,
-            coordinateOrderWarning: validation.coordinateOrderWarning,
-            coordinateSource: validation.coordinateSource,
-            diagnostics: validation,
-            reason: validation.reason,
+    const ticketLat = ticketCoords?.latitude;
+    const ticketLng = ticketCoords?.longitude;
+    const techLat = techCoords?.latitude;
+    const techLng = techCoords?.longitude;
+
+    if (ticketCoords && techCoords) {
+      const distanceKm = calculateHaversineDistanceKm(ticketLat!, ticketLng!, techLat!, techLng!);
+      // Radius must come from database configuration — never hardcode
+      const allowedRadius = (typeof technician.coverageRadiusKm === 'number' && technician.coverageRadiusKm > 0)
+        ? technician.coverageRadiusKm
+        : null;
+      if (allowedRadius !== null && distanceKm > allowedRadius) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'SERVICE_AREA_MISMATCH',
+            message: `Technician ${technician.name} is ${Math.round(distanceKm)}km away, exceeding their ${allowedRadius}km operating radius.`,
+            details: {
+              technicianName: technician.name,
+              distanceKm: Math.round(distanceKm * 10) / 10,
+              coverageRadiusKm: allowedRadius,
+              customerLocation: customerLocationSummary,
+            },
           },
-        },
-      });
-      return;
+        });
+        return;
+      }
+    } else if (technician.serviceAreas && technician.serviceAreas.length > 0) {
+      if (locationContext) {
+        const coversArea = technician.serviceAreas.some((area) => {
+          const a = area.toLowerCase().trim();
+          return locationContext.includes(a) || (ticketCity && a.includes(ticketCity));
+        });
+
+        const coversPincode = (ticketPincode || customerPincode) && technician.pincodes && technician.pincodes.length > 0
+          ? technician.pincodes.includes(ticketPincode || customerPincode)
+          : false;
+
+        if (!coversArea && !coversPincode) {
+          res.status(400).json({
+            success: false,
+            error: {
+              code: 'SERVICE_AREA_MISMATCH',
+              message: `Technician ${technician.name} does not cover the service area for this ticket.`,
+              details: {
+                technicianName: technician.name,
+                customerLocation: customerLocationSummary,
+                technicianCoverage: techCoverageSummary,
+              },
+            },
+          });
+          return;
+        }
+      }
     }
 
     ticket.assignedTechnicianId = technician._id as mongoose.Types.ObjectId;

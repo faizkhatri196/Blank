@@ -70,11 +70,22 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
         let lon = sa.longitude;
         if (!isValidApplicationCoordinate(lat, lon)) {
           try {
-            const query = `${sa.city}${sa.state ? ', ' + sa.state : ''}, ${sa.country || 'India'}`;
-            const geoResults = await NominatimLocationProvider.search(query);
-            if (geoResults && geoResults.length > 0 && isValidApplicationCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
-              lat = geoResults[0].latitude;
-              lon = geoResults[0].longitude;
+            const queries = [
+              `${sa.city}${sa.state ? ', ' + sa.state : ''}, ${sa.country || 'India'}`,
+              `${sa.city}, ${sa.country || 'India'}`,
+              sa.city,
+            ];
+            for (const q of queries) {
+              try {
+                const geoResults = await NominatimLocationProvider.search(q);
+                if (geoResults && geoResults.length > 0 && isValidApplicationCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
+                  lat = geoResults[0].latitude;
+                  lon = geoResults[0].longitude;
+                  break;
+                }
+              } catch {
+                // Try next query
+              }
             }
           } catch {
             // Geocoding failure non-blocking
@@ -337,6 +348,13 @@ export async function login(req: AuthenticatedRequest, res: Response): Promise<v
 
     const company = await Company.findById(user.companyId);
 
+    // Look up customerId for CUSTOMER role
+    let customerId: string | undefined;
+    if (user.role === 'CUSTOMER') {
+      const custDoc = await (await import('../models/Customer')).Customer.findOne({ userId: user._id });
+      customerId = custDoc?._id?.toString();
+    }
+
     res.json({
       success: true,
       data: {
@@ -352,6 +370,7 @@ export async function login(req: AuthenticatedRequest, res: Response): Promise<v
           servicesSupported: company?.servicesSupported || ['SOLAR', 'AC'],
           isPilotCompany: company?.isPilot || false,
           environmentContext: company?.environmentContext || (company?.isPilot ? 'PILOT' : 'DEMO'),
+          customerId,
         },
       },
     });

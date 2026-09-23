@@ -227,7 +227,88 @@ const KNOWN_PLACES: Record<string, LocationSearchResult[]> = {
       provider: 'nominatim',
     },
   ],
+  // Mandvi (Kutch) — real coordinates, NOT Mandvi (Surat). Distance to Koday: ~7.5 km.
+  mandvi: [
+    {
+      formattedAddress: 'Mandvi, Kutch, Gujarat 370465, India',
+      city: 'Mandvi',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.8321,
+      longitude: 69.3538,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Koday, Mandvi, Kutch, Gujarat, India',
+      city: 'Mandvi',
+      locality: 'Koday',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.8801,
+      longitude: 69.3621,
+      provider: 'nominatim',
+    },
+    {
+      formattedAddress: 'Maska, Mandvi, Kutch, Gujarat, India',
+      city: 'Mandvi',
+      locality: 'Maska',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.8556,
+      longitude: 69.3781,
+      provider: 'nominatim',
+    },
+  ],
+  // Koday / Kodai (village near Mandvi, ~7.5 km from Mandvi center)
+  koday: [
+    {
+      formattedAddress: 'Koday, Mandvi Taluka, Kutch, Gujarat 370465, India',
+      city: 'Mandvi',
+      locality: 'Koday',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.8801,
+      longitude: 69.3621,
+      provider: 'nominatim',
+    },
+  ],
+  kodai: [
+    {
+      formattedAddress: 'Kodai, Mandvi Taluka, Kutch, Gujarat 370465, India',
+      city: 'Mandvi',
+      locality: 'Kodai',
+      district: 'Kutch District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '370465',
+      latitude: 22.8801,
+      longitude: 69.3621,
+      provider: 'nominatim',
+    },
+  ],
+  wankaner: [
+    {
+      formattedAddress: 'Wankaner, Morbi, Gujarat 363621, India',
+      city: 'Wankaner',
+      district: 'Morbi District',
+      state: 'Gujarat',
+      country: 'India',
+      postalCode: '363621',
+      latitude: 22.6118,
+      longitude: 70.9434,
+      provider: 'nominatim',
+    },
+  ],
 };
+
 
 export class NominatimLocationProvider {
   /**

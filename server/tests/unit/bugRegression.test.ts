@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { companySignupSchema, serviceAreaSchema } from '../../src/validators';
 import { calculateHaversineDistanceKm, isValidApplicationCoordinate, createGeoPoint } from '../../src/services/location/geospatial';
 import { FuzzyNormalizer } from '../../src/services/location/FuzzyNormalizer';
+import { NominatimLocationProvider } from '../../src/services/location/NominatimProvider';
 
 describe('BUG A & B Regression Test Suite', () => {
   describe('Bug A: Customer Location & Service Discovery', () => {
@@ -66,6 +67,17 @@ describe('BUG A & B Regression Test Suite', () => {
       const norm = FuzzyNormalizer.normalize('Mundra');
       expect(norm.normalizedQuery.toLowerCase()).toContain('mundra');
       expect(norm.normalizedQuery.toLowerCase()).not.toContain('ahmedabad');
+    });
+
+    it('6. Reverse geocoding should not silently fallback to a hardcoded city when the place remains unresolved', async () => {
+      const result = await NominatimLocationProvider.reverseGeocode(22.5, 69.0);
+      expect(result).toBeNull();
+    });
+
+    it('7. Zeroed coordinates are never treated as a valid GeoJSON point', () => {
+      expect(isValidApplicationCoordinate(0, 0)).toBe(false);
+      const point = isValidApplicationCoordinate(0, 0) ? createGeoPoint(0, 0) : null;
+      expect(point).toBeNull();
     });
 
     it('8. Company signup accepts valid coordinates through the application validator', () => {

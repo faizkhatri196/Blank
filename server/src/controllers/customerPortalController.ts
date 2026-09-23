@@ -12,9 +12,8 @@ import { ServiceRegistry } from '../config/serviceRegistry';
 import { normalizeComplaint } from '../ai/complaintNormalizer';
 import { AIFactory } from '../ai/AIFactory';
 import { generateTicketNumber } from '../services/ticketService';
-import { calculateHaversineDistanceKm, isValidCoordinate } from '../services/location/geospatial';
-import { NominatimLocationProvider } from '../services/location/NominatimProvider';
-import { CoverageService } from '../services/coverageService';
+import { calculateHaversineDistanceKm, isValidApplicationCoordinate, extractValidCoords } from '../services/location/geospatial';
+import { resolveServiceCoverage, discoverAvailableServices } from '../services/location/coverageService';
 import {
   ServiceType,
   TicketStatus,
@@ -105,19 +104,6 @@ export function serializeCustomerTicket(
     },
   ];
 
-  const lastHistory = ticket.statusHistory && ticket.statusHistory.length > 0
-    ? ticket.statusHistory[ticket.statusHistory.length - 1]
-    : undefined;
-  const cancelHistory = ticket.statusHistory
-    ? [...ticket.statusHistory].reverse().find((h) => h.status === 'CANCELLED')
-    : undefined;
-  const isRejected = Boolean(
-    cancelHistory?.note && (
-      cancelHistory.note.toLowerCase().includes('reject') ||
-      cancelHistory.note.toLowerCase().includes('declined')
-    )
-  );
-
   // Customer-friendly status label
   let customerStatusLabel = 'Request Submitted';
   switch (status) {
@@ -148,19 +134,8 @@ export function serializeCustomerTicket(
       customerStatusLabel = 'Service Completed';
       break;
     case 'CANCELLED':
-      customerStatusLabel = isRejected ? 'Request Rejected' : 'Request Cancelled';
+      customerStatusLabel = 'Request Cancelled';
       break;
-  }
-
-  // If request is cancelled/rejected, append terminal cancellation milestone to timeline
-  if (status === 'CANCELLED') {
-    steps.push({
-      key: 'CANCELLED',
-      label: isRejected ? 'Request Rejected' : 'Request Cancelled',
-      status: 'COMPLETED',
-      timestamp: cancelHistory?.timestamp ? new Date(cancelHistory.timestamp).toISOString() : ticket.updatedAt?.toISOString(),
-      description: cancelHistory?.note || (isRejected ? 'Service request was rejected by service team.' : 'Service request was cancelled.'),
-    });
   }
 
   const serviceDef = ServiceRegistry.getService(ticket.serviceType);
@@ -200,8 +175,6 @@ export function serializeCustomerTicket(
     assignedProfessionalRole: ticket.assignedTechnicianId ? assignedProfessionalRole : undefined,
     assignedProfessionalName,
     approvedCompanyContact: approvedContact,
-    statusNote: cancelHistory?.note || lastHistory?.note,
-    cancellationReason: cancelHistory?.note,
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
     completedAt: ticket.completedAt?.toISOString(),
@@ -217,77 +190,64 @@ export function serializeCustomerTicket(
 
 /**
  * POST /api/customer-portal/services/available
- * Location-based service discovery (Real Coordinates & Coverage)
+ * Location-based service discovery (City + Pincode)
  */
 export async function getAvailableServices(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const locInput = req.body.location || req.body;
-    let latitude = typeof locInput.latitude === 'number' ? locInput.latitude : (typeof req.body.latitude === 'number' ? req.body.latitude : undefined);
-    let longitude = typeof locInput.longitude === 'number' ? locInput.longitude : (typeof req.body.longitude === 'number' ? req.body.longitude : undefined);
-    const city = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : undefined);
+    const city = typeof locInput.city === 'string' ? locInput.city.trim() : (typeof req.body.city === 'string' ? req.body.city.trim() : '');
     const pincode = locInput.postalCode || locInput.pincode || req.body.pincode ? String(locInput.postalCode || locInput.pincode || req.body.pincode).trim() : undefined;
+    const latitude = typeof locInput.latitude === 'number' ? locInput.latitude : (typeof req.body.latitude === 'number' ? req.body.latitude : undefined);
+    const longitude = typeof locInput.longitude === 'number' ? locInput.longitude : (typeof req.body.longitude === 'number' ? req.body.longitude : undefined);
+    const area = typeof locInput.area === 'string' ? locInput.area.trim() : undefined;
 
-    // If coordinates missing or invalid, attempt reverse geocoding/geocoding if query or address is available
-    if (!isValidCoordinate(latitude, longitude)) {
-      const queryStr = locInput.formattedAddress || locInput.inputText || locInput.address || city;
-      if (queryStr && typeof queryStr === 'string' && queryStr.trim().length >= 2) {
-        try {
-          const geoResults = await NominatimLocationProvider.search(queryStr.trim());
-          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
-            latitude = geoResults[0].latitude;
-            longitude = geoResults[0].longitude;
-          }
-        } catch {}
-      }
-    }
-
-    if (!isValidCoordinate(latitude, longitude)) {
+    if (!city && !isValidApplicationCoordinate(latitude, longitude)) {
       res.status(400).json({
         success: false,
-        error: {
-          code: 'LOCATION_COORDINATES_REQUIRED',
-          message: 'Valid latitude (-90..90) and longitude (-180..180) coordinates are required to check service availability.',
-        },
+        error: { code: 'INVALID_LOCATION', message: 'Valid location or city coordinates are required to check service availability.' },
       });
       return;
     }
 
-    const evaluation = await CoverageService.evaluateCoverage(latitude!, longitude!);
+    // Unified coverage engine — identical logic used for both discovery and request creation
+    const discovery = await discoverAvailableServices({ latitude, longitude, city, area, pincode });
 
-    if (!evaluation.coverageAvailable) {
+    if (!discovery.coverageAvailable) {
       res.json({
         success: true,
         data: {
           coverageAvailable: false,
-          city,
+          city: city || undefined,
           latitude,
           longitude,
           pincode,
           services: [],
           availableServices: [],
-          coverageAreas: evaluation.coverageAreas,
-          distances: evaluation.distances,
-          message: 'No active service coverage was found at this location.',
+          message: discovery.message || 'Servora services are not currently available in this area.',
         },
       });
       return;
     }
 
-    const serviceDefinitions = evaluation.services.map((group) => {
-      const def = ServiceRegistry.getService(group.serviceType);
-      return {
-        serviceType: group.serviceType,
-        displayName: def?.displayName || group.name,
-        shortDescription: def?.shortDescription || group.description,
-        icon: def?.icon,
-        heroImage: def?.heroImage,
-        providerCount: group.companies.length,
-        primaryCompanyId: group.companies[0]?.companyId,
-        providers: group.companies,
-        distanceKm: group.companies[0]?.distanceKm,
-        radiusKm: group.companies[0]?.radiusKm,
-      };
-    });
+    const serviceDefinitions = discovery.services
+      .map((match) => {
+        const def = ServiceRegistry.getService(match.serviceType);
+        if (!def) return null;
+        return {
+          serviceType: def.serviceType,
+          displayName: def.displayName,
+          shortDescription: def.shortDescription,
+          icon: def.icon,
+          heroImage: def.heroImage,
+          providerCount: 1,
+          primaryCompanyId: match.companyId,
+          providers: [{ companyId: match.companyId, companyName: match.companyName }],
+          matchedBy: match.matchedBy,
+          distanceKm: match.distanceKm,
+          coverageRadiusKm: match.coverageRadiusKm,
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
     res.json({
       success: true,
@@ -295,13 +255,9 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
         coverageAvailable: true,
         city,
         pincode,
-        latitude,
-        longitude,
         companyId: serviceDefinitions[0]?.primaryCompanyId,
         services: serviceDefinitions,
         availableServices: serviceDefinitions,
-        coverageAreas: evaluation.coverageAreas,
-        distances: evaluation.distances,
       },
     });
   } catch (error: any) {
@@ -380,126 +336,51 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     }
 
     const rawInput = complaint.trim();
+    const cleanCity = location.city.trim().toLowerCase();
     const cleanPincode = location.pincode ? String(location.pincode).trim() : (location.postalCode ? String(location.postalCode).trim() : undefined);
-    let custLat = location.coordinates?.latitude ?? location.latitude;
-    let custLon = location.coordinates?.longitude ?? location.longitude;
-
-    if (!isValidCoordinate(custLat, custLon)) {
-      const queryStr = location.formattedAddress || location.inputText || location.address || location.city;
-      if (queryStr && typeof queryStr === 'string' && queryStr.trim().length >= 2) {
-        try {
-          const geoResults = await NominatimLocationProvider.search(queryStr.trim());
-          if (geoResults && geoResults.length > 0 && isValidCoordinate(geoResults[0].latitude, geoResults[0].longitude)) {
-            custLat = geoResults[0].latitude;
-            custLon = geoResults[0].longitude;
-          }
-        } catch {}
-      }
-    }
-
-    if (!isValidCoordinate(custLat, custLon)) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'LOCATION_COORDINATES_REQUIRED',
-          message: 'Valid geographic coordinates are required to schedule service.',
-        },
-      });
-      return;
-    }
-
-    // Determine covering company based on authoritative geospatial service-area configuration
+    const custLat = location.coordinates?.latitude ?? location.latitude;
+    const custLon = location.coordinates?.longitude ?? location.longitude;
+    const hasCustCoords = isValidApplicationCoordinate(custLat, custLon);
+    // Unified authoritative coverage check — identical engine as service discovery
     const requestedCompanyId = req.body.companyId || req.companyId;
-    let coverageResult = await CoverageService.evaluateCoverage(custLat!, custLon!, serviceType, requestedCompanyId);
-
-    // If requestedCompanyId was not covering, try across all active companies
-    if (!coverageResult.coverageAvailable && requestedCompanyId) {
-      coverageResult = await CoverageService.evaluateCoverage(custLat!, custLon!, serviceType);
-    }
-
-    if (!coverageResult.coverageAvailable || coverageResult.services.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
-          message: `Servora ${serviceType} service is not currently available at this location.`,
-        },
-      });
-      return;
-    }
-
-    const matchingServiceGroup = coverageResult.services.find((s) => s.serviceType === serviceType);
-    if (!matchingServiceGroup || matchingServiceGroup.companies.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
-          message: `Servora ${serviceType} service is not currently available at this location.`,
-        },
-      });
-      return;
-    }
-
-    const winningProvider = matchingServiceGroup.companies[0];
-    const companyId = new mongoose.Types.ObjectId(winningProvider.companyId);
-    const targetCompany = await Company.findById(companyId);
-    if (!targetCompany) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
-          message: 'Service provider not found.',
-        },
-      });
-      return;
-    }
-
-    const winningAreaEval = coverageResult.coverageAreas.find(
-      (a) => a.companyId === winningProvider.companyId && a.withinRadius && a.active && a.services.includes(serviceType)
-    );
-
-    // Authoritative Unified Technician Coverage Validation (Single Source of Truth)
-    const techValidation = await CoverageService.validateTechnicianCoverage({
-      customerLatitude: custLat!,
-      customerLongitude: custLon!,
+    const coverageResult = await resolveServiceCoverage({
+      latitude: custLat,
+      longitude: custLon,
+      city: location.city,
+      area: location.area,
+      pincode: cleanPincode,
       serviceType,
-      companyId,
-      customerAddress: location.address,
+      requestedCompanyId,
     });
 
-    const hasCompanyTechs = await Technician.exists({ companyId, active: true, serviceTypes: serviceType });
-    if (hasCompanyTechs && !techValidation.eligible) {
+    if (!coverageResult.covered || !coverageResult.companyId) {
       res.status(400).json({
         success: false,
         error: {
-          code: 'TECHNICIAN_OUTSIDE_COVERAGE',
-          message:
-            techValidation.reason ||
-            `No certified technician is currently available within operating radius of this location.`,
-          details: {
-            customerLatitude: custLat,
-            customerLongitude: custLon,
-            distanceKm: techValidation.distanceKm,
-            radiusKm: techValidation.radiusKm,
-            customerAddress: location.address,
-            diagnostics: techValidation,
-          },
+          code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
+          message: `Servora ${serviceType} service is not currently available in ${location.city}${cleanPincode ? ' (' + cleanPincode + ')' : ''}.`,
         },
       });
       return;
     }
+
+    const targetCompanyDoc = await Company.findById(coverageResult.companyId);
+    if (!targetCompanyDoc) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'SERVICE_UNAVAILABLE_AT_LOCATION', message: 'Service provider not found.' },
+      });
+      return;
+    }
+    const targetCompany = targetCompanyDoc;
+
+    const companyId = targetCompany._id as mongoose.Types.ObjectId;
 
     // Resolve customer entity
     let customerDoc: any = null;
     if (req.userId) {
       customerDoc = await Customer.findOne({ userId: req.userId, companyId });
     }
-
-    const effectiveLat = isValidCoordinate(custLat, custLon) ? custLat : winningAreaEval?.centerLatitude;
-    const effectiveLon = isValidCoordinate(custLat, custLon) ? custLon : winningAreaEval?.centerLongitude;
-    const resolvedCoords = isValidCoordinate(effectiveLat, effectiveLon)
-      ? { latitude: effectiveLat!, longitude: effectiveLon! }
-      : undefined;
 
     if (!customerDoc) {
       const custName = customerDetails?.name || req.user?.name || 'Customer';
@@ -515,16 +396,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         address: location.address,
         city: location.city,
         pincode: location.pincode,
-        coordinates: resolvedCoords,
+        coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
       });
-    } else {
-      customerDoc.address = location.address || customerDoc.address;
-      customerDoc.city = location.city || customerDoc.city;
-      customerDoc.pincode = location.pincode || customerDoc.pincode;
-      if (resolvedCoords) {
-        customerDoc.coordinates = resolvedCoords;
-      }
-      await customerDoc.save();
     }
 
     // AI Complaint Normalization
@@ -539,10 +412,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       city: location.city,
       area: location.area || '',
       pincode: location.pincode || '',
-      coordinates: resolvedCoords,
+      coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
       locationSource: location.locationSource || 'MANUAL',
-      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
-      timestamp: location.timestamp ? new Date(location.timestamp) : new Date(),
     };
 
     const richLocationSnapshot = {
@@ -552,14 +423,11 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       state: location.state,
       country: location.country || 'India',
       postalCode: cleanPincode,
-      latitude: effectiveLat,
-      longitude: effectiveLon,
+      latitude: custLat,
+      longitude: custLon,
       provider: location.provider || 'nominatim',
       placeId: location.placeId,
       resolvedAt: new Date(),
-      source: location.locationSource || 'MANUAL',
-      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
-      timestamp: location.timestamp ? new Date(location.timestamp) : new Date(),
     };
 
     const finalIsUnknown = Boolean(isUnknownTriage || normalizedResult.isUnknownTriage);
@@ -584,19 +452,6 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       status: 'NEW',
       serviceLocation: legacyLocationSnapshot,
       serviceLocationSnapshot: richLocationSnapshot,
-      coverageSnapshot: winningAreaEval
-        ? {
-            coverageId: winningAreaEval.areaId,
-            coverageLocationName: winningAreaEval.areaName,
-            coverageCoordinates: {
-              latitude: winningAreaEval.centerLatitude,
-              longitude: winningAreaEval.centerLongitude,
-            },
-            configuredRadiusKm: winningAreaEval.radiusKm,
-            calculatedDistanceKm: Math.round(winningAreaEval.distanceKm * 100) / 100,
-            covered: true,
-          }
-        : undefined,
       isDemoData: targetCompany.environmentContext === 'DEMO' || !targetCompany.isPilot,
       createdBy: req.userId || customerDoc._id,
       statusHistory: [
@@ -681,104 +536,35 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
 
 /**
  * GET /api/customer-portal/requests
- * Lists customer service requests (supports authenticated customers and guest tracked ticket IDs)
+ * Lists the authenticated customer's own service requests
  */
 export async function getCustomerRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    // 1. Extract any client-side tracked ticket IDs from query parameter (comma-separated or array)
-    let queryTicketIds: mongoose.Types.ObjectId[] = [];
-    const rawIds = req.query.ticketIds;
-    if (typeof rawIds === 'string' && rawIds.trim()) {
-      const splitIds = rawIds
-        .split(',')
-        .map((id) => id.trim())
-        .filter((id) => mongoose.Types.ObjectId.isValid(id));
-      queryTicketIds = splitIds.map((id) => new mongoose.Types.ObjectId(id));
-    } else if (Array.isArray(rawIds)) {
-      queryTicketIds = rawIds
-        .map(String)
-        .filter((id) => mongoose.Types.ObjectId.isValid(id))
-        .map((id) => new mongoose.Types.ObjectId(id));
-    }
-
-    const orConditions: any[] = [];
-
-    if (req.userId) {
-      // Find all Customer docs for this user
-      const customerDocs = await Customer.find({ userId: req.userId });
-      const customerIds = customerDocs.map((c) => c._id);
-
-      // Also check if user has phone/email to match customer records that were created as guest
-      const userPhone = req.user?.phone?.trim();
-      const userEmail = req.user?.email?.trim()?.toLowerCase();
-
-      if (userPhone || userEmail) {
-        const matchCustQuery: any[] = [];
-        if (userPhone) matchCustQuery.push({ phone: userPhone });
-        if (userEmail) matchCustQuery.push({ email: userEmail });
-
-        const matchingCustomers = await Customer.find({ $or: matchCustQuery });
-        matchingCustomers.forEach((c) => {
-          if (!customerIds.some((cid) => cid.equals(c._id))) {
-            customerIds.push(c._id);
-          }
-        });
-
-        // Link unlinked matching customer documents to this user for permanent persistence
-        await Customer.updateMany(
-          { $or: matchCustQuery, userId: { $exists: false } },
-          { $set: { userId: req.userId } }
-        ).catch(() => {});
-      }
-
-      if (customerIds.length > 0) {
-        orConditions.push({ customerId: { $in: customerIds } });
-      }
-      orConditions.push({ createdBy: req.userId });
-    }
-
-    if (queryTicketIds.length > 0) {
-      orConditions.push({ _id: { $in: queryTicketIds } });
-
-      // If user is logged in, retroactively associate these tickets and their customers to the user
-      if (req.userId) {
-        ServiceTicket.find({ _id: { $in: queryTicketIds } })
-          .then(async (matchedTickets) => {
-            const custIdsToLink = matchedTickets.map((t) => t.customerId).filter(Boolean);
-            if (custIdsToLink.length > 0) {
-              await Customer.updateMany(
-                { _id: { $in: custIdsToLink }, userId: { $exists: false } },
-                { $set: { userId: req.userId } }
-              ).catch(() => {});
-            }
-          })
-          .catch(() => {});
-      }
-    }
-
-    // If neither authenticated nor tracking any ticket IDs, return empty list gracefully
-    if (orConditions.length === 0) {
-      res.json({
-        success: true,
-        data: [],
-      });
+    if (!req.userId) {
+      res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Login required.' } });
       return;
     }
 
-    // Crucial: Customer requests MUST NOT be restricted by req.companyId,
-    // because customers can have tickets across multiple service providers!
-    const tickets = await ServiceTicket.find({ $or: orConditions }).sort({ createdAt: -1 });
+    // Customers are consumers — find ALL their requests across ALL companies.
+    // Do NOT filter by req.companyId (which is the registration company, not necessarily the service company).
+    const customerDocs = await Customer.find({ userId: req.userId });
+    const customerIds = customerDocs.map((c) => c._id);
 
-    // Fetch matching companies in a single query
-    const companyIds = Array.from(
-      new Set(tickets.map((t) => t.companyId?.toString()).filter(Boolean))
-    );
+    const query: any = {
+      $or: [{ customerId: { $in: customerIds } }, { createdBy: req.userId }],
+    };
+    // NOTE: NO companyId filter here — customers may have tickets across multiple company areas.
+
+    const tickets = await ServiceTicket.find(query).sort({ createdAt: -1 });
+
+    // Fetch unique companies for this customer's tickets (multi-company serialization)
+    const companyIds = [...new Set(tickets.map((t) => t.companyId?.toString()).filter(Boolean))];
     const companies = await Company.find({ _id: { $in: companyIds } });
     const companyMap = new Map(companies.map((c) => [c._id.toString(), c]));
 
     const serialized = tickets.map((t) => {
-      const comp = companyMap.get(t.companyId?.toString());
-      return serializeCustomerTicket(t, comp);
+      const ticketCompany = companyMap.get(t.companyId?.toString()) || null;
+      return serializeCustomerTicket(t, ticketCompany);
     });
 
     res.json({
@@ -803,28 +589,13 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
       return;
     }
 
-    // Authorization & tenant check
+    // Authorization & Tenant Isolation check
     if (req.userId) {
       const customerDocs = await Customer.find({ userId: req.userId });
       const customerIds = customerDocs.map((c) => c._id.toString());
-      const userPhone = req.user?.phone?.trim();
-      const userEmail = req.user?.email?.trim()?.toLowerCase();
-
-      let isOwner =
+      const isOwner =
         customerIds.includes(ticket.customerId.toString()) ||
         (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString());
-
-      if (!isOwner && (userPhone || userEmail)) {
-        const custDoc = await Customer.findById(ticket.customerId);
-        if (
-          custDoc &&
-          ((userPhone && custDoc.phone === userPhone) || (userEmail && custDoc.email?.toLowerCase() === userEmail))
-        ) {
-          isOwner = true;
-          custDoc.userId = req.userId as any;
-          await custDoc.save().catch(() => {});
-        }
-      }
 
       if (!isOwner) {
         res.status(403).json({
@@ -846,113 +617,6 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
     res.json({
       success: true,
       data: serialized,
-    });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
-  }
-}
-
-/**
- * POST /api/customer-portal/requests/:id/cancel
- * Customer cancels their service request
- */
-export async function cancelCustomerRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const { reason } = req.body;
-    const ticket = await ServiceTicket.findById(req.params.id);
-
-    if (!ticket) {
-      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Service request not found.' } });
-      return;
-    }
-
-    if (ticket.status === 'COMPLETED') {
-      res.status(400).json({
-        success: false,
-        error: { code: 'CANNOT_CANCEL_COMPLETED', message: 'Completed service requests cannot be cancelled.' },
-      });
-      return;
-    }
-
-    if (ticket.status === 'CANCELLED') {
-      res.status(400).json({
-        success: false,
-        error: { code: 'ALREADY_CANCELLED', message: 'This service request is already cancelled.' },
-      });
-      return;
-    }
-
-    // Authorization check for authenticated users
-    if (req.userId) {
-      const customerDocs = await Customer.find({ userId: req.userId });
-      const customerIds = customerDocs.map((c) => c._id.toString());
-      const userPhone = req.user?.phone?.trim();
-      const userEmail = req.user?.email?.trim()?.toLowerCase();
-
-      let isOwner =
-        customerIds.includes(ticket.customerId.toString()) ||
-        (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString());
-
-      if (!isOwner && (userPhone || userEmail)) {
-        const custDoc = await Customer.findById(ticket.customerId);
-        if (
-          custDoc &&
-          ((userPhone && custDoc.phone === userPhone) || (userEmail && custDoc.email?.toLowerCase() === userEmail))
-        ) {
-          isOwner = true;
-        }
-      }
-
-      if (!isOwner) {
-        res.status(403).json({
-          success: false,
-          error: { code: 'FORBIDDEN', message: 'Access denied. You can only cancel your own service requests.' },
-        });
-        return;
-      }
-    }
-
-    const cancelNote =
-      reason && typeof reason === 'string' && reason.trim()
-        ? `Cancelled by customer: ${reason.trim()}`
-        : 'Cancelled by customer via Servora Customer Portal';
-
-    ticket.status = 'CANCELLED';
-    ticket.statusHistory.push({
-      status: 'CANCELLED',
-      changedBy: req.userId || (ticket.customerId as any),
-      timestamp: new Date(),
-      note: cancelNote,
-    });
-
-    // If technician was assigned, restore availability
-    if (ticket.assignedTechnicianId) {
-      const tech = await Technician.findById(ticket.assignedTechnicianId);
-      if (tech && tech.availability === 'BUSY') {
-        tech.availability = 'AVAILABLE';
-        await tech.save();
-      }
-    }
-
-    await ticket.save();
-
-    await AuditLog.create({
-      companyId: ticket.companyId,
-      actorId: req.userId || ticket.customerId,
-      actorRole: 'CUSTOMER',
-      action: 'CANCEL_CUSTOMER_REQUEST',
-      entityType: 'ServiceTicket',
-      entityId: ticket._id.toString(),
-      metadata: { reason: cancelNote },
-    });
-
-    const company = await Company.findById(ticket.companyId);
-    const serialized = serializeCustomerTicket(ticket, company);
-
-    res.json({
-      success: true,
-      data: serialized,
-      message: 'Service request has been successfully cancelled.',
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });

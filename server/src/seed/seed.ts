@@ -53,22 +53,49 @@ export async function seedDatabase() {
     servicesSupported: ['SOLAR', 'AC'],
     serviceAreas: [
       {
+        // Ahmedabad — real geocoded center (Prahlad Nagar area)
         city: 'Ahmedabad',
+        state: 'Gujarat',
+        country: 'India',
+        latitude: 23.0225,       // Real Ahmedabad coordinates
+        longitude: 72.5714,
+        center: { type: 'Point', coordinates: [72.5714, 23.0225] }, // GeoJSON: [lng, lat]
+        radiusKm: 30,            // Covers greater Ahmedabad area (DB config, not hardcoded rule)
+        radius: 30,
         areas: ['Prahlad Nagar', 'Bopal', 'Satellite', 'Bodakdev', 'Sanand', 'Navrangpura', 'Vastrapur'],
         pincodes: ['380015', '380054', '380058', '380009', '382110'],
         services: ['SOLAR', 'AC'],
+        active: true,
       },
       {
+        // Gandhinagar — real geocoded center
         city: 'Gandhinagar',
+        state: 'Gujarat',
+        country: 'India',
+        latitude: 23.2156,       // Real Gandhinagar coordinates
+        longitude: 72.6369,
+        center: { type: 'Point', coordinates: [72.6369, 23.2156] },
+        radiusKm: 20,
+        radius: 20,
         areas: ['Sector 21', 'Infocity', 'Kudasan'],
         pincodes: ['382007', '382421'],
         services: ['SOLAR', 'AC'],
+        active: true,
       },
       {
+        // Sanand — real geocoded center
         city: 'Sanand',
+        state: 'Gujarat',
+        country: 'India',
+        latitude: 22.9853,       // Real Sanand coordinates
+        longitude: 72.3772,
+        center: { type: 'Point', coordinates: [72.3772, 22.9853] },
+        radiusKm: 15,
+        radius: 15,
         areas: ['GIDC Phase 2', 'Sanand City'],
         pincodes: ['382110'],
         services: ['SOLAR', 'AC'],
+        active: true,
       },
     ],
     isPilot: false,
@@ -213,8 +240,27 @@ export async function seedDatabase() {
     },
   ];
 
+  // Real Gujarat base coordinates for each seed technician (indexed by position in techProfilesData)
+  // These are real geocoded coordinates — NOT (0,0) defaults
+  const techBaseLocations = [
+    // Rahul Sharma — Bopal, Ahmedabad West
+    { latitude: 23.0339, longitude: 72.4687, radiusKm: 25 },
+    // Amit Patel — Gandhinagar
+    { latitude: 23.2156, longitude: 72.6369, radiusKm: 20 },
+    // Jay Dave — Ahmedabad Central (Navrangpura)
+    { latitude: 23.0395, longitude: 72.5603, radiusKm: 30 },
+    // Vikram Solanki — Maninagar, Ahmedabad East
+    { latitude: 22.9907, longitude: 72.6062, radiusKm: 20 },
+    // Sneha Joshi — Gift City, near Gandhinagar
+    { latitude: 23.1717, longitude: 72.6805, radiusKm: 20 },
+    // Demo Technician — Prahlad Nagar, Ahmedabad
+    { latitude: 23.0225, longitude: 72.5080, radiusKm: 35 },
+  ];
+
   const technicians: any[] = [];
-  for (const t of techProfilesData) {
+  for (let i = 0; i < techProfilesData.length; i++) {
+    const t = techProfilesData[i];
+    const baseLoc = techBaseLocations[i];
     const user = await User.create({
       companyId,
       name: t.name,
@@ -238,6 +284,15 @@ export async function seedDatabase() {
       certifications: ['Certified Field Technician Level II'],
       serviceAreas: t.serviceAreas,
       availability: t.availability,
+      coverageRadiusKm: baseLoc.radiusKm, // From seed config, not a hardcoded rule
+      baseLocation: {
+        latitude: baseLoc.latitude,
+        longitude: baseLoc.longitude,
+        center: {
+          type: 'Point',
+          coordinates: [baseLoc.longitude, baseLoc.latitude], // GeoJSON: [lng, lat]
+        },
+      },
       active: true,
     });
     technicians.push(tech);
