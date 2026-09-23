@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
 import { CustomerLocation, getCustomerSavedLocation } from '../../utils/customerLocation';
+import { saveTicketToStore } from '../../utils/customerTicketStore';
 import { reverseGeocodeCoords, geocodeAddressOrCity, acquireLiveLocation } from '../../utils/locationSearch';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
@@ -409,7 +410,14 @@ export const CustomerServiceRequest: React.FC = () => {
       const res = await apiClient.post('/customer-portal/requests', payload);
 
       if (res.data.success && res.data.data._id) {
-        navigate(`/customer/requests/${res.data.data._id}`, { replace: true });
+        const newTicketId = res.data.data._id;
+        try {
+          saveTicketToStore(res.data.data);
+        } catch (storageErr) {
+          console.warn('[CustomerServiceRequest] Could not persist ticket to localStorage:', storageErr);
+        }
+
+        navigate(`/customer/requests/${newTicketId}`, { replace: true });
       } else {
         setSubmitError(res.data.error?.message || 'Failed to create request. Please try again.');
         setIsSubmitting(false);

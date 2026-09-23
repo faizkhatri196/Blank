@@ -105,6 +105,19 @@ export function serializeCustomerTicket(
     },
   ];
 
+  const lastHistory = ticket.statusHistory && ticket.statusHistory.length > 0
+    ? ticket.statusHistory[ticket.statusHistory.length - 1]
+    : undefined;
+  const cancelHistory = ticket.statusHistory
+    ? [...ticket.statusHistory].reverse().find((h) => h.status === 'CANCELLED')
+    : undefined;
+  const isRejected = Boolean(
+    cancelHistory?.note && (
+      cancelHistory.note.toLowerCase().includes('reject') ||
+      cancelHistory.note.toLowerCase().includes('declined')
+    )
+  );
+
   // Customer-friendly status label
   let customerStatusLabel = 'Request Submitted';
   switch (status) {
@@ -135,8 +148,19 @@ export function serializeCustomerTicket(
       customerStatusLabel = 'Service Completed';
       break;
     case 'CANCELLED':
-      customerStatusLabel = 'Request Cancelled';
+      customerStatusLabel = isRejected ? 'Request Rejected' : 'Request Cancelled';
       break;
+  }
+
+  // If request is cancelled/rejected, append terminal cancellation milestone to timeline
+  if (status === 'CANCELLED') {
+    steps.push({
+      key: 'CANCELLED',
+      label: isRejected ? 'Request Rejected' : 'Request Cancelled',
+      status: 'COMPLETED',
+      timestamp: cancelHistory?.timestamp ? new Date(cancelHistory.timestamp).toISOString() : ticket.updatedAt?.toISOString(),
+      description: cancelHistory?.note || (isRejected ? 'Service request was rejected by service team.' : 'Service request was cancelled.'),
+    });
   }
 
   const serviceDef = ServiceRegistry.getService(ticket.serviceType);
@@ -176,6 +200,8 @@ export function serializeCustomerTicket(
     assignedProfessionalRole: ticket.assignedTechnicianId ? assignedProfessionalRole : undefined,
     assignedProfessionalName,
     approvedCompanyContact: approvedContact,
+    statusNote: cancelHistory?.note || lastHistory?.note,
+    cancellationReason: cancelHistory?.note,
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
     completedAt: ticket.completedAt?.toISOString(),
@@ -655,30 +681,105 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
 
 /**
  * GET /api/customer-portal/requests
- * Lists the authenticated customer's own service requests
+ * Lists customer service requests (supports authenticated customers and guest tracked ticket IDs)
  */
 export async function getCustomerRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.userId) {
-      res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Login required.' } });
+    // 1. Extract any client-side tracked ticket IDs from query parameter (comma-separated or array)
+    let queryTicketIds: mongoose.Types.ObjectId[] = [];
+    const rawIds = req.query.ticketIds;
+    if (typeof rawIds === 'string' && rawIds.trim()) {
+      const splitIds = rawIds
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => mongoose.Types.ObjectId.isValid(id));
+      queryTicketIds = splitIds.map((id) => new mongoose.Types.ObjectId(id));
+    } else if (Array.isArray(rawIds)) {
+      queryTicketIds = rawIds
+        .map(String)
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
+    }
+
+    const orConditions: any[] = [];
+
+    if (req.userId) {
+      // Find all Customer docs for this user
+      const customerDocs = await Customer.find({ userId: req.userId });
+      const customerIds = customerDocs.map((c) => c._id);
+
+      // Also check if user has phone/email to match customer records that were created as guest
+      const userPhone = req.user?.phone?.trim();
+      const userEmail = req.user?.email?.trim()?.toLowerCase();
+
+      if (userPhone || userEmail) {
+        const matchCustQuery: any[] = [];
+        if (userPhone) matchCustQuery.push({ phone: userPhone });
+        if (userEmail) matchCustQuery.push({ email: userEmail });
+
+        const matchingCustomers = await Customer.find({ $or: matchCustQuery });
+        matchingCustomers.forEach((c) => {
+          if (!customerIds.some((cid) => cid.equals(c._id))) {
+            customerIds.push(c._id);
+          }
+        });
+
+        // Link unlinked matching customer documents to this user for permanent persistence
+        await Customer.updateMany(
+          { $or: matchCustQuery, userId: { $exists: false } },
+          { $set: { userId: req.userId } }
+        ).catch(() => {});
+      }
+
+      if (customerIds.length > 0) {
+        orConditions.push({ customerId: { $in: customerIds } });
+      }
+      orConditions.push({ createdBy: req.userId });
+    }
+
+    if (queryTicketIds.length > 0) {
+      orConditions.push({ _id: { $in: queryTicketIds } });
+
+      // If user is logged in, retroactively associate these tickets and their customers to the user
+      if (req.userId) {
+        ServiceTicket.find({ _id: { $in: queryTicketIds } })
+          .then(async (matchedTickets) => {
+            const custIdsToLink = matchedTickets.map((t) => t.customerId).filter(Boolean);
+            if (custIdsToLink.length > 0) {
+              await Customer.updateMany(
+                { _id: { $in: custIdsToLink }, userId: { $exists: false } },
+                { $set: { userId: req.userId } }
+              ).catch(() => {});
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    // If neither authenticated nor tracking any ticket IDs, return empty list gracefully
+    if (orConditions.length === 0) {
+      res.json({
+        success: true,
+        data: [],
+      });
       return;
     }
 
-    const customerDocs = await Customer.find({ userId: req.userId });
-    const customerIds = customerDocs.map((c) => c._id);
+    // Crucial: Customer requests MUST NOT be restricted by req.companyId,
+    // because customers can have tickets across multiple service providers!
+    const tickets = await ServiceTicket.find({ $or: orConditions }).sort({ createdAt: -1 });
 
-    const query: any = {
-      $or: [{ customerId: { $in: customerIds } }, { createdBy: req.userId }],
-    };
+    // Fetch matching companies in a single query
+    const companyIds = Array.from(
+      new Set(tickets.map((t) => t.companyId?.toString()).filter(Boolean))
+    );
+    const companies = await Company.find({ _id: { $in: companyIds } });
+    const companyMap = new Map(companies.map((c) => [c._id.toString(), c]));
 
-    if (req.companyId) {
-      query.companyId = req.companyId;
-    }
-
-    const tickets = await ServiceTicket.find(query).sort({ createdAt: -1 });
-    const company = await Company.findById(req.companyId);
-
-    const serialized = tickets.map((t) => serializeCustomerTicket(t, company));
+    const serialized = tickets.map((t) => {
+      const comp = companyMap.get(t.companyId?.toString());
+      return serializeCustomerTicket(t, comp);
+    });
 
     res.json({
       success: true,
@@ -702,13 +803,28 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
       return;
     }
 
-    // Authorization & Tenant Isolation check
+    // Authorization & tenant check
     if (req.userId) {
       const customerDocs = await Customer.find({ userId: req.userId });
       const customerIds = customerDocs.map((c) => c._id.toString());
-      const isOwner =
+      const userPhone = req.user?.phone?.trim();
+      const userEmail = req.user?.email?.trim()?.toLowerCase();
+
+      let isOwner =
         customerIds.includes(ticket.customerId.toString()) ||
         (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString());
+
+      if (!isOwner && (userPhone || userEmail)) {
+        const custDoc = await Customer.findById(ticket.customerId);
+        if (
+          custDoc &&
+          ((userPhone && custDoc.phone === userPhone) || (userEmail && custDoc.email?.toLowerCase() === userEmail))
+        ) {
+          isOwner = true;
+          custDoc.userId = req.userId as any;
+          await custDoc.save().catch(() => {});
+        }
+      }
 
       if (!isOwner) {
         res.status(403).json({
@@ -730,6 +846,113 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
     res.json({
       success: true,
       data: serialized,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+}
+
+/**
+ * POST /api/customer-portal/requests/:id/cancel
+ * Customer cancels their service request
+ */
+export async function cancelCustomerRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { reason } = req.body;
+    const ticket = await ServiceTicket.findById(req.params.id);
+
+    if (!ticket) {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Service request not found.' } });
+      return;
+    }
+
+    if (ticket.status === 'COMPLETED') {
+      res.status(400).json({
+        success: false,
+        error: { code: 'CANNOT_CANCEL_COMPLETED', message: 'Completed service requests cannot be cancelled.' },
+      });
+      return;
+    }
+
+    if (ticket.status === 'CANCELLED') {
+      res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_CANCELLED', message: 'This service request is already cancelled.' },
+      });
+      return;
+    }
+
+    // Authorization check for authenticated users
+    if (req.userId) {
+      const customerDocs = await Customer.find({ userId: req.userId });
+      const customerIds = customerDocs.map((c) => c._id.toString());
+      const userPhone = req.user?.phone?.trim();
+      const userEmail = req.user?.email?.trim()?.toLowerCase();
+
+      let isOwner =
+        customerIds.includes(ticket.customerId.toString()) ||
+        (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString());
+
+      if (!isOwner && (userPhone || userEmail)) {
+        const custDoc = await Customer.findById(ticket.customerId);
+        if (
+          custDoc &&
+          ((userPhone && custDoc.phone === userPhone) || (userEmail && custDoc.email?.toLowerCase() === userEmail))
+        ) {
+          isOwner = true;
+        }
+      }
+
+      if (!isOwner) {
+        res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Access denied. You can only cancel your own service requests.' },
+        });
+        return;
+      }
+    }
+
+    const cancelNote =
+      reason && typeof reason === 'string' && reason.trim()
+        ? `Cancelled by customer: ${reason.trim()}`
+        : 'Cancelled by customer via Servora Customer Portal';
+
+    ticket.status = 'CANCELLED';
+    ticket.statusHistory.push({
+      status: 'CANCELLED',
+      changedBy: req.userId || (ticket.customerId as any),
+      timestamp: new Date(),
+      note: cancelNote,
+    });
+
+    // If technician was assigned, restore availability
+    if (ticket.assignedTechnicianId) {
+      const tech = await Technician.findById(ticket.assignedTechnicianId);
+      if (tech && tech.availability === 'BUSY') {
+        tech.availability = 'AVAILABLE';
+        await tech.save();
+      }
+    }
+
+    await ticket.save();
+
+    await AuditLog.create({
+      companyId: ticket.companyId,
+      actorId: req.userId || ticket.customerId,
+      actorRole: 'CUSTOMER',
+      action: 'CANCEL_CUSTOMER_REQUEST',
+      entityType: 'ServiceTicket',
+      entityId: ticket._id.toString(),
+      metadata: { reason: cancelNote },
+    });
+
+    const company = await Company.findById(ticket.companyId);
+    const serialized = serializeCustomerTicket(ticket, company);
+
+    res.json({
+      success: true,
+      data: serialized,
+      message: 'Service request has been successfully cancelled.',
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });

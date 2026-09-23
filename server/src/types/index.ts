@@ -317,5 +317,7 @@ export interface CustomerSafeTicketResponse {
     comment?: string;
     submittedAt?: string;
   };
+  statusNote?: string;
+  cancellationReason?: string;
 }
 

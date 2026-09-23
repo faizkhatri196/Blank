@@ -192,5 +192,45 @@ describe('Customer Portal & Privacy Unit Tests', () => {
 
       expect(serialized.approvedCompanyContact).toBeUndefined();
     });
+
+    it('should properly serialize CANCELLED and REJECTED status and include notes and timeline steps', () => {
+      const cancelledTicket: any = {
+        ...mockTicket,
+        status: 'CANCELLED',
+        statusHistory: [
+          { status: 'NEW', note: 'Customer booked service', timestamp: new Date('2026-09-17T10:00:00Z') },
+          { status: 'CANCELLED', note: 'Cancelled by customer via Servora Customer Portal', timestamp: new Date('2026-09-17T10:30:00Z') },
+        ],
+      };
+
+      const serializedCancelled = serializeCustomerTicket(
+        cancelledTicket as IServiceTicket,
+        mockCompany
+      );
+
+      expect(serializedCancelled.status).toBe('CANCELLED');
+      expect(serializedCancelled.customerStatusLabel).toBe('Request Cancelled');
+      expect(serializedCancelled.cancellationReason).toBe('Cancelled by customer via Servora Customer Portal');
+      const cancelStep = serializedCancelled.customerTimeline.find((s) => s.key === 'CANCELLED');
+      expect(cancelStep).toBeDefined();
+      expect(cancelStep?.status).toBe('COMPLETED');
+
+      const rejectedTicket: any = {
+        ...mockTicket,
+        status: 'CANCELLED',
+        statusHistory: [
+          { status: 'NEW', note: 'Customer booked service', timestamp: new Date('2026-09-17T10:00:00Z') },
+          { status: 'CANCELLED', note: 'Service request was rejected: outside certified service boundary', timestamp: new Date('2026-09-17T10:30:00Z') },
+        ],
+      };
+
+      const serializedRejected = serializeCustomerTicket(
+        rejectedTicket as IServiceTicket,
+        mockCompany
+      );
+
+      expect(serializedRejected.customerStatusLabel).toBe('Request Rejected');
+      expect(serializedRejected.cancellationReason).toContain('outside certified service boundary');
+    });
   });
 });

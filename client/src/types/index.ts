@@ -428,6 +428,8 @@ export interface CustomerSafeTicket {
     comment?: string;
     submittedAt?: string;
   };
+  statusNote?: string;
+  cancellationReason?: string;
 }
 
 export interface AvailableServiceItem {
