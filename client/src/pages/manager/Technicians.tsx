@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { Technician, ServiceType } from '../../types';
 import { Modal } from '../../components/common/Modal';
-import { Users, Plus, Phone, Wrench, Shield, CheckCircle, Search, Loader2, Edit2, Eye, Power, AlertCircle, MapPin } from 'lucide-react';
+import { Users, Plus, Phone, Wrench, Shield, CheckCircle, Search, Loader2, Edit2, Eye, Power, AlertCircle, MapPin, Sparkles, Compass } from 'lucide-react';
+import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
+import { CustomerLocation } from '../../utils/customerLocation';
+import { geocodeAddressOrCity, reverseGeocodeCoords } from '../../utils/locationSearch';
 
 export const Technicians: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const editTechId = searchParams.get('edit');
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [serviceFilter, setServiceFilter] = useState<string>('');
@@ -27,8 +33,12 @@ export const Technicians: React.FC = () => {
   const [skillsInput, setSkillsInput] = useState('SOLAR_INSTALLATION, INVERTER_REPAIR');
   const [toolsInput, setToolsInput] = useState('MULTIMETER, CLAMP_METER, MC4_TOOL');
   const [serviceAreasInput, setServiceAreasInput] = useState('');
-  const [radiusInput, setRadiusInput] = useState('20');
+  const [radiusInput, setRadiusInput] = useState('25');
   const [pincodesInput, setPincodesInput] = useState('');
+  const [baseAddress, setBaseAddress] = useState('');
+  const [baseLat, setBaseLat] = useState('');
+  const [baseLng, setBaseLng] = useState('');
+  const [addLocationObj, setAddLocationObj] = useState<CustomerLocation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -36,6 +46,7 @@ export const Technicians: React.FC = () => {
   const [editingTech, setEditingTech] = useState<Technician | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editExperienceYears, setEditExperienceYears] = useState(3);
   const [editServiceTypes, setEditServiceTypes] = useState<ServiceType[]>(['SOLAR']);
@@ -44,10 +55,91 @@ export const Technicians: React.FC = () => {
   const [editServiceAreasInput, setEditServiceAreasInput] = useState('');
   const [editRadiusInput, setEditRadiusInput] = useState('20');
   const [editPincodesInput, setEditPincodesInput] = useState('');
+  const [editBaseAddress, setEditBaseAddress] = useState('');
+  const [editBaseLat, setEditBaseLat] = useState('');
+  const [editBaseLng, setEditBaseLng] = useState('');
+  const [editLocationObj, setEditLocationObj] = useState<CustomerLocation | null>(null);
   const [editAvailability, setEditAvailability] = useState<'AVAILABLE' | 'BUSY' | 'OFFLINE'>('AVAILABLE');
   const [editActive, setEditActive] = useState(true);
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editModalError, setEditModalError] = useState<string | null>(null);
+  const [technicianSuccessMessage, setTechnicianSuccessMessage] = useState<string | null>(null);
+  const [isGeocodingAddLocation, setIsGeocodingAddLocation] = useState(false);
+  const [isGeocodingEditLocation, setIsGeocodingEditLocation] = useState(false);
+
+  const handleAutoGeocodeAdd = async () => {
+    const query = baseAddress || serviceAreasInput || name;
+    if (!query) return;
+    setIsGeocodingAddLocation(true);
+    try {
+      const res = await geocodeAddressOrCity(query);
+      if (res) {
+        setBaseLat(String(res.latitude));
+        setBaseLng(String(res.longitude));
+        if (!baseAddress) setBaseAddress(res.formattedAddress || query);
+      }
+    } finally {
+      setIsGeocodingAddLocation(false);
+    }
+  };
+
+  const handleUseGpsForAdd = () => {
+    if (!navigator.geolocation) return;
+    setIsGeocodingAddLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        try {
+          const res = await reverseGeocodeCoords(lat, lon);
+          setBaseLat(String(lat));
+          setBaseLng(String(lon));
+          setBaseAddress(res.formattedAddress || res.city);
+        } finally {
+          setIsGeocodingAddLocation(false);
+        }
+      },
+      () => setIsGeocodingAddLocation(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const handleAutoGeocodeEdit = async () => {
+    const query = editBaseAddress || editServiceAreasInput || editName;
+    if (!query) return;
+    setIsGeocodingEditLocation(true);
+    try {
+      const res = await geocodeAddressOrCity(query);
+      if (res) {
+        setEditBaseLat(String(res.latitude));
+        setEditBaseLng(String(res.longitude));
+        if (!editBaseAddress) setEditBaseAddress(res.formattedAddress || query);
+      }
+    } finally {
+      setIsGeocodingEditLocation(false);
+    }
+  };
+
+  const handleUseGpsForEdit = () => {
+    if (!navigator.geolocation) return;
+    setIsGeocodingEditLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        try {
+          const res = await reverseGeocodeCoords(lat, lon);
+          setEditBaseLat(String(lat));
+          setEditBaseLng(String(lon));
+          setEditBaseAddress(res.formattedAddress || res.city);
+        } finally {
+          setIsGeocodingEditLocation(false);
+        }
+      },
+      () => setIsGeocodingEditLocation(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   // View Technician modal state
   const [viewingTech, setViewingTech] = useState<Technician | null>(null);
@@ -112,7 +204,7 @@ export const Technicians: React.FC = () => {
         .map((p) => p.trim())
         .filter(Boolean);
 
-      await apiClient.post('/technicians', {
+      const payload: any = {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         phone: phone.trim(),
@@ -121,11 +213,42 @@ export const Technicians: React.FC = () => {
         serviceTypes,
         skills,
         tools,
-        serviceAreas,
-        coverageRadiusKm: Number(radiusInput) || 20,
+        serviceAreas: serviceAreas.length > 0 ? serviceAreas : [baseAddress.trim() || 'All Areas'],
+        coverageRadiusKm: Number(radiusInput) || 25,
         pincodes,
         certifications: ['Certified Field Technician Level II'],
-      });
+      };
+
+      if (baseAddress || baseLat || baseLng || addLocationObj) {
+        let latNum = addLocationObj?.latitude ?? (baseLat ? parseFloat(baseLat) : undefined);
+        let lngNum = addLocationObj?.longitude ?? (baseLng ? parseFloat(baseLng) : undefined);
+
+        // Auto-geocode if coordinates missing or [0, 0]
+        if ((latNum === undefined || lngNum === undefined || (Math.abs(latNum) < 0.001 && Math.abs(lngNum) < 0.001)) && (baseAddress || serviceAreas.length > 0)) {
+          const query = baseAddress || serviceAreas[0];
+          try {
+            const geocoded = await geocodeAddressOrCity(query);
+            if (geocoded) {
+              latNum = geocoded.latitude;
+              lngNum = geocoded.longitude;
+            }
+          } catch {}
+        }
+
+        payload.baseLocation = {
+          placeId: addLocationObj?.placeId,
+          formattedAddress: addLocationObj?.formattedAddress || baseAddress.trim() || undefined,
+          city: addLocationObj?.city || baseAddress.trim() || undefined,
+          area: addLocationObj?.area,
+          state: addLocationObj?.state,
+          country: addLocationObj?.country || 'India',
+          postalCode: addLocationObj?.pincode || (pincodes.length > 0 ? pincodes[0] : undefined),
+          latitude: latNum !== undefined && !isNaN(latNum) ? latNum : undefined,
+          longitude: lngNum !== undefined && !isNaN(lngNum) ? lngNum : undefined,
+        };
+      }
+
+      await apiClient.post('/technicians', payload);
 
       // Provide one-time display of temporary login credentials for manager to share
       setCreatedTechInfo({
@@ -141,8 +264,12 @@ export const Technicians: React.FC = () => {
       setPhone('');
       setPassword('');
       setConfirmPassword('');
-      setRadiusInput('20');
+      setRadiusInput('25');
       setPincodesInput('');
+      setBaseAddress('');
+      setBaseLat('');
+      setBaseLng('');
+      setAddLocationObj(null);
       await loadTechnicians();
     } catch (err: any) {
       setModalError(err.message || 'Failed to add technician');
@@ -154,19 +281,70 @@ export const Technicians: React.FC = () => {
   const openEditModal = (tech: Technician) => {
     setEditingTech(tech);
     setEditName(tech.name);
+    setEditEmail(tech.email || '');
     setEditPhone(tech.phone);
     setEditExperienceYears(tech.experienceYears);
     setEditServiceTypes(tech.serviceTypes || ['SOLAR']);
     setEditSkillsInput((tech.skills || []).join(', '));
     setEditToolsInput((tech.tools || []).join(', '));
     setEditServiceAreasInput((tech.serviceAreas || []).join(', '));
-    setEditRadiusInput(String(tech.coverageRadiusKm ?? 20));
+    setEditRadiusInput(String(tech.coverageRadiusKm ?? 25));
     setEditPincodesInput((tech.pincodes || []).join(', '));
+    setEditBaseAddress((tech.baseLocation as any)?.formattedAddress || (tech.baseLocation as any)?.city || '');
+    const techLatVal = (tech.baseLocation as any)?.latitude ?? (tech.baseLocation as any)?.center?.coordinates?.[1];
+    const techLngVal = (tech.baseLocation as any)?.longitude ?? (tech.baseLocation as any)?.center?.coordinates?.[0];
+    setEditBaseLat(
+      techLatVal !== undefined && techLatVal !== null && Math.abs(techLatVal) > 0.001
+        ? String(techLatVal)
+        : ''
+    );
+    setEditBaseLng(
+      techLngVal !== undefined && techLngVal !== null && Math.abs(techLngVal) > 0.001
+        ? String(techLngVal)
+        : ''
+    );
+    if (tech.baseLocation) {
+      setEditLocationObj({
+        placeId: (tech.baseLocation as any).placeId,
+        formattedAddress: tech.baseLocation.formattedAddress,
+        city: tech.baseLocation.city || '',
+        area: (tech.baseLocation as any).area,
+        state: (tech.baseLocation as any).state,
+        country: (tech.baseLocation as any).country,
+        pincode: (tech.baseLocation as any).postalCode,
+        latitude: techLatVal,
+        longitude: techLngVal,
+      });
+    } else {
+      setEditLocationObj(null);
+    }
+
+    // If coordinates are missing or [0, 0], attempt background forward geocode
+    const addressToGeocode = (tech.baseLocation as any)?.formattedAddress || (tech.baseLocation as any)?.city || (tech.serviceAreas?.[0]);
+    if ((!techLatVal || !techLngVal || (Math.abs(techLatVal) < 0.001 && Math.abs(techLngVal) < 0.001)) && addressToGeocode) {
+      geocodeAddressOrCity(addressToGeocode).then((geocoded) => {
+        if (geocoded) {
+          setEditBaseLat(String(geocoded.latitude));
+          setEditBaseLng(String(geocoded.longitude));
+          if (!editBaseAddress) setEditBaseAddress(geocoded.formattedAddress || addressToGeocode);
+        }
+      }).catch(() => {});
+    }
+
     setEditAvailability(tech.availability || 'AVAILABLE');
     setEditActive(tech.active !== false);
     setEditModalError(null);
     setIsEditModalOpen(true);
   };
+
+  useEffect(() => {
+    if (editTechId && technicians.length > 0) {
+      const found = technicians.find((t) => t._id === editTechId);
+      if (found) {
+        openEditModal(found);
+      }
+    }
+  }, [editTechId, technicians]);
 
   const handleUpdateTechnician = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,9 +380,10 @@ export const Technicians: React.FC = () => {
         return;
       }
 
-      await apiClient.patch(`/technicians/${editingTech._id}`, {
+      const updatePayload: any = {
         name: editName.trim(),
         phone: editPhone.trim(),
+        email: editEmail.trim().toLowerCase(),
         experienceYears: Number(editExperienceYears),
         serviceTypes: editServiceTypes,
         skills,
@@ -214,13 +393,56 @@ export const Technicians: React.FC = () => {
         pincodes,
         availability: editAvailability,
         active: editActive,
-      });
+      };
+
+      if (editBaseAddress || editBaseLat || editBaseLng || editLocationObj) {
+        let latNum = editLocationObj?.latitude ?? (editBaseLat ? parseFloat(editBaseLat) : undefined);
+        let lngNum = editLocationObj?.longitude ?? (editBaseLng ? parseFloat(editBaseLng) : undefined);
+
+        // Auto-geocode if missing or invalid [0, 0]
+        if ((latNum === undefined || lngNum === undefined || (Math.abs(latNum) < 0.001 && Math.abs(lngNum) < 0.001)) && (editBaseAddress || serviceAreas.length > 0)) {
+          const query = editBaseAddress || serviceAreas[0];
+          try {
+            const geocoded = await geocodeAddressOrCity(query);
+            if (geocoded) {
+              latNum = geocoded.latitude;
+              lngNum = geocoded.longitude;
+              setEditBaseLat(String(latNum));
+              setEditBaseLng(String(lngNum));
+            }
+          } catch (e) {
+            console.warn('Geocoding tech base location failed:', e);
+          }
+        }
+
+        updatePayload.baseLocation = {
+          placeId: editLocationObj?.placeId || (editingTech?.baseLocation as any)?.placeId,
+          formattedAddress: editLocationObj?.formattedAddress || editBaseAddress.trim() || undefined,
+          city: editLocationObj?.city || editBaseAddress.trim() || undefined,
+          area: editLocationObj?.area || (editingTech?.baseLocation as any)?.area,
+          state: editLocationObj?.state || (editingTech?.baseLocation as any)?.state,
+          country: editLocationObj?.country || (editingTech?.baseLocation as any)?.country || 'India',
+          postalCode: editLocationObj?.pincode || (pincodes.length > 0 ? pincodes[0] : undefined),
+          latitude: latNum !== undefined && !isNaN(latNum) ? latNum : undefined,
+          longitude: lngNum !== undefined && !isNaN(lngNum) ? lngNum : undefined,
+        };
+      }
+
+      await apiClient.patch(`/technicians/${editingTech._id}`, updatePayload);
 
       setIsEditModalOpen(false);
       setEditingTech(null);
+      setTechnicianSuccessMessage(`Technician ${editName} profile updated successfully.`);
+      setTimeout(() => setTechnicianSuccessMessage(null), 4000);
       await loadTechnicians();
     } catch (err: any) {
-      setEditModalError(err.message || 'Failed to update technician');
+      console.error('Failed to update technician:', err);
+      const errMsg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to update technician profile';
+      setEditModalError(errMsg);
     } finally {
       setIsEditSubmitting(false);
     }
@@ -308,6 +530,22 @@ export const Technicians: React.FC = () => {
             type="button"
             onClick={() => setCreatedTechInfo(null)}
             className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 shadow-sm"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {technicianSuccessMessage && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600" />
+            <span className="font-bold">{technicianSuccessMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setTechnicianSuccessMessage(null)}
+            className="text-emerald-600 hover:text-emerald-800 font-bold"
           >
             Dismiss
           </button>
@@ -643,9 +881,108 @@ export const Technicians: React.FC = () => {
                 min="1"
                 value={radiusInput}
                 onChange={(e) => setRadiusInput(e.target.value)}
-                placeholder="20"
-                className="w-full border border-slate-300 rounded-xl p-2"
+                placeholder="25"
+                className="w-full border border-slate-300 rounded-xl p-2 font-bold text-emerald-800"
               />
+            </div>
+          </div>
+
+          {/* Base Location & Coverage Center */}
+          <div className="p-3.5 bg-emerald-50/50 rounded-2xl border border-emerald-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                Operating City & Base Coverage Center
+              </span>
+              <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-full">
+                Auto-covers {radiusInput || 25}km region
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              The technician will cover all customer requests, villages, and localities within <strong>{radiusInput || 25} km</strong> of this center.
+            </p>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Coverage Location (Autocomplete Search) *
+              </label>
+              <LocationAutocompleteInput
+                value={baseAddress}
+                placeholder="Search any locality, hub, city, or area..."
+                onSelect={(loc) => {
+                  setAddLocationObj(loc);
+                  setBaseAddress(loc.formattedAddress || loc.city);
+                  if (loc.latitude) setBaseLat(String(loc.latitude));
+                  if (loc.longitude) setBaseLng(String(loc.longitude));
+                  if (loc.pincode && !pincodesInput) setPincodesInput(loc.pincode);
+                  if (!serviceAreasInput) {
+                    setServiceAreasInput(loc.area ? `${loc.area}, ${loc.city}` : loc.city);
+                  }
+                }}
+              />
+            </div>
+
+            {baseLat && baseLng ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100/80 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="font-semibold">Confirmed Coordinates:</span>
+                <span className="font-mono text-[11px]">{Number(baseLat).toFixed(4)}° N, {Number(baseLng).toFixed(4)}° E</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>Select from autocomplete to attach authoritative real coordinates.</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Center Latitude
+                </label>
+                <input
+                  id="tech-add-base-lat"
+                  type="number"
+                  step="any"
+                  value={baseLat}
+                  onChange={(e) => setBaseLat(e.target.value)}
+                  placeholder="e.g. 23.0225"
+                  className="w-full border border-slate-300 rounded-xl p-2 bg-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Center Longitude
+                </label>
+                <input
+                  id="tech-add-base-lng"
+                  type="number"
+                  step="any"
+                  value={baseLng}
+                  onChange={(e) => setBaseLng(e.target.value)}
+                  placeholder="e.g. 72.5714"
+                  className="w-full border border-slate-300 rounded-xl p-2 bg-white font-mono text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleAutoGeocodeAdd}
+                disabled={isGeocodingAddLocation || (!baseAddress && !serviceAreasInput)}
+                className="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>{isGeocodingAddLocation ? 'Geocoding...' : '⚡ Auto-Geocode Coordinates'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleUseGpsForAdd}
+                disabled={isGeocodingAddLocation}
+                className="px-2.5 py-1 text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <Compass className="w-3 h-3 text-slate-600" />
+                <span>📍 Use Live GPS</span>
+              </button>
             </div>
           </div>
 
@@ -739,7 +1076,7 @@ export const Technicians: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Full Name *</label>
               <input
@@ -747,6 +1084,16 @@ export const Technicians: React.FC = () => {
                 required
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
+                className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Email Address *</label>
+              <input
+                type="email"
+                required
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
                 className="w-full border border-slate-300 rounded-xl p-2 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
@@ -784,6 +1131,92 @@ export const Technicians: React.FC = () => {
                 placeholder="20"
                 className="w-full border border-slate-300 rounded-xl p-2"
               />
+            </div>
+          </div>
+
+          {/* Base Location & Real Coordinates */}
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                Base Location & Center Coordinates
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">Used for live distance calculation</span>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Coverage Location (Autocomplete Search)</label>
+              <LocationAutocompleteInput
+                value={editBaseAddress}
+                placeholder="Search any locality, hub, city, or area..."
+                onSelect={(loc) => {
+                  setEditLocationObj(loc);
+                  setEditBaseAddress(loc.formattedAddress || loc.city);
+                  if (loc.latitude) setEditBaseLat(String(loc.latitude));
+                  if (loc.longitude) setEditBaseLng(String(loc.longitude));
+                  if (loc.pincode && !editPincodesInput) setEditPincodesInput(loc.pincode);
+                  if (!editServiceAreasInput) {
+                    setEditServiceAreasInput(loc.area ? `${loc.area}, ${loc.city}` : loc.city);
+                  }
+                }}
+              />
+            </div>
+
+            {editBaseLat && editBaseLng ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100/80 border border-emerald-200 rounded-lg text-xs text-emerald-800">
+                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span className="font-semibold">Confirmed Coordinates:</span>
+                <span className="font-mono text-[11px]">{Number(editBaseLat).toFixed(4)}° N, {Number(editBaseLng).toFixed(4)}° E</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span>Select from autocomplete to attach authoritative real coordinates.</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Latitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editBaseLat}
+                  onChange={(e) => setEditBaseLat(e.target.value)}
+                  placeholder="e.g. 23.0225"
+                  className="w-full border border-slate-300 rounded-xl p-2 bg-white font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">Longitude</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={editBaseLng}
+                  onChange={(e) => setEditBaseLng(e.target.value)}
+                  placeholder="e.g. 72.5714"
+                  className="w-full border border-slate-300 rounded-xl p-2 bg-white font-mono text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleAutoGeocodeEdit}
+                disabled={isGeocodingEditLocation || (!editBaseAddress && !editServiceAreasInput)}
+                className="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <Sparkles className="w-3 h-3 text-indigo-600" />
+                <span>{isGeocodingEditLocation ? 'Geocoding...' : '⚡ Auto-Geocode Coordinates'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleUseGpsForEdit}
+                disabled={isGeocodingEditLocation}
+                className="px-2.5 py-1 text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <Compass className="w-3 h-3 text-slate-600" />
+                <span>📍 Use Live GPS</span>
+              </button>
             </div>
           </div>
 

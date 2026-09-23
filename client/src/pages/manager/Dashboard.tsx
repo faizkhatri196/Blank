@@ -681,8 +681,8 @@ export const Dashboard: React.FC = () => {
                         {st}
                       </span>
                     ))}
-                    <span className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                      {tech.serviceAreas[0]}
+                    <span className="text-[10px] text-slate-400 truncate max-w-[120px]" title={tech.serviceAreas?.join(', ') || 'All Areas'}>
+                      {tech.serviceAreas?.join(', ') || 'All Areas'}
                     </span>
                   </div>
                 </div>

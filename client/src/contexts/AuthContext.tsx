@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, ServiceType } from '../types';
 import { apiClient } from '../api/client';
-import { clearCustomerLocation } from '../utils/customerLocation';
 
 interface AuthContextType {
   user: User | null;
@@ -52,10 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    if (user?.id) {
-      clearCustomerLocation(user.id);
-    }
-    clearCustomerLocation();
     setToken(null);
     setUser(null);
     localStorage.removeItem('copilot_token');

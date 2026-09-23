@@ -12,6 +12,7 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { PriorityBadge } from '../../components/common/PriorityBadge';
 import { ServiceBadge } from '../../components/common/ServiceBadge';
 import { Modal } from '../../components/common/Modal';
+import { geocodeAddressOrCity } from '../../utils/locationSearch';
 import {
   Brain,
   Users,
@@ -56,9 +57,25 @@ export const TicketDetail: React.FC = () => {
     title: string;
     message: string;
     details?: {
+      technicianId?: string;
+      technicianName?: string;
+      customerAddress?: string;
       customerLocation?: string;
+      customerLatitude?: number;
+      customerLongitude?: number;
       technicianCoverage?: string;
+      technicianCoverageAddress?: string;
+      technicianCoverageLatitude?: number;
+      technicianCoverageLongitude?: number;
       reason?: string;
+      distanceKm?: number;
+      radiusKm?: number;
+      coverageRadiusKm?: number;
+      coverageAreaId?: string;
+      coordinateSource?: { customer?: string; technician?: string };
+      coordinateOrderWarning?: string;
+      diagnostics?: any;
+      isNullIsland?: boolean;
     };
   } | null>(null);
 
@@ -113,19 +130,85 @@ export const TicketDetail: React.FC = () => {
       await loadTicket();
     } catch (err: any) {
       const errResponse = err.response?.data?.error;
+      const recMatch = recommendations.find((r) => r.technicianId === technicianId);
+
+      // Customer coordinates fallback from loaded ticket
+      const custLat =
+        errResponse?.details?.customerLatitude ??
+        (ticket as any)?.serviceLocationSnapshot?.latitude ??
+        ticket?.serviceLocation?.latitude ??
+        (ticket?.serviceLocation as any)?.coordinates?.latitude;
+      const custLng =
+        errResponse?.details?.customerLongitude ??
+        (ticket as any)?.serviceLocationSnapshot?.longitude ??
+        ticket?.serviceLocation?.longitude ??
+        (ticket?.serviceLocation as any)?.coordinates?.longitude;
+
+      const custAddr =
+        errResponse?.details?.customerAddress ||
+        errResponse?.details?.customerLocation ||
+        (ticket?.serviceLocation as any)?.formattedAddress ||
+        ticket?.serviceLocation?.address ||
+        [ticket?.serviceLocation?.area, ticket?.serviceLocation?.city].filter(Boolean).join(', ') ||
+        'Customer Location';
+
+      // Technician coordinates fallback
+      const techLat =
+        errResponse?.details?.technicianCoverageLatitude ??
+        (recMatch as any)?.diagnostics?.coverageArea?.latitude ??
+        (recMatch as any)?.diagnostics?.technician?.latitude;
+      const techLng =
+        errResponse?.details?.technicianCoverageLongitude ??
+        (recMatch as any)?.diagnostics?.coverageArea?.longitude ??
+        (recMatch as any)?.diagnostics?.technician?.longitude;
+
+      const techAddr =
+        errResponse?.details?.technicianCoverageAddress ||
+        errResponse?.details?.technicianCoverage ||
+        (recMatch as any)?.technicianCoverageSummary ||
+        'Technician Coverage Area';
+
+      const reportedDist = errResponse?.details?.distanceKm ?? (recMatch as any)?.distanceKm;
+      const reportedRad =
+        errResponse?.details?.radiusKm ??
+        errResponse?.details?.coverageRadiusKm ??
+        (recMatch as any)?.coverageRadiusKm ??
+        25;
+
+      const isNullIsland = reportedDist !== undefined && reportedDist > 7000;
+
       if (errResponse) {
         setAssignmentError({
           title:
-            errResponse.code === 'SERVICE_AREA_MISMATCH'
+            errResponse.code === 'SERVICE_AREA_MISMATCH' || errResponse.code === 'TECHNICIAN_OUTSIDE_COVERAGE'
               ? 'Technician Coverage Area Mismatch'
               : 'Assignment Validation Failed',
-          message: errResponse.message || 'The selected technician cannot be assigned to this ticket.',
-          details: errResponse.details,
+          message: isNullIsland
+            ? `Technician ${errResponse.details?.technicianName || recMatch?.technicianName || 'selected'} has unconfigured coordinates [0, 0] in the database (calculating ${reportedDist}km distance to Null Island). Please click 'Edit Technician Coverage' below to configure their real location.`
+            : (errResponse.message || 'The selected technician cannot be assigned to this ticket.'),
+          details: {
+            ...errResponse.details,
+            technicianId: errResponse.details?.technicianId || technicianId,
+            technicianName: errResponse.details?.technicianName || recMatch?.technicianName,
+            customerLatitude: custLat,
+            customerLongitude: custLng,
+            customerAddress: custAddr,
+            technicianCoverageLatitude: techLat,
+            technicianCoverageLongitude: techLng,
+            technicianCoverageAddress: isNullIsland ? 'Unconfigured Coordinates [0, 0]' : techAddr,
+            distanceKm: reportedDist,
+            radiusKm: reportedRad,
+            coverageRadiusKm: reportedRad,
+            isNullIsland,
+          },
         });
       } else {
         setAssignmentError({
           title: 'Assignment Failed',
           message: err.message || 'An unexpected error occurred while assigning technician.',
+          details: {
+            technicianId,
+          },
         });
       }
     } finally {
@@ -635,9 +718,35 @@ export const TicketDetail: React.FC = () => {
               <div className="flex items-start gap-1.5 text-xs text-slate-500 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                 <span>
-                  {(ticket as any).serviceLocation?.address || ticket.customerId?.address}, {(ticket as any).serviceLocation?.city || ticket.customerId?.city} {(ticket as any).serviceLocation?.pincode ? `(${(ticket as any).serviceLocation?.pincode})` : ''}
+                  {(ticket as any).serviceLocationSnapshot?.formattedAddress ||
+                    (ticket as any).serviceLocation?.address ||
+                    ticket.customerId?.address}, {(ticket as any).serviceLocationSnapshot?.city || (ticket as any).serviceLocation?.city || ticket.customerId?.city} {((ticket as any).serviceLocationSnapshot?.postalCode || (ticket as any).serviceLocation?.pincode) ? `(${((ticket as any).serviceLocationSnapshot?.postalCode || (ticket as any).serviceLocation?.pincode)})` : ''}
                 </span>
               </div>
+              {/* Service Location Snapshot Coordinates */}
+              {((ticket as any).serviceLocationSnapshot?.latitude !== undefined || (ticket as any).serviceLocation?.latitude !== undefined) && (
+                <div className="text-[10px] text-slate-400 font-mono mt-0.5 pl-5">
+                  Coords: {((ticket as any).serviceLocationSnapshot?.latitude ?? (ticket as any).serviceLocation?.latitude)?.toFixed(4)}°N, {((ticket as any).serviceLocationSnapshot?.longitude ?? (ticket as any).serviceLocation?.longitude)?.toFixed(4)}°E
+                </div>
+              )}
+
+              {/* Verified Authoritative Coverage Snapshot */}
+              {(ticket as any).coverageSnapshot && (
+                <div className="mt-2.5 p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center justify-between font-bold text-emerald-900">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Verified Geo-Coverage
+                    </span>
+                    <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                      {(ticket as any).coverageSnapshot.calculatedDistanceKm?.toFixed(2)} km / {(ticket as any).coverageSnapshot.configuredRadiusKm} km
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700">
+                    Hub: {(ticket as any).coverageSnapshot.coverageLocationName || 'Coverage Center'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Customer Feedback if provided */}
@@ -921,33 +1030,158 @@ export const TicketDetail: React.FC = () => {
             </div>
 
             {assignmentError.details && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
-                  Coverage Diagnostics
-                </h5>
-                <div className="space-y-1 text-slate-700">
-                  {assignmentError.details.customerLocation && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Customer Location:</span>
-                      <span className="font-bold text-slate-900">
-                        {assignmentError.details.customerLocation}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <h5 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                    Geospatial Coverage Diagnostics
+                  </h5>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                      OUTSIDE COVERAGE
+                    </span>
+                    {assignmentError.details.distanceKm !== undefined && (
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                        {assignmentError.details.distanceKm} km
                       </span>
-                    </div>
-                  )}
-                  {assignmentError.details.technicianCoverage && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Technician Coverage:</span>
-                      <span className="font-bold text-slate-900">
-                        {assignmentError.details.technicianCoverage}
-                      </span>
-                    </div>
-                  )}
-                  {assignmentError.details.reason && (
-                    <div className="pt-1 text-[11px] text-rose-700 font-medium border-t border-slate-200">
-                      Reason: {assignmentError.details.reason}
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
+
+                {assignmentError.details.coordinateOrderWarning && (
+                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-start gap-2">
+                    <span className="font-bold text-rose-700">⚠️</span>
+                    <div className="leading-snug">{assignmentError.details.coordinateOrderWarning}</div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  {/* Customer Location */}
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-1.5">
+                    <div className="font-bold text-slate-700 flex items-center justify-between pb-1 border-b border-slate-100">
+                      <span>📍 Customer</span>
+                      {assignmentError.details.coordinateSource?.customer && (
+                        <span className="text-[9px] font-mono text-slate-400">
+                          {assignmentError.details.coordinateSource.customer}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Address:</span>
+                      <span className="font-medium text-slate-800 break-words">
+                        {assignmentError.details.customerAddress ||
+                          assignmentError.details.customerLocation ||
+                          assignmentError.details.diagnostics?.customer?.address ||
+                          'Customer Location'}
+                      </span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-600 break-words flex items-center justify-between">
+                      <span>
+                        Lat: {assignmentError.details.customerLatitude?.toFixed(4) ?? assignmentError.details.diagnostics?.customer?.latitude?.toFixed(4) ?? 'N/A'}, Lon: {assignmentError.details.customerLongitude?.toFixed(4) ?? assignmentError.details.diagnostics?.customer?.longitude?.toFixed(4) ?? 'N/A'}
+                      </span>
+                      {(!assignmentError.details.customerLatitude || !assignmentError.details.customerLongitude) && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const q = assignmentError.details?.customerAddress || ticket?.serviceLocation?.city;
+                            if (q) {
+                              const geo = await geocodeAddressOrCity(q);
+                              if (geo) {
+                                setAssignmentError({
+                                  ...assignmentError,
+                                  details: {
+                                    ...assignmentError.details,
+                                    customerLatitude: geo.latitude,
+                                    customerLongitude: geo.longitude,
+                                  },
+                                });
+                              }
+                            }
+                          }}
+                          className="text-[10px] text-indigo-600 font-bold hover:underline ml-1"
+                        >
+                          ⚡ Auto-Geocode
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Technician Base Location */}
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 space-y-1.5 min-w-0">
+                    <div className="font-bold text-slate-700 flex items-center justify-between pb-1 border-b border-slate-100">
+                      <span>👷 Technician Base</span>
+                      {assignmentError.details.coordinateSource?.technician && (
+                        <span className="text-[9px] font-mono text-slate-400">
+                          {assignmentError.details.coordinateSource.technician}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Technician:</span>
+                      <span className="font-bold text-slate-900 break-words">
+                        {assignmentError.details.technicianName ||
+                          assignmentError.details.diagnostics?.technician?.name ||
+                          'Selected Technician'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Coverage Area:</span>
+                      <span className="text-slate-700 break-words">
+                        {assignmentError.details.technicianCoverageAddress ||
+                          assignmentError.details.technicianCoverage ||
+                          assignmentError.details.diagnostics?.technician?.baseAddress ||
+                          'Technician Coverage Area'}
+                      </span>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-600 break-words flex items-center justify-between">
+                      <span>
+                        Lat: {assignmentError.details.technicianCoverageLatitude?.toFixed(4) ?? assignmentError.details.diagnostics?.technician?.latitude?.toFixed(4) ?? 'N/A'}, Lon: {assignmentError.details.technicianCoverageLongitude?.toFixed(4) ?? assignmentError.details.diagnostics?.technician?.longitude?.toFixed(4) ?? 'N/A'}
+                      </span>
+                      {assignmentError.details.isNullIsland && (
+                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                          [0, 0] Unconfigured
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {assignmentError.details.isNullIsland && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-start gap-2.5">
+                    <span className="font-bold text-base text-rose-600 shrink-0">⚠️</span>
+                    <div className="leading-relaxed">
+                      <strong className="block font-bold text-rose-950">Unconfigured Technician Coordinates:</strong>
+                      Technician <strong>{assignmentError.details.technicianName}</strong> does not have valid operating GPS coordinates stored in the database, resulting in a distance calculation of <strong>{assignmentError.details.distanceKm} km</strong> from Null Island [0, 0]. Click <strong>Edit Technician Coverage</strong> below to configure real coordinates.
+                    </div>
+                  </div>
+                )}
+
+                {/* Metrics Summary Strip */}
+                <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-100 rounded-lg text-center">
+                  <div>
+                    <span className="block text-[10px] text-slate-500 uppercase font-semibold">Calculated Distance</span>
+                    <span className="font-mono font-bold text-slate-900 text-xs">
+                      {assignmentError.details.distanceKm !== undefined ? `${assignmentError.details.distanceKm} km` : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-500 uppercase font-semibold">Configured Radius</span>
+                    <span className="font-mono font-bold text-indigo-700 text-xs">
+                      {assignmentError.details.radiusKm ?? assignmentError.details.coverageRadiusKm ?? 20} km
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-500 uppercase font-semibold">Status</span>
+                    <span className="font-bold text-rose-700 text-xs">
+                      OUTSIDE COVERAGE
+                    </span>
+                  </div>
+                </div>
+
+                {assignmentError.details.reason && (
+                  <div className="pt-2 text-xs text-rose-700 font-medium border-t border-slate-200">
+                    Evaluation Reason: {assignmentError.details.reason}
+                  </div>
+                )}
               </div>
             )}
 
@@ -963,7 +1197,7 @@ export const TicketDetail: React.FC = () => {
                 Choose Another Technician
               </button>
               <Link
-                to="/manager/technicians"
+                to={`/manager/technicians?edit=${assignmentError.details?.technicianId || ''}`}
                 onClick={() => setAssignmentError(null)}
                 className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm"
               >
