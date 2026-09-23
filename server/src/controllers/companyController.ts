@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import { Company } from '../models/Company';
 import { AuditLog } from '../models/AuditLog';
 import { serviceAreaSchema } from '../validators';
-import { createGeoPoint, isValidCoordinate } from '../services/location/geospatial';
+import { createGeoPoint, isValidApplicationCoordinate } from '../services/location/geospatial';
 import { z } from 'zod';
 
 export async function getCompanyCoverage(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -63,7 +63,7 @@ export async function updateCompanyCoverage(req: AuthenticatedRequest, res: Resp
       const lat = sa.latitude;
       const lon = sa.longitude;
       const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
-      const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+      const center = isValidApplicationCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
       return {
         _id: sa._id,
         locationName: sa.locationName?.trim(),
@@ -144,7 +144,7 @@ export async function addServiceArea(req: AuthenticatedRequest, res: Response): 
     const lat = sa.latitude;
     const lon = sa.longitude;
     const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
-    const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : { type: 'Point' as const, coordinates: [0, 0] as [number, number] };
+    const center = isValidApplicationCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
 
     const newArea = {
       locationName: sa.locationName?.trim(),
@@ -236,7 +236,7 @@ export async function updateSingleServiceArea(req: AuthenticatedRequest, res: Re
     const lat = sa.latitude ?? company.serviceAreas[targetIndex].latitude;
     const lon = sa.longitude ?? company.serviceAreas[targetIndex].longitude;
     const radiusKm = sa.radiusKm ?? sa.radius ?? company.serviceAreas[targetIndex].radiusKm ?? 20;
-    const center = isValidCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : company.serviceAreas[targetIndex].center;
+    const center = isValidApplicationCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
 
     company.serviceAreas[targetIndex] = {
       ...company.serviceAreas[targetIndex],

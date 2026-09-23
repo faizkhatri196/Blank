@@ -45,8 +45,21 @@ export function createGeoPoint(latitude: number, longitude: number): GeoPoint {
  */
 export function isValidCoordinate(latitude?: number, longitude?: number): boolean {
   if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+  if (!isFinite(latitude) || !isFinite(longitude)) return false;
   if (isNaN(latitude) || isNaN(longitude)) return false;
   if (latitude < -90 || latitude > 90) return false;
   if (longitude < -180 || longitude > 180) return false;
+  return true;
+}
+
+/**
+ * Validates a coordinate pair as a real application location.
+ * Rejects (0,0), null, undefined, NaN, and infinite values.
+ */
+export function isValidApplicationCoordinate(latitude?: number | null, longitude?: number | null): boolean {
+  if (latitude === null || latitude === undefined) return false;
+  if (longitude === null || longitude === undefined) return false;
+  if (!isValidCoordinate(latitude, longitude)) return false;
+  if (latitude === 0 && longitude === 0) return false;
   return true;
 }

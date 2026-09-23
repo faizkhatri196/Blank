@@ -338,26 +338,18 @@ export class NominatimLocationProvider {
 
       if (response.ok) {
         const item = (await response.json()) as NominatimItem;
-        return this.mapNominatimItem(item, false);
+        const mapped = this.mapNominatimItem(item, false);
+        const hasResolvedPlace = Boolean(mapped.city || mapped.locality || mapped.district || mapped.state);
+        if (!hasResolvedPlace) {
+          return null;
+        }
+        return mapped;
       }
     } catch {
-      // Fallback
+      // No silent fallback to city guesses when reverse geocoding fails.
     }
 
-    // Approximate fallback for known test areas
-    if (Math.abs(latitude - 22.3) < 0.2 && Math.abs(longitude - 70.8) < 0.2) {
-      return KNOWN_PLACES.rajkot[0];
-    }
-    if (Math.abs(latitude - 23.0) < 0.2 && Math.abs(longitude - 72.5) < 0.2) {
-      return KNOWN_PLACES.ahmedabad[0];
-    }
-
-    return {
-      formattedAddress: `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`,
-      latitude,
-      longitude,
-      provider: 'nominatim',
-    };
+    return null;
   }
 
   private static mapNominatimItem(item: NominatimItem, wasCorrected: boolean): LocationSearchResult {
