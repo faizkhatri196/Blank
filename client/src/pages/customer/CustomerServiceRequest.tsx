@@ -62,7 +62,8 @@ export const CustomerServiceRequest: React.FC = () => {
   const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
   const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
   const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>();
+  const initialCompanyId = searchParams.get('companyId') || undefined;
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(initialCompanyId);
   const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat);
   const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
@@ -172,6 +173,7 @@ export const CustomerServiceRequest: React.FC = () => {
         latitude: checkLat ?? lat,
         longitude: checkLng ?? lng,
         query: checkCity.trim(),
+        companyId: selectedCompanyId || searchParams.get('companyId') || undefined,
       });
 
       if (res.data.success) {
@@ -180,7 +182,7 @@ export const CustomerServiceRequest: React.FC = () => {
         const services: AvailableServiceItem[] = res.data.data.services || [];
         setAvailableServices(services);
 
-        if (res.data.data.companyId) {
+        if (res.data.data.companyId && !selectedCompanyId) {
           setSelectedCompanyId(res.data.data.companyId);
         }
 
@@ -198,9 +200,15 @@ export const CustomerServiceRequest: React.FC = () => {
           setLocationError(res.data.data.message || `Servora services are not currently available in ${checkCity}.`);
         } else {
           // If current serviceType is not available in this location, switch to first available
-          if (services.length > 0 && (!serviceType || !services.some((s) => s.serviceType === serviceType))) {
-            setServiceType(services[0].serviceType);
-            setSelectedProblem(null);
+          if (services.length > 0) {
+            const matched = services.find((s) => s.serviceType === serviceType) || services[0];
+            if (!serviceType || !services.some((s) => s.serviceType === serviceType)) {
+              setServiceType(matched.serviceType);
+              setSelectedProblem(null);
+            }
+            if (!selectedCompanyId && matched.primaryCompanyId) {
+              setSelectedCompanyId(matched.primaryCompanyId);
+            }
           }
         }
       }
@@ -381,7 +389,7 @@ export const CustomerServiceRequest: React.FC = () => {
 
       // Determine matching service & companyId
       const matchedService = availableServices.find((s) => s.serviceType === serviceType);
-      const targetCompanyId = matchedService?.primaryCompanyId || selectedCompanyId;
+      const targetCompanyId = selectedCompanyId || matchedService?.primaryCompanyId || matchedService?.providers?.[0]?.companyId;
 
       const hasCoords = typeof resolvedLat === 'number' && typeof resolvedLng === 'number' && !isNaN(resolvedLat) && !isNaN(resolvedLng);
       const cleanAddress = address.trim() || 'Service Site Address';
@@ -650,6 +658,9 @@ export const CustomerServiceRequest: React.FC = () => {
                   onClick={() => {
                     setServiceType(srv.serviceType);
                     setSelectedProblem(null);
+                    if (srv.primaryCompanyId && (!selectedCompanyId || !srv.providers?.some((p) => p.companyId === selectedCompanyId))) {
+                      setSelectedCompanyId(srv.primaryCompanyId);
+                    }
                   }}
                   className={`group relative rounded-3xl p-6 border transition-all cursor-pointer flex flex-col justify-between overflow-hidden ${
                     isSelected
@@ -685,6 +696,80 @@ export const CustomerServiceRequest: React.FC = () => {
               );
             })}
           </div>
+
+          {/* Provider Selection (when service is selected) */}
+          {(() => {
+            const currentSrv = availableServices.find((s) => s.serviceType === serviceType);
+            const providers = currentSrv?.providers || [];
+            if (!serviceType || providers.length === 0) return null;
+
+            return (
+              <div className="mt-4 p-4 rounded-3xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Certified Service Provider</span>
+                    </h4>
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                      {providers.length > 1
+                        ? 'Multiple certified companies cover your area. Choose your preferred provider:'
+                        : 'Certified operational partner assigned to fulfill this service in your area:'}
+                    </p>
+                  </div>
+                  {providers.length > 1 && (
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                      {providers.length} Available
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  {providers.map((p) => {
+                    const isChosen =
+                      selectedCompanyId === p.companyId ||
+                      (!selectedCompanyId && p.companyId === currentSrv?.primaryCompanyId);
+                    return (
+                      <div
+                        key={p.companyId}
+                        onClick={() => setSelectedCompanyId(p.companyId)}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isChosen
+                            ? 'border-indigo-600 bg-indigo-50/60 shadow-xs ring-2 ring-indigo-500/20'
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${
+                              isChosen ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {p.companyName?.charAt(0).toUpperCase() || 'P'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 truncate">{p.companyName}</p>
+                            <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                              <span>✓ Certified Operations</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                            isChosen
+                              ? 'border-indigo-600 bg-indigo-600 text-white'
+                              : 'border-slate-300 bg-white'
+                          }`}
+                        >
+                          {isChosen && <Check className="w-3 h-3" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex justify-end pt-2">
             <button
@@ -1128,6 +1213,22 @@ export const CustomerServiceRequest: React.FC = () => {
                 <p className="font-semibold text-slate-800 text-xs mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                   <span>{address}, {city} {pincode ? `(${pincode})` : ''}</span>
+                </p>
+              </div>
+
+              <div className="sm:col-span-2">
+                <span className="font-bold text-slate-400 uppercase text-[10px]">Certified Service Partner</span>
+                <p className="font-bold text-slate-900 text-xs mt-0.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    {(() => {
+                      const currentSrv = availableServices.find((s) => s.serviceType === serviceType);
+                      const activeProv = currentSrv?.providers?.find(
+                        (p) => p.companyId === (selectedCompanyId || currentSrv.primaryCompanyId)
+                      );
+                      return activeProv?.companyName || 'Certified Servora Partner';
+                    })()}
+                  </span>
                 </p>
               </div>
             </div>

@@ -210,7 +210,8 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
     }
 
     // Unified coverage engine — identical logic used for both discovery and request creation
-    const discovery = await discoverAvailableServices({ latitude, longitude, city, area, pincode });
+    const requestedCompanyId = req.body.companyId || req.companyId;
+    const discovery = await discoverAvailableServices({ latitude, longitude, city, area, pincode, requestedCompanyId });
 
     if (!discovery.coverageAvailable) {
       res.json({
@@ -239,9 +240,11 @@ export async function getAvailableServices(req: AuthenticatedRequest, res: Respo
           shortDescription: def.shortDescription,
           icon: def.icon,
           heroImage: def.heroImage,
-          providerCount: 1,
+          providerCount: match.providers?.length || 1,
           primaryCompanyId: match.companyId,
-          providers: [{ companyId: match.companyId, companyName: match.companyName }],
+          providers: match.providers?.length
+            ? match.providers
+            : [{ companyId: match.companyId, companyName: match.companyName }],
           matchedBy: match.matchedBy,
           distanceKm: match.distanceKm,
           coverageRadiusKm: match.coverageRadiusKm,
@@ -342,8 +345,9 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     const custLon = location.coordinates?.longitude ?? location.longitude;
     const hasCustCoords = isValidApplicationCoordinate(custLat, custLon);
     // Unified authoritative coverage check — identical engine as service discovery
-    // Note: Do not restrict customers to req.companyId (their registration tenant)
-    const requestedCompanyId = req.body.companyId;
+    // Prefer requested company (or user company context if manager/customer is testing)
+    const userRole = (req.user as any)?.role;
+    const requestedCompanyId = req.body.companyId || (userRole === 'SERVICE_MANAGER' || userRole === 'ADMIN' ? (req.user as any)?.companyId : undefined);
     let coverageResult = await resolveServiceCoverage({
       latitude: custLat,
       longitude: custLon,
@@ -465,7 +469,7 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       status: 'NEW',
       serviceLocation: legacyLocationSnapshot,
       serviceLocationSnapshot: richLocationSnapshot,
-      isDemoData: targetCompany.environmentContext === 'DEMO' || !targetCompany.isPilot,
+      isDemoData: targetCompany.environmentContext === 'DEMO',
       createdBy: req.userId || customerDoc._id,
       statusHistory: [
         {

@@ -24,6 +24,7 @@ import {
   Phone,
   Mail,
   Lock,
+  Compass,
 } from 'lucide-react';
 import { ServoraLogo } from '../../components/common/ServoraLogo';
 import { searchLocations } from '../../utils/locationSearch';
@@ -107,6 +108,70 @@ export const CompanyOnboarding: React.FC = () => {
   const [tempAreaInput, setTempAreaInput] = useState<Record<number, string>>({});
   const [tempPincodeInput, setTempPincodeInput] = useState<Record<number, string>>({});
   const [radiusInputs, setRadiusInputs] = useState<Record<number, string>>({});
+  const [isLocatingArea, setIsLocatingArea] = useState<Record<number, boolean>>({});
+
+  const handleUseCurrentLocationForArea = (idx: number) => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsLocatingArea((prev) => ({ ...prev, [idx]: true }));
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+            { headers: { Accept: 'application/json' } }
+          );
+          const data = await res.json();
+          const addr = data.address || {};
+          const detectedCity =
+            addr.city?.trim() ||
+            addr.town?.trim() ||
+            addr.village?.trim() ||
+            addr.municipality?.trim() ||
+            addr.state_district?.trim() ||
+            addr.district?.trim() ||
+            '';
+          const detectedState = addr.state?.trim() || '';
+          const detectedPin = addr.postcode ? String(addr.postcode).trim() : '';
+          const locality = addr.suburb?.trim() || addr.neighbourhood?.trim() || addr.road?.trim() || '';
+
+          setServiceAreas((prev) => {
+            const copy = [...prev];
+            copy[idx] = {
+              ...copy[idx],
+              city: detectedCity || copy[idx].city,
+              state: detectedState || copy[idx].state,
+              country: addr.country?.trim() || 'India',
+              latitude: lat,
+              longitude: lon,
+              pincodes:
+                detectedPin && !copy[idx].pincodes.includes(detectedPin)
+                  ? [...copy[idx].pincodes, detectedPin]
+                  : copy[idx].pincodes,
+              areas:
+                locality && !copy[idx].areas.includes(locality)
+                  ? [...copy[idx].areas, locality]
+                  : copy[idx].areas,
+            };
+            return copy;
+          });
+        } catch {
+          alert('Could not determine address from GPS coordinates.');
+        } finally {
+          setIsLocatingArea((prev) => ({ ...prev, [idx]: false }));
+        }
+      },
+      (_err) => {
+        setIsLocatingArea((prev) => ({ ...prev, [idx]: false }));
+        alert('Location permission denied or unavailable.');
+      },
+      { timeout: 8000 }
+    );
+  };
 
   const addAreaChip = (index: number) => {
     const val = (tempAreaInput[index] || '').trim();
@@ -524,19 +589,44 @@ export const CompanyOnboarding: React.FC = () => {
               <div className="space-y-4">
                 {serviceAreas.map((area, idx) => (
                   <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                        Operational Area #{idx + 1}
-                      </span>
-                      {serviceAreas.length > 1 && (
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                          Operational Area #{idx + 1}
+                        </span>
+                        {typeof area.latitude === 'number' && typeof area.longitude === 'number' && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            GPS Verified ({area.latitude.toFixed(2)}, {area.longitude.toFixed(2)})
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => removeAreaRow(idx)}
-                          className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1"
+                          disabled={isLocatingArea[idx]}
+                          onClick={() => handleUseCurrentLocationForArea(idx)}
+                          className="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-xl flex items-center gap-1.5 transition-colors disabled:opacity-50"
                         >
-                          <Trash2 className="w-3.5 h-3.5" /> Remove
+                          {isLocatingArea[idx] ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                          )}
+                          <span>{isLocatingArea[idx] ? 'Detecting...' : 'Use My Current Location'}</span>
                         </button>
-                      )}
+
+                        {serviceAreas.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeAreaRow(idx)}
+                            className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

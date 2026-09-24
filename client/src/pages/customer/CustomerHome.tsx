@@ -507,13 +507,20 @@ export const CustomerHome: React.FC = () => {
                 return (
                   <div
                     key={service.serviceType}
-                    onClick={() =>
-                      navigate(
-                        `/customer/request?service=${service.serviceType}&city=${encodeURIComponent(
-                          location.city
-                        )}`
-                      )
-                    }
+                    onClick={() => {
+                      const q = new URLSearchParams();
+                      q.set('service', service.serviceType);
+                      if (location.city) q.set('city', location.city);
+                      if (location.pincode) q.set('pincode', location.pincode);
+                      if (location.area) q.set('area', location.area);
+                      if (typeof location.latitude === 'number' && typeof location.longitude === 'number') {
+                        q.set('lat', String(location.latitude));
+                        q.set('lng', String(location.longitude));
+                      }
+                      if (location.formattedAddress) q.set('address', location.formattedAddress);
+                      if (service.primaryCompanyId) q.set('companyId', service.primaryCompanyId);
+                      navigate(`/customer/request?${q.toString()}`);
+                    }}
                     className="group bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-400 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden"
                   >
                     <div>
