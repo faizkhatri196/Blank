@@ -232,6 +232,7 @@ export async function reverseGeocodeCoords(
   latitude: number,
   longitude: number
 ): Promise<StructuredLocationSuggestion> {
+  // 1. Try internal server endpoint first
   try {
     const apiKey = getStoredGoogleMapsKey();
     const headers: Record<string, string> = {};
@@ -247,25 +248,84 @@ export async function reverseGeocodeCoords(
     if (res.data?.success && res.data.data) {
       const d = res.data.data;
       const city = d.city || d.locationName;
-      if (!city) throw new Error('Reverse geocoding did not identify a city');
-      const area = d.area || d.locality;
-      const pincode = d.postalCode || undefined;
-      return {
-        city: city.trim(),
-        state: d.state || '',
-        country: d.country || 'India',
-        area: area?.trim(),
-        pincode,
-        latitude,
-        longitude,
-        formattedAddress: d.formattedAddress || `${city}, India`,
-      };
+      if (city) {
+        const area = d.area || d.locality;
+        const pincode = d.postalCode || undefined;
+        return {
+          city: city.trim(),
+          state: d.state || '',
+          country: d.country || 'India',
+          area: area?.trim(),
+          pincode,
+          latitude,
+          longitude,
+          formattedAddress: d.formattedAddress || `${city}, India`,
+        };
+      }
     }
   } catch (e) {
-    console.warn('Backend reverse geocode failed, keeping live coordinates:', e);
+    console.warn('Backend reverse geocode failed, trying client fallback:', e);
   }
 
-  throw new Error('Unable to determine your location. Please select your location manually.');
+  // 2. Direct client-side OpenStreetMap reverse geocode fallback
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      const item = await res.json();
+      const addr = item.address || {};
+      const city =
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.municipality ||
+        addr.district ||
+        addr.state_district ||
+        addr.county ||
+        '';
+      const state = addr.state || '';
+      const country = addr.country || 'India';
+      const area =
+        addr.suburb ||
+        addr.neighbourhood ||
+        addr.residential ||
+        addr.road ||
+        undefined;
+      const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
+      const parts = [area, city, state, country].filter(Boolean);
+      const formattedAddress = parts.length > 0 ? parts.join(', ') : item.display_name;
+
+      if (city || formattedAddress) {
+        return {
+          city: city.trim() || 'Detected Location',
+          state: state.trim(),
+          country: country.trim(),
+          area: area?.trim(),
+          pincode,
+          latitude,
+          longitude,
+          formattedAddress: formattedAddress || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Client reverse geocoding fallback failed:', err);
+  }
+
+  // 3. Fallback: NEVER DROP LIVE COORDINATES!
+  return {
+    city: 'Current Location',
+    state: '',
+    country: 'India',
+    latitude,
+    longitude,
+    formattedAddress: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+  };
 }
 
 export interface LiveLocationResult {

@@ -66,10 +66,18 @@ export const Technicians: React.FC = () => {
   const [technicianSuccessMessage, setTechnicianSuccessMessage] = useState<string | null>(null);
   const [isGeocodingAddLocation, setIsGeocodingAddLocation] = useState(false);
   const [isGeocodingEditLocation, setIsGeocodingEditLocation] = useState(false);
+  const [isFetchingGpsAdd, setIsFetchingGpsAdd] = useState(false);
+  const [isFetchingGpsEdit, setIsFetchingGpsEdit] = useState(false);
+  const [gpsFeedbackAdd, setGpsFeedbackAdd] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [gpsFeedbackEdit, setGpsFeedbackEdit] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   const handleAutoGeocodeAdd = async () => {
-    const query = baseAddress || serviceAreasInput || name;
-    if (!query) return;
+    const query = baseAddress || serviceAreasInput;
+    if (!query) {
+      setGpsFeedbackAdd({ type: 'error', text: 'Please enter an address or service area first to auto-geocode.' });
+      return;
+    }
+    setGpsFeedbackAdd({ type: 'info', text: `Looking up coordinates for "${query}"...` });
     setIsGeocodingAddLocation(true);
     try {
       const res = await geocodeAddressOrCity(query);
@@ -77,36 +85,130 @@ export const Technicians: React.FC = () => {
         setBaseLat(String(res.latitude));
         setBaseLng(String(res.longitude));
         if (!baseAddress) setBaseAddress(res.formattedAddress || query);
+        if (res.pincode && !pincodesInput) setPincodesInput(res.pincode);
+        setAddLocationObj({
+          city: res.city || query,
+          area: res.area,
+          state: res.state,
+          country: res.country,
+          pincode: res.pincode,
+          latitude: res.latitude,
+          longitude: res.longitude,
+          formattedAddress: res.formattedAddress,
+          source: 'MANUAL',
+        });
+        setGpsFeedbackAdd({ type: 'success', text: `✓ Coordinates resolved: ${res.latitude.toFixed(4)}° N, ${res.longitude.toFixed(4)}° E` });
+      } else {
+        setGpsFeedbackAdd({ type: 'error', text: `Could not find coordinates for "${query}". Try searching in autocomplete.` });
       }
+    } catch (err: any) {
+      setGpsFeedbackAdd({ type: 'error', text: err.message || 'Geocoding failed.' });
     } finally {
       setIsGeocodingAddLocation(false);
     }
   };
 
   const handleUseGpsForAdd = () => {
-    if (!navigator.geolocation) return;
-    setIsGeocodingAddLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        try {
-          const res = await reverseGeocodeCoords(lat, lon);
-          setBaseLat(String(lat));
-          setBaseLng(String(lon));
-          setBaseAddress(res.formattedAddress || res.city);
-        } finally {
-          setIsGeocodingAddLocation(false);
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setGpsFeedbackAdd({ type: 'error', text: 'Geolocation is not supported by your browser.' });
+      return;
+    }
+
+    setIsFetchingGpsAdd(true);
+    setGpsFeedbackAdd({ type: 'info', text: 'Requesting device GPS location...' });
+
+    const handleSuccess = async (pos: GeolocationPosition) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      // 1. Immediately store coordinates so they are never lost
+      setBaseLat(String(lat));
+      setBaseLng(String(lon));
+      setGpsFeedbackAdd({ type: 'info', text: `Acquired GPS (${lat.toFixed(4)}, ${lon.toFixed(4)}). Resolving address...` });
+
+      try {
+        const res = await reverseGeocodeCoords(lat, lon);
+        if (res) {
+          setBaseAddress(res.formattedAddress || res.city || `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+          if (res.area && !serviceAreasInput) {
+            setServiceAreasInput(res.area);
+          } else if (res.city && !serviceAreasInput) {
+            setServiceAreasInput(res.city);
+          }
+          if (res.pincode && !pincodesInput) {
+            setPincodesInput(res.pincode);
+          }
+          setAddLocationObj({
+            city: res.city,
+            area: res.area,
+            state: res.state,
+            country: res.country,
+            pincode: res.pincode,
+            latitude: lat,
+            longitude: lon,
+            formattedAddress: res.formattedAddress,
+            source: 'GPS',
+            accuracy: pos.coords.accuracy,
+            timestamp: new Date().toISOString(),
+          });
+          setGpsFeedbackAdd({
+            type: 'success',
+            text: `✓ Live GPS attached: ${res.city || res.area || `${lat.toFixed(4)}, ${lon.toFixed(4)}`}`,
+          });
         }
-      },
-      () => setIsGeocodingAddLocation(false),
-      { enableHighAccuracy: true, timeout: 8000 }
+      } catch (err: any) {
+        console.warn('Reverse geocode error, retained GPS coordinates:', err);
+        setBaseAddress((prev) => prev || `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+        setGpsFeedbackAdd({
+          type: 'success',
+          text: `✓ Live GPS coordinates captured (${lat.toFixed(4)}, ${lon.toFixed(4)}).`,
+        });
+      } finally {
+        setIsFetchingGpsAdd(false);
+      }
+    };
+
+    const handleError = (err: GeolocationPositionError) => {
+      // If high accuracy failed or timed out (common on desktop/laptops), retry with network accuracy
+      if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+        setGpsFeedbackAdd({ type: 'info', text: 'GPS hardware timeout, falling back to network positioning...' });
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          (fallbackErr) => {
+            setIsFetchingGpsAdd(false);
+            if (fallbackErr.code === fallbackErr.PERMISSION_DENIED) {
+              setGpsFeedbackAdd({ type: 'error', text: 'Location permission denied. Please allow location access in your browser.' });
+            } else {
+              setGpsFeedbackAdd({ type: 'error', text: 'Could not acquire live position. Please select location from autocomplete.' });
+            }
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+        return;
+      }
+
+      setIsFetchingGpsAdd(false);
+      if (err.code === err.PERMISSION_DENIED) {
+        setGpsFeedbackAdd({ type: 'error', text: 'Location permission denied. Please allow location access in your browser settings.' });
+      } else {
+        setGpsFeedbackAdd({ type: 'error', text: `GPS Error: ${err.message || 'Unable to fetch position'}` });
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
     );
   };
 
   const handleAutoGeocodeEdit = async () => {
-    const query = editBaseAddress || editServiceAreasInput || editName;
-    if (!query) return;
+    const query = editBaseAddress || editServiceAreasInput;
+    if (!query) {
+      setGpsFeedbackEdit({ type: 'error', text: 'Please enter an address or service area first to auto-geocode.' });
+      return;
+    }
+    setGpsFeedbackEdit({ type: 'info', text: `Looking up coordinates for "${query}"...` });
     setIsGeocodingEditLocation(true);
     try {
       const res = await geocodeAddressOrCity(query);
@@ -114,30 +216,118 @@ export const Technicians: React.FC = () => {
         setEditBaseLat(String(res.latitude));
         setEditBaseLng(String(res.longitude));
         if (!editBaseAddress) setEditBaseAddress(res.formattedAddress || query);
+        if (res.pincode && !editPincodesInput) setEditPincodesInput(res.pincode);
+        setEditLocationObj({
+          city: res.city || query,
+          area: res.area,
+          state: res.state,
+          country: res.country,
+          pincode: res.pincode,
+          latitude: res.latitude,
+          longitude: res.longitude,
+          formattedAddress: res.formattedAddress,
+          source: 'MANUAL',
+        });
+        setGpsFeedbackEdit({ type: 'success', text: `✓ Coordinates resolved: ${res.latitude.toFixed(4)}° N, ${res.longitude.toFixed(4)}° E` });
+      } else {
+        setGpsFeedbackEdit({ type: 'error', text: `Could not find coordinates for "${query}". Try searching in autocomplete.` });
       }
+    } catch (err: any) {
+      setGpsFeedbackEdit({ type: 'error', text: err.message || 'Geocoding failed.' });
     } finally {
       setIsGeocodingEditLocation(false);
     }
   };
 
   const handleUseGpsForEdit = () => {
-    if (!navigator.geolocation) return;
-    setIsGeocodingEditLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        try {
-          const res = await reverseGeocodeCoords(lat, lon);
-          setEditBaseLat(String(lat));
-          setEditBaseLng(String(lon));
-          setEditBaseAddress(res.formattedAddress || res.city);
-        } finally {
-          setIsGeocodingEditLocation(false);
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setGpsFeedbackEdit({ type: 'error', text: 'Geolocation is not supported by your browser.' });
+      return;
+    }
+
+    setIsFetchingGpsEdit(true);
+    setGpsFeedbackEdit({ type: 'info', text: 'Requesting device GPS location...' });
+
+    const handleSuccess = async (pos: GeolocationPosition) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+
+      setEditBaseLat(String(lat));
+      setEditBaseLng(String(lon));
+      setGpsFeedbackEdit({ type: 'info', text: `Acquired GPS (${lat.toFixed(4)}, ${lon.toFixed(4)}). Resolving address...` });
+
+      try {
+        const res = await reverseGeocodeCoords(lat, lon);
+        if (res) {
+          setEditBaseAddress(res.formattedAddress || res.city || `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+          if (res.area && !editServiceAreasInput) {
+            setEditServiceAreasInput(res.area);
+          } else if (res.city && !editServiceAreasInput) {
+            setEditServiceAreasInput(res.city);
+          }
+          if (res.pincode && !editPincodesInput) {
+            setEditPincodesInput(res.pincode);
+          }
+          setEditLocationObj({
+            city: res.city,
+            area: res.area,
+            state: res.state,
+            country: res.country,
+            pincode: res.pincode,
+            latitude: lat,
+            longitude: lon,
+            formattedAddress: res.formattedAddress,
+            source: 'GPS',
+            accuracy: pos.coords.accuracy,
+            timestamp: new Date().toISOString(),
+          });
+          setGpsFeedbackEdit({
+            type: 'success',
+            text: `✓ Live GPS attached: ${res.city || res.area || `${lat.toFixed(4)}, ${lon.toFixed(4)}`}`,
+          });
         }
-      },
-      () => setIsGeocodingEditLocation(false),
-      { enableHighAccuracy: true, timeout: 8000 }
+      } catch (err: any) {
+        console.warn('Reverse geocode error, retained GPS coordinates:', err);
+        setEditBaseAddress((prev) => prev || `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+        setGpsFeedbackEdit({
+          type: 'success',
+          text: `✓ Live GPS coordinates captured (${lat.toFixed(4)}, ${lon.toFixed(4)}).`,
+        });
+      } finally {
+        setIsFetchingGpsEdit(false);
+      }
+    };
+
+    const handleError = (err: GeolocationPositionError) => {
+      if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+        setGpsFeedbackEdit({ type: 'info', text: 'GPS hardware timeout, falling back to network positioning...' });
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          (fallbackErr) => {
+            setIsFetchingGpsEdit(false);
+            if (fallbackErr.code === fallbackErr.PERMISSION_DENIED) {
+              setGpsFeedbackEdit({ type: 'error', text: 'Location permission denied. Please allow location access in your browser.' });
+            } else {
+              setGpsFeedbackEdit({ type: 'error', text: 'Could not acquire live position. Please select location from autocomplete.' });
+            }
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+        return;
+      }
+
+      setIsFetchingGpsEdit(false);
+      if (err.code === err.PERMISSION_DENIED) {
+        setGpsFeedbackEdit({ type: 'error', text: 'Location permission denied. Please allow location access in your browser settings.' });
+      } else {
+        setGpsFeedbackEdit({ type: 'error', text: `GPS Error: ${err.message || 'Unable to fetch position'}` });
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
     );
   };
 
@@ -280,6 +470,8 @@ export const Technicians: React.FC = () => {
 
   const openEditModal = (tech: Technician) => {
     setEditingTech(tech);
+    setEditModalError(null);
+    setGpsFeedbackEdit(null);
     setEditName(tech.name);
     setEditEmail(tech.email || '');
     setEditPhone(tech.phone);
@@ -495,7 +687,11 @@ export const Technicians: React.FC = () => {
 
         <button
           id="add-technician-btn"
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setModalError(null);
+            setGpsFeedbackAdd(null);
+            setIsAddModalOpen(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -968,22 +1164,27 @@ export const Technicians: React.FC = () => {
               <button
                 type="button"
                 onClick={handleAutoGeocodeAdd}
-                disabled={isGeocodingAddLocation || (!baseAddress && !serviceAreasInput)}
+                disabled={isGeocodingAddLocation || isFetchingGpsAdd || (!baseAddress && !serviceAreasInput)}
                 className="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1 disabled:opacity-50"
               >
-                <Sparkles className="w-3 h-3 text-indigo-600" />
+                {isGeocodingAddLocation ? <Loader2 className="w-3 h-3 animate-spin text-indigo-600" /> : <Sparkles className="w-3 h-3 text-indigo-600" />}
                 <span>{isGeocodingAddLocation ? 'Geocoding...' : '⚡ Auto-Geocode Coordinates'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleUseGpsForAdd}
-                disabled={isGeocodingAddLocation}
+                disabled={isFetchingGpsAdd || isGeocodingAddLocation}
                 className="px-2.5 py-1 text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors flex items-center gap-1 disabled:opacity-50"
               >
-                <Compass className="w-3 h-3 text-slate-600" />
-                <span>📍 Use Live GPS</span>
+                {isFetchingGpsAdd ? <Loader2 className="w-3 h-3 animate-spin text-slate-600" /> : <Compass className="w-3 h-3 text-slate-600" />}
+                <span>{isFetchingGpsAdd ? 'Locating via GPS...' : '📍 Use Live GPS'}</span>
               </button>
             </div>
+            {gpsFeedbackAdd && (
+              <p className={`text-[11px] font-medium pt-1 ${gpsFeedbackAdd.type === 'error' ? 'text-red-600' : gpsFeedbackAdd.type === 'success' ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                {gpsFeedbackAdd.text}
+              </p>
+            )}
           </div>
 
           <div>
@@ -1202,22 +1403,27 @@ export const Technicians: React.FC = () => {
               <button
                 type="button"
                 onClick={handleAutoGeocodeEdit}
-                disabled={isGeocodingEditLocation || (!editBaseAddress && !editServiceAreasInput)}
+                disabled={isGeocodingEditLocation || isFetchingGpsEdit || (!editBaseAddress && !editServiceAreasInput)}
                 className="px-2.5 py-1 text-[11px] font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1 disabled:opacity-50"
               >
-                <Sparkles className="w-3 h-3 text-indigo-600" />
+                {isGeocodingEditLocation ? <Loader2 className="w-3 h-3 animate-spin text-indigo-600" /> : <Sparkles className="w-3 h-3 text-indigo-600" />}
                 <span>{isGeocodingEditLocation ? 'Geocoding...' : '⚡ Auto-Geocode Coordinates'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleUseGpsForEdit}
-                disabled={isGeocodingEditLocation}
+                disabled={isFetchingGpsEdit || isGeocodingEditLocation}
                 className="px-2.5 py-1 text-[11px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors flex items-center gap-1 disabled:opacity-50"
               >
-                <Compass className="w-3 h-3 text-slate-600" />
-                <span>📍 Use Live GPS</span>
+                {isFetchingGpsEdit ? <Loader2 className="w-3 h-3 animate-spin text-slate-600" /> : <Compass className="w-3 h-3 text-slate-600" />}
+                <span>{isFetchingGpsEdit ? 'Locating via GPS...' : '📍 Use Live GPS'}</span>
               </button>
             </div>
+            {gpsFeedbackEdit && (
+              <p className={`text-[11px] font-medium pt-1 ${gpsFeedbackEdit.type === 'error' ? 'text-red-600' : gpsFeedbackEdit.type === 'success' ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                {gpsFeedbackEdit.text}
+              </p>
+            )}
           </div>
 
           <div>

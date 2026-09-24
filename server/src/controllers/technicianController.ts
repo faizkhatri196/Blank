@@ -111,6 +111,22 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
       active: true,
     });
 
+    let baseLocation: any = data.baseLocation;
+    if (
+      baseLocation &&
+      typeof baseLocation.latitude === 'number' &&
+      typeof baseLocation.longitude === 'number'
+    ) {
+      const lat = baseLocation.latitude;
+      const lon = baseLocation.longitude;
+      if (isValidCoordinate(lat, lon)) {
+        baseLocation = {
+          ...baseLocation,
+          center: createGeoPoint(lat, lon),
+        };
+      }
+    }
+
     const technician = await Technician.create({
       userId: user._id,
       companyId: req.companyId,
@@ -123,6 +139,16 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
       tools: data.tools,
       certifications: data.certifications,
       serviceAreas: data.serviceAreas,
+      baseLocation,
+      currentLocation:
+        baseLocation && typeof baseLocation.latitude === 'number' && typeof baseLocation.longitude === 'number'
+          ? {
+              latitude: baseLocation.latitude,
+              longitude: baseLocation.longitude,
+              address: baseLocation.formattedAddress || baseLocation.city,
+              timestamp: new Date(),
+            }
+          : undefined,
       coverageRadiusKm: data.coverageRadiusKm ?? 20,
       pincodes: data.pincodes ?? [],
       availability: data.availability,
