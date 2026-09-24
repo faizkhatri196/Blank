@@ -6,10 +6,58 @@ export interface LocationSuggestion {
   latitude: number;
   longitude: number;
   postalCode?: string;
+  postcode?: string;
+  houseNumber?: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
   city?: string;
+  district?: string;
   state?: string;
   country?: string;
+  locality?: string;
   rawType?: string;
+}
+
+function parseNominatimItem(item: any): LocationSuggestion {
+  const addr = item.address || {};
+  const houseNumber = addr.house_number?.trim() || undefined;
+  const road = addr.road?.trim() || undefined;
+  const neighbourhood = addr.neighbourhood?.trim() || undefined;
+  const suburb = addr.suburb?.trim() || undefined;
+  const village = addr.village?.trim() || undefined;
+  const town = addr.town?.trim() || undefined;
+  const countyName = addr.county?.replace(/\s+(taluka|tehsil|mandal|subdistrict|block)\b/gi, '').trim() || undefined;
+  const city = addr.city?.trim() || addr.town?.trim() || addr.village?.trim() || addr.municipality?.trim() || countyName || undefined;
+  const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
+  const state = addr.state?.trim() || undefined;
+  const country = addr.country?.trim() || undefined;
+  const postcode = addr.postcode ? String(addr.postcode).trim() : undefined;
+  const locality = suburb || neighbourhood || village || town || road || undefined;
+  const locationName = locality || city || district || item.name || item.display_name;
+
+  return {
+    locationName,
+    formattedAddress: item.display_name,
+    latitude: parseFloat(item.lat),
+    longitude: parseFloat(item.lon),
+    postalCode: postcode,
+    postcode,
+    houseNumber,
+    road,
+    neighbourhood,
+    suburb,
+    village,
+    town,
+    city,
+    district,
+    state,
+    country,
+    locality,
+    rawType: item.type || 'place',
+  };
 }
 
 export async function searchLocations(query: string): Promise<LocationSuggestion[]> {
@@ -37,22 +85,9 @@ export async function searchLocations(query: string): Promise<LocationSuggestion
     });
     if (response.ok) {
       const data = await response.json();
-      return data.map((item: any) => ({
-        locationName:
-          item.address?.city ||
-          item.address?.town ||
-          item.address?.village ||
-          item.address?.suburb ||
-          item.display_name.split(',')[0].trim(),
-        formattedAddress: item.display_name,
-        latitude: parseFloat(item.lat),
-        longitude: parseFloat(item.lon),
-        postalCode: item.address?.postcode || '',
-        city: item.address?.city || item.address?.town || item.address?.village || '',
-        state: item.address?.state || '',
-        country: item.address?.country || '',
-        rawType: item.type || 'place',
-      }));
+      if (Array.isArray(data)) {
+        return data.map(parseNominatimItem);
+      }
     }
   } catch (err) {
     console.error('All location search sources failed:', err);
@@ -80,21 +115,9 @@ export async function reverseGeocodeLocation(lat: number, lon: number): Promise<
     });
     if (response.ok) {
       const item = await response.json();
-      return {
-        locationName:
-          item.address?.suburb ||
-          item.address?.neighbourhood ||
-          item.address?.city ||
-          item.address?.town ||
-          item.display_name.split(',')[0].trim(),
-        formattedAddress: item.display_name,
-        latitude: parseFloat(item.lat),
-        longitude: parseFloat(item.lon),
-        postalCode: item.address?.postcode || '',
-        city: item.address?.city || item.address?.town || item.address?.village || '',
-        state: item.address?.state || '',
-        country: item.address?.country || '',
-      };
+      if (item && !item.error) {
+        return parseNominatimItem(item);
+      }
     }
   } catch (err) {
     console.error('Direct reverse geocode failed:', err);

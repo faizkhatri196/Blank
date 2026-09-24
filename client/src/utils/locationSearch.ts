@@ -3,6 +3,9 @@
  * Uses server-side location provider abstraction first (/api/location/search),
  * with OpenStreetMap Nominatim fallback.
  * Generic, global, zero hardcoded lists, zero silent city/state defaulting.
+ *
+ * Race-condition protection: Each call creates its own AbortController.
+ * Callers must pass the signal and cancel appropriately.
  */
 
 import { apiClient } from '../api/client';
@@ -13,10 +16,18 @@ export interface StructuredLocationSuggestion {
   country: string;
   area?: string;
   pincode?: string;
+  postcode?: string;
+  houseNumber?: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
+  district?: string;
   latitude: number;
   longitude: number;
   formattedAddress: string;
-  placeId?: string;
+  geocodingStatus?: 'VERIFIED' | 'MISSING';
 }
 
 export function getStoredGoogleMapsKey(): string {
@@ -38,29 +49,40 @@ export function setStoredGoogleMapsKey(key: string): void {
     } else {
       localStorage.removeItem('servora_google_maps_key');
     }
-  } catch {
-    // Ignore localStorage errors
-  }
+  } catch {}
 }
 
-let activeAbortController: AbortController | null = null;
-let searchSequence = 0;
+/**
+ * Validate that coordinates are a real application location.
+ * Rejects: null, undefined, NaN, Infinity, out of range, and (0,0).
+ */
+function isValidApplicationCoordinate(lat: unknown, lon: unknown): boolean {
+  if (typeof lat !== 'number' || typeof lon !== 'number') return false;
+  if (!isFinite(lat) || !isFinite(lon)) return false;
+  if (isNaN(lat) || isNaN(lon)) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lon < -180 || lon > 180) return false;
+  // Reject (0,0) — Gulf of Guinea, never a valid SERVORA location
+  if (lat === 0 && lon === 0) return false;
+  return true;
+}
 
+/**
+ * Search for locations by text query.
+ * Returns suggestions with coordinates.
+ *
+ * RACE CONDITION PROTECTION: Pass an AbortSignal from the caller's AbortController.
+ * The caller should abort the previous request when a new search starts.
+ */
 export async function searchLocations(
   query: string,
-  cityContext?: string
+  cityContext?: string,
+  signal?: AbortSignal
 ): Promise<StructuredLocationSuggestion[]> {
   const trimmed = query.trim();
   if (trimmed.length < 2) {
     return [];
   }
-
-  // Cancel previous in-flight request
-  if (activeAbortController) {
-    activeAbortController.abort();
-  }
-  activeAbortController = new AbortController();
-  const requestSequence = ++searchSequence;
 
   // 1. Try server-side location provider abstraction
   try {
@@ -69,29 +91,39 @@ export async function searchLocations(
       params.city = cityContext;
     }
 
-    const apiKey = getStoredGoogleMapsKey();
-    const headers: Record<string, string> = {};
-    if (apiKey) {
-      headers['x-google-maps-api-key'] = apiKey;
-    }
-
     const res = await apiClient.get('/location/search', {
       params,
-      headers,
-      signal: activeAbortController.signal,
+      signal,
     });
 
-    if (requestSequence === searchSequence && res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      return res.data.data.map((item: any) => ({
-        city: item.city || item.locationName || '',
-        state: item.state || '',
-        country: item.country || '',
-        area: item.area || item.locality || (item.rawType === 'suburb' ? item.locationName : undefined),
-        pincode: item.postalCode || undefined,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        formattedAddress: item.formattedAddress || item.locationName,
-      }));
+    if (res.data?.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      return res.data.data
+        .map((item: any) => {
+          const lat = typeof item.latitude === 'number' ? item.latitude : undefined;
+          const lon = typeof item.longitude === 'number' ? item.longitude : undefined;
+          const pin = item.postcode || item.postalCode || undefined;
+          return {
+            city: item.city || item.locationName || '',
+            state: item.state || '',
+            country: item.country || '',
+            area: item.area || item.locality || (item.rawType === 'suburb' ? item.locationName : undefined),
+            pincode: pin,
+            postcode: pin,
+            houseNumber: item.houseNumber || undefined,
+            road: item.road || undefined,
+            neighbourhood: item.neighbourhood || undefined,
+            suburb: item.suburb || undefined,
+            village: item.village || undefined,
+            town: item.town || undefined,
+            district: item.district || undefined,
+            // Only attach valid non-(0,0) coordinates; otherwise leave undefined
+            latitude: isValidApplicationCoordinate(lat, lon) ? lat! : undefined,
+            longitude: isValidApplicationCoordinate(lat, lon) ? lon! : undefined,
+            formattedAddress: item.formattedAddress || item.locationName,
+            geocodingStatus: item.geocodingStatus || (isValidApplicationCoordinate(lat, lon) ? 'VERIFIED' : 'MISSING'),
+          } as StructuredLocationSuggestion;
+        })
+        .filter((s: StructuredLocationSuggestion) => s.city || s.area);
     }
   } catch (err: any) {
     if (err.name === 'CanceledError' || err.name === 'AbortError') {
@@ -116,7 +148,7 @@ export async function searchLocations(
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
 
     const res = await fetch(url, {
-      signal: activeAbortController.signal,
+      signal,
       headers: {
         Accept: 'application/json',
       },
@@ -127,7 +159,7 @@ export async function searchLocations(
     }
 
     const data: any[] = await res.json();
-    if (requestSequence !== searchSequence || !Array.isArray(data)) {
+    if (!Array.isArray(data)) {
       return [];
     }
 
@@ -135,49 +167,51 @@ export async function searchLocations(
 
     for (const item of data) {
       const addr = item.address || {};
+      const houseNumber = addr.house_number?.trim() || undefined;
+      const road = addr.road?.trim() || undefined;
+      const neighbourhood = addr.neighbourhood?.trim() || undefined;
+      const suburb = addr.suburb?.trim() || undefined;
+      const village = addr.village?.trim() || undefined;
+      const town = addr.town?.trim() || undefined;
+      const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
       const city =
-        addr.city ||
-        addr.town ||
-        addr.village ||
-        addr.municipality ||
-        addr.district ||
-        addr.state_district ||
-        addr.county ||
-        item.display_name.split(',')[0].trim() ||
+        addr.city?.trim() ||
+        addr.town?.trim() ||
+        addr.village?.trim() ||
+        addr.municipality?.trim() ||
+        district ||
         '';
 
-      const state = addr.state || '';
-      const country = addr.country || '';
-      const area =
-        addr.suburb ||
-        addr.neighbourhood ||
-        addr.residential ||
-        addr.commercial ||
-        addr.quarter ||
-        addr.road ||
-        undefined;
-
+      const state = addr.state?.trim() || '';
+      const country = addr.country?.trim() || '';
+      const area = suburb || neighbourhood || village || town || road || undefined;
       const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
       const latitude = parseFloat(item.lat);
       const longitude = parseFloat(item.lon);
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
-          (Math.abs(latitude) < 0.0001 && Math.abs(longitude) < 0.0001)) continue;
 
-      const parts = [area, city, state, country].filter(Boolean);
-      let formattedAddress = parts.join(', ');
-      if (pincode) {
-        formattedAddress += ` ${pincode}`;
+      // Only include result if coordinates are valid and not (0,0)
+      if (!isValidApplicationCoordinate(latitude, longitude)) {
+        continue;
       }
 
       suggestions.push({
-        city: city.trim(),
-        state: state.trim(),
-        country: country.trim(),
-        area: area?.trim(),
+        city,
+        state,
+        country,
+        area,
         pincode,
+        postcode: pincode,
+        houseNumber,
+        road,
+        neighbourhood,
+        suburb,
+        village,
+        town,
+        district,
         latitude,
         longitude,
-        formattedAddress: formattedAddress || item.display_name,
+        formattedAddress: item.display_name,
+        geocodingStatus: 'VERIFIED',
       });
     }
 
@@ -206,16 +240,22 @@ export async function fetchCityLocalities(city: string): Promise<StructuredLocat
       const areas = res.data.data.filter(
         (item: any) => item.area || item.locality || item.rawType === 'suburb'
       );
-      return areas.map((item: any) => ({
-        city: item.city || city,
-        state: item.state || '',
-        country: item.country || '',
-        area: item.area || item.locality || item.locationName,
-        pincode: item.postalCode || undefined,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        formattedAddress: item.formattedAddress || `${item.area || item.locality || item.locationName}, ${city}`,
-      }));
+      return areas.map((item: any) => {
+        const lat = typeof item.latitude === 'number' ? item.latitude : undefined;
+        const lon = typeof item.longitude === 'number' ? item.longitude : undefined;
+        return {
+          city: item.city || city,
+          state: item.state || '',
+          country: item.country || '',
+          area: item.area || item.locality || item.locationName,
+          pincode: item.postalCode || undefined,
+          // Only expose valid non-(0,0) coordinates
+          latitude: isValidApplicationCoordinate(lat, lon) ? lat! : undefined,
+          longitude: isValidApplicationCoordinate(lat, lon) ? lon! : undefined,
+          formattedAddress: item.formattedAddress || `${item.area || item.locality || item.locationName}, ${city}`,
+          geocodingStatus: item.geocodingStatus || (isValidApplicationCoordinate(lat, lon) ? 'VERIFIED' : 'MISSING'),
+        } as StructuredLocationSuggestion;
+      });
     }
     return [];
   } catch (err) {

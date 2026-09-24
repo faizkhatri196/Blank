@@ -2,12 +2,14 @@ import { LocationSearchResult } from './types';
 import { FuzzyNormalizer } from './FuzzyNormalizer';
 
 interface NominatimAddress {
-  suburb?: string;
-  neighbourhood?: string;
+  house_number?: string;
   road?: string;
-  city?: string;
-  town?: string;
+  neighbourhood?: string;
+  suburb?: string;
   village?: string;
+  town?: string;
+  city?: string;
+  municipality?: string;
   county?: string;
   district?: string;
   state_district?: string;
@@ -30,289 +32,9 @@ interface NominatimItem {
 const cache = new Map<string, { data: LocationSearchResult[]; timestamp: number }>();
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
 
-// Offline fallback dictionary for reliable local tests and fast offline execution
-const KNOWN_PLACES: Record<string, LocationSearchResult[]> = {
-  rajkot: [
-    {
-      formattedAddress: 'Rajkot, Gujarat, India',
-      city: 'Rajkot',
-      district: 'Rajkot District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '360001',
-      latitude: 22.3039,
-      longitude: 70.8022,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Kalawad Road, Rajkot, Gujarat 360005, India',
-      city: 'Rajkot',
-      locality: 'Kalawad Road',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '360005',
-      latitude: 22.2835,
-      longitude: 70.7681,
-      provider: 'nominatim',
-    },
-  ],
-  ahmedabad: [
-    {
-      formattedAddress: 'Ahmedabad, Gujarat, India',
-      city: 'Ahmedabad',
-      district: 'Ahmedabad District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '380001',
-      latitude: 23.0225,
-      longitude: 72.5714,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Satellite, Ahmedabad, Gujarat 380015, India',
-      city: 'Ahmedabad',
-      locality: 'Satellite',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '380015',
-      latitude: 23.0305,
-      longitude: 72.5178,
-      provider: 'nominatim',
-    },
-  ],
-  surat: [
-    {
-      formattedAddress: 'Surat, Gujarat, India',
-      city: 'Surat',
-      district: 'Surat District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '395003',
-      latitude: 21.1702,
-      longitude: 72.8311,
-      provider: 'nominatim',
-    },
-  ],
-  mundra: [
-    {
-      formattedAddress: 'Mundra, Gujarat 370421, India',
-      city: 'Mundra',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370421',
-      latitude: 22.8393,
-      longitude: 69.7249,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Samaghoga, Mundra, Gujarat 370415, India',
-      city: 'Mundra',
-      locality: 'Samaghoga',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370415',
-      latitude: 22.8447,
-      longitude: 69.7153,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Baroi, Mundra, Gujarat 370415, India',
-      city: 'Mundra',
-      locality: 'Baroi',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370415',
-      latitude: 22.8312,
-      longitude: 69.734,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Mundra Port / SEZ, Mundra, Gujarat 370421, India',
-      city: 'Mundra',
-      locality: 'Mundra Port',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370421',
-      latitude: 22.75,
-      longitude: 69.7,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Dhrab, Mundra, Gujarat 370405, India',
-      city: 'Mundra',
-      locality: 'Dhrab',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370405',
-      latitude: 22.8123,
-      longitude: 69.7541,
-      provider: 'nominatim',
-    },
-  ],
-  mumbai: [
-    {
-      formattedAddress: 'Mumbai, Maharashtra, India',
-      city: 'Mumbai',
-      district: 'Mumbai Suburban',
-      state: 'Maharashtra',
-      country: 'India',
-      postalCode: '400001',
-      latitude: 19.076,
-      longitude: 72.8777,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Powai, Mumbai, Maharashtra 400076, India',
-      city: 'Mumbai',
-      locality: 'Powai',
-      district: 'Mumbai Suburban',
-      state: 'Maharashtra',
-      country: 'India',
-      postalCode: '400076',
-      latitude: 19.1176,
-      longitude: 72.906,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Andheri, Mumbai, Maharashtra 400053, India',
-      city: 'Mumbai',
-      locality: 'Andheri',
-      district: 'Mumbai Suburban',
-      state: 'Maharashtra',
-      country: 'India',
-      postalCode: '400053',
-      latitude: 19.1197,
-      longitude: 72.8464,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Thane, Mumbai Suburban, Maharashtra 400601, India',
-      city: 'Mumbai',
-      locality: 'Thane',
-      district: 'Thane District',
-      state: 'Maharashtra',
-      country: 'India',
-      postalCode: '400601',
-      latitude: 19.2183,
-      longitude: 72.9781,
-      provider: 'nominatim',
-    },
-  ],
-  'new york': [
-    {
-      formattedAddress: 'New York, NY, United States',
-      city: 'New York',
-      state: 'New York',
-      country: 'United States',
-      postalCode: '10001',
-      latitude: 40.7128,
-      longitude: -74.006,
-      provider: 'nominatim',
-    },
-  ],
-  london: [
-    {
-      formattedAddress: 'London, Greater London, England, United Kingdom',
-      city: 'London',
-      state: 'England',
-      country: 'United Kingdom',
-      postalCode: 'SW1A 1AA',
-      latitude: 51.5074,
-      longitude: -0.1278,
-      provider: 'nominatim',
-    },
-  ],
-  // Mandvi (Kutch) — real coordinates, NOT Mandvi (Surat). Distance to Koday: ~7.5 km.
-  mandvi: [
-    {
-      formattedAddress: 'Mandvi, Kutch, Gujarat 370465, India',
-      city: 'Mandvi',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370465',
-      latitude: 22.8321,
-      longitude: 69.3538,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Koday, Mandvi, Kutch, Gujarat, India',
-      city: 'Mandvi',
-      locality: 'Koday',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370465',
-      latitude: 22.8801,
-      longitude: 69.3621,
-      provider: 'nominatim',
-    },
-    {
-      formattedAddress: 'Maska, Mandvi, Kutch, Gujarat, India',
-      city: 'Mandvi',
-      locality: 'Maska',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370465',
-      latitude: 22.8556,
-      longitude: 69.3781,
-      provider: 'nominatim',
-    },
-  ],
-  // Koday / Kodai (village near Mandvi, ~7.5 km from Mandvi center)
-  koday: [
-    {
-      formattedAddress: 'Koday, Mandvi Taluka, Kutch, Gujarat 370465, India',
-      city: 'Mandvi',
-      locality: 'Koday',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370465',
-      latitude: 22.8801,
-      longitude: 69.3621,
-      provider: 'nominatim',
-    },
-  ],
-  kodai: [
-    {
-      formattedAddress: 'Kodai, Mandvi Taluka, Kutch, Gujarat 370465, India',
-      city: 'Mandvi',
-      locality: 'Kodai',
-      district: 'Kutch District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '370465',
-      latitude: 22.8801,
-      longitude: 69.3621,
-      provider: 'nominatim',
-    },
-  ],
-  wankaner: [
-    {
-      formattedAddress: 'Wankaner, Morbi, Gujarat 363621, India',
-      city: 'Wankaner',
-      district: 'Morbi District',
-      state: 'Gujarat',
-      country: 'India',
-      postalCode: '363621',
-      latitude: 22.6118,
-      longitude: 70.9434,
-      provider: 'nominatim',
-    },
-  ],
-};
-
-
 export class NominatimLocationProvider {
   /**
-   * Search for locations matching query with fuzzy normalization.
+   * Search for locations matching query with generic normalization.
    */
   public static async search(query: string, cityContext?: string): Promise<LocationSearchResult[]> {
     const rawTarget = cityContext
@@ -352,48 +74,13 @@ export class NominatimLocationProvider {
       if (response.ok) {
         const rawResults = (await response.json()) as NominatimItem[];
         if (Array.isArray(rawResults) && rawResults.length > 0) {
-          let mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
-          if (cityContext && KNOWN_PLACES[cityContext.toLowerCase()]) {
-            const knownLocalities = KNOWN_PLACES[cityContext.toLowerCase()].filter((k) => k.locality);
-            const seen = new Set(mapped.map((m) => (m.locality || m.formattedAddress).toLowerCase()));
-            for (const loc of knownLocalities) {
-              if (loc.locality && !seen.has(loc.locality.toLowerCase())) {
-                mapped.push(loc);
-              }
-            }
-          }
+          const mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
           cache.set(cacheKey, { data: mapped, timestamp: Date.now() });
           return mapped;
         }
       }
     } catch {
-      // Network timeout or blocked — seamlessly fallback to known offline places
-    }
-
-    // Offline / fallback lookup
-    for (const [key, results] of Object.entries(KNOWN_PLACES)) {
-      if (cacheKey.includes(key) || key.includes(cacheKey)) {
-        if (query && query.trim().length >= 2 && query.toLowerCase() !== key) {
-          const matchedSub = results.filter(
-            (r) =>
-              (r.locality && r.locality.toLowerCase().includes(query.toLowerCase())) ||
-              (r.postalCode && r.postalCode.includes(query)) ||
-              (r.formattedAddress && r.formattedAddress.toLowerCase().includes(query.toLowerCase()))
-          );
-          if (matchedSub.length > 0) return matchedSub;
-        }
-        return results;
-      }
-    }
-
-    if (norm.extractedPostalCode === '360005' || cacheKey.includes('360005')) {
-      return KNOWN_PLACES.rajkot.filter((r) => r.postalCode === '360005' || r.city === 'Rajkot');
-    }
-    if (norm.extractedPostalCode === '380015' || cacheKey.includes('380015')) {
-      return KNOWN_PLACES.ahmedabad.filter((r) => r.postalCode === '380015' || r.locality === 'Satellite');
-    }
-    if (norm.extractedPostalCode === '370421' || norm.extractedPostalCode === '370415' || cacheKey.includes('370421') || cacheKey.includes('370415')) {
-      return KNOWN_PLACES.mundra;
+      // Network timeout or error — return empty without inventing hardcoded places
     }
 
     return [];
@@ -403,6 +90,17 @@ export class NominatimLocationProvider {
    * Reverse geocode coordinates to structured address.
    */
   public static async reverseGeocode(latitude: number, longitude: number): Promise<LocationSearchResult | null> {
+    if (typeof latitude !== 'number' || typeof longitude !== 'number' || isNaN(latitude) || isNaN(longitude)) {
+      return null;
+    }
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return null;
+    }
+    // Reject (0,0) - Gulf of Guinea / Null Island
+    if (latitude === 0 && longitude === 0) {
+      return null;
+    }
+
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${latitude}&lon=${longitude}`;
       const controller = new AbortController();
@@ -420,40 +118,60 @@ export class NominatimLocationProvider {
       if (response.ok) {
         const item = (await response.json()) as NominatimItem;
         const mapped = this.mapNominatimItem(item, false);
-        const hasResolvedPlace = Boolean(mapped.city || mapped.locality || mapped.district || mapped.state);
+        const hasResolvedPlace = Boolean(
+          mapped.city ||
+          mapped.town ||
+          mapped.village ||
+          mapped.suburb ||
+          mapped.neighbourhood ||
+          mapped.road ||
+          mapped.locality ||
+          mapped.district
+        );
         if (!hasResolvedPlace) {
           return null;
         }
         return mapped;
       }
     } catch {
-      // No silent fallback to city guesses when reverse geocoding fails.
+      // Geocoding failure non-blocking, return null
     }
 
     return null;
   }
 
-  private static mapNominatimItem(item: NominatimItem, wasCorrected: boolean): LocationSearchResult {
+  public static mapNominatimItem(item: NominatimItem, wasCorrected = false): LocationSearchResult {
     const addr = item.address || {};
-    const city = addr.city || addr.town || addr.village || addr.county || '';
-    const district = addr.district || addr.state_district || '';
-    const locality = addr.suburb || addr.neighbourhood || addr.road || '';
-    const state = addr.state || '';
-    const country = addr.country || '';
-    const postalCode = addr.postcode || '';
-
-    // Construct a concise, readable formatted address
-    const parts = [locality, city, state, postalCode, country].filter(Boolean);
-    const cleanAddress = parts.length > 0 ? parts.join(', ') : item.display_name;
+    const houseNumber = addr.house_number?.trim() || undefined;
+    const road = addr.road?.trim() || undefined;
+    const neighbourhood = addr.neighbourhood?.trim() || undefined;
+    const suburb = addr.suburb?.trim() || undefined;
+    const village = addr.village?.trim() || undefined;
+    const town = addr.town?.trim() || undefined;
+    const countyName = addr.county?.replace(/\s+(taluka|tehsil|mandal|subdistrict|block)\b/gi, '').trim() || undefined;
+    const city = addr.city?.trim() || addr.town?.trim() || addr.village?.trim() || addr.municipality?.trim() || countyName || undefined;
+    const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
+    const state = addr.state?.trim() || undefined;
+    const country = addr.country?.trim() || undefined;
+    // Rule: Postal PIN/postcode MUST come only from the geocoder's actual postcode field. If unavailable, undefined.
+    const postcode = addr.postcode ? String(addr.postcode).trim() : undefined;
+    const locality = suburb || neighbourhood || village || town || road || undefined;
 
     return {
-      formattedAddress: cleanAddress,
-      city: city || undefined,
-      district: district || undefined,
-      locality: locality || undefined,
-      state: state || undefined,
-      country: country || undefined,
-      postalCode: postalCode || undefined,
+      formattedAddress: item.display_name,
+      houseNumber,
+      road,
+      neighbourhood,
+      suburb,
+      village,
+      town,
+      city,
+      district,
+      state,
+      country,
+      postcode,
+      postalCode: postcode,
+      locality,
       latitude: parseFloat(item.lat),
       longitude: parseFloat(item.lon),
       placeId: String(item.place_id),

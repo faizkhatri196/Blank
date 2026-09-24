@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, ServiceType } from '../types';
 import { apiClient } from '../api/client';
+import { clearCustomerLocation } from '../utils/customerLocation';
 
 interface AuthContextType {
   user: User | null;
@@ -51,6 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Clear guest-scoped location only. Do NOT wipe user-scoped location
+    // (servora.customer.location.<userId>) — the customer's saved location should
+    // persist across sessions so they don't need to re-select it on every login.
+    clearCustomerLocation(); // clears guest key only
     setToken(null);
     setUser(null);
     localStorage.removeItem('copilot_token');

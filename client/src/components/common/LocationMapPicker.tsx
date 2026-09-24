@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Search, MapPin, Navigation, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, Navigation, Loader2 } from 'lucide-react';
 import { searchLocations, reverseGeocodeLocation, LocationSuggestion } from '../../api/location';
 
 interface LocationMapPickerProps {
@@ -42,16 +42,12 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const circleRef = useRef<L.Circle | null>(null);
-  const accuracyCircleRef = useRef<L.Circle | null>(null);
 
   const [query, setQuery] = useState(locationName || formattedAddress || '');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentRadius, setCurrentRadius] = useState<number>(radiusKm);
-  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
-  const [accuracyWarning, setAccuracyWarning] = useState<string | null>(null);
   const searchTimeoutRef = useRef<any>(null);
 
   // Sync radius state if prop changes externally
@@ -167,27 +163,6 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
         }
       }
 
-      // Accuracy uncertainty circle if accuracy is known and > 150m
-      if (locationAccuracy && locationAccuracy > 150) {
-        if (!accuracyCircleRef.current) {
-          const accCircle = L.circle(latlng, {
-            radius: locationAccuracy,
-            color: '#d97706',
-            fillColor: '#f59e0b',
-            fillOpacity: 0.1,
-            weight: 1.5,
-            dashArray: '3, 5',
-          }).addTo(map);
-          accuracyCircleRef.current = accCircle;
-        } else {
-          accuracyCircleRef.current.setLatLng(latlng);
-          accuracyCircleRef.current.setRadius(locationAccuracy);
-        }
-      } else if (accuracyCircleRef.current) {
-        accuracyCircleRef.current.remove();
-        accuracyCircleRef.current = null;
-      }
-
       // Fly to marker if view is far
       const currentCenter = map.getCenter();
       const dist = map.distance(currentCenter, latlng);
@@ -203,12 +178,8 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
         circleRef.current.remove();
         circleRef.current = null;
       }
-      if (accuracyCircleRef.current) {
-        accuracyCircleRef.current.remove();
-        accuracyCircleRef.current = null;
-      }
     }
-  }, [latitude, longitude, currentRadius, showRadius, locationAccuracy]);
+  }, [latitude, longitude, currentRadius, showRadius]);
 
   const updateLocationFromCoords = async (lat: number, lng: number, radius: number) => {
     try {
@@ -266,8 +237,6 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
     setQuery(item.locationName || item.formattedAddress);
     setShowDropdown(false);
     setSuggestions([]);
-    setLocationAccuracy(null);
-    setAccuracyWarning(null);
 
     onChange({
       latitude: item.latitude,
@@ -304,35 +273,19 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
       alert('Geolocation is not supported by your browser');
       return;
     }
-    setIsLocating(true);
-    setAccuracyWarning(null);
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setIsLocating(false);
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const acc = pos.coords.accuracy;
-        setLocationAccuracy(acc || null);
-
-        if (acc && acc > 1500) {
-          setAccuracyWarning(
-            `Network-assisted location detected (~${(acc / 1000).toFixed(1)} km accuracy). If this does not match your exact physical location, please search your city/area above or click directly on the map to pinpoint.`
-          );
-        } else {
-          setAccuracyWarning(null);
-        }
-
         updateLocationFromCoords(lat, lng, currentRadius);
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setView([lat, lng], 13, { animate: true });
         }
       },
       (err) => {
-        setIsLocating(false);
         alert('Could not retrieve current location: ' + err.message);
       },
-      { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
+      { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
@@ -350,37 +303,19 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
             placeholder="Search address, landmark, town, city, pincode, or coordinates..."
             className="w-full pl-9 pr-10 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-sm"
           />
-          {searching || isLocating ? (
+          {searching ? (
             <Loader2 className="absolute right-3 w-4 h-4 text-blue-600 animate-spin" />
           ) : (
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              disabled={isLocating}
               title="Use current GPS position"
-              className="absolute right-2 p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition-colors disabled:opacity-50"
+              className="absolute right-2 p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100 transition-colors"
             >
               <Navigation className="w-4 h-4" />
             </button>
           )}
         </div>
-
-        {/* Warning Banner for Coarse / Approximate Location */}
-        {accuracyWarning && (
-          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-start gap-2 animate-fadeIn">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="flex-1 text-[11px] leading-relaxed">
-              <span className="font-semibold">{accuracyWarning}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAccuracyWarning(null)}
-              className="text-amber-500 hover:text-amber-800 text-xs font-bold px-1"
-            >
-              ✕
-            </button>
-          </div>
-        )}
 
         {/* Autocomplete Dropdown */}
         {showDropdown && suggestions.length > 0 && (

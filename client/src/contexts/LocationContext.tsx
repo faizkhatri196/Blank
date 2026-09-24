@@ -1,62 +1,48 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../utils/customerLocation';
-import { useAuth } from './AuthContext';
+﻿import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation as persistLocation, clearCustomerLocation as clearLocation } from "../utils/customerLocation";
+import { useAuth } from "./AuthContext";
+
+export const LOCATION_CHANGE_EVENT = "servora:locationChanged";
 
 interface LocationContextValue {
   location: CustomerLocation | null;
-  setLocation: (location: CustomerLocation | null, persist?: boolean) => void;
-  clearLocation: (persist?: boolean) => void;
+  setAndSaveLocation: (loc: CustomerLocation | null) => void;
+  clearSavedLocation: () => void;
 }
 
-const LocationContext = createContext<LocationContextValue | undefined>(undefined);
+const LocationContext = createContext<LocationContextValue>({ location: null, setAndSaveLocation: () => {}, clearSavedLocation: () => {} });
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [location, setLocationState] = useState<CustomerLocation | null>(() =>
-    getCustomerSavedLocation(user?.id)
-  );
+  const [location, setLocation] = useState<CustomerLocation | null>(() => getCustomerSavedLocation(user?.id));
+
+  useEffect(() => { setLocation(getCustomerSavedLocation(user?.id)); }, [user?.id]);
 
   useEffect(() => {
-    setLocationState(getCustomerSavedLocation(user?.id));
+    const h = (e: StorageEvent) => { if (e.key?.startsWith("servora.customer.location") || e.key === "servora.customer.guest_location") setLocation(getCustomerSavedLocation(user?.id)); };
+    window.addEventListener("storage", h);
+    return () => window.removeEventListener("storage", h);
   }, [user?.id]);
 
   useEffect(() => {
-    const reload = () => setLocationState(getCustomerSavedLocation(user?.id));
-    const handleStorage = (event: StorageEvent) => {
-      if (!event.key || event.key === `servora.customer.location.${user?.id || ''}`) reload();
-    };
-    window.addEventListener('servora:locationChanged', reload);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('servora:locationChanged', reload);
-      window.removeEventListener('storage', handleStorage);
-    };
+    const h = () => setLocation(getCustomerSavedLocation(user?.id));
+    window.addEventListener(LOCATION_CHANGE_EVENT, h);
+    return () => window.removeEventListener(LOCATION_CHANGE_EVENT, h);
   }, [user?.id]);
 
-  const value = useMemo<LocationContextValue>(() => ({
-    location,
-    setLocation: (next, persist = true) => {
-      setLocationState(next);
-      if (next && persist) saveCustomerLocation(next, user?.id);
-      window.dispatchEvent(new Event('servora:locationChanged'));
-    },
-    clearLocation: (persist = true) => {
-      setLocationState(null);
-      if (persist && user?.id) {
-        localStorage.removeItem(`servora.customer.location.${String(user.id).trim()}`);
-      }
-      if (persist && !user?.id) {
-        localStorage.removeItem('servora.customer.guest_location');
-      }
-      window.dispatchEvent(new Event('servora:locationChanged'));
-    },
-  }), [location, user?.id]);
+  const setAndSaveLocation = useCallback((loc: CustomerLocation | null) => {
+    loc ? persistLocation(loc, user?.id) : clearLocation(user?.id);
+    setLocation(loc);
+    window.dispatchEvent(new CustomEvent(LOCATION_CHANGE_EVENT));
+  }, [user?.id]);
 
-  return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
+  const clearSavedLocation = useCallback(() => {
+    clearLocation(user?.id);
+    setLocation(null);
+    window.dispatchEvent(new CustomEvent(LOCATION_CHANGE_EVENT));
+  }, [user?.id]);
+
+  return <LocationContext.Provider value={{ location, setAndSaveLocation, clearSavedLocation }}>{children}</LocationContext.Provider>;
 };
 
-export function useCustomerLocation(): LocationContextValue {
-  const context = useContext(LocationContext);
-  if (!context) throw new Error('useCustomerLocation must be used within LocationProvider');
-  return context;
-}
+export const useCustomerLocation = () => useContext(LocationContext);

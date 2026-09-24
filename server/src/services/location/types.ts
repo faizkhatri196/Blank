@@ -7,11 +7,18 @@ export interface GeoPoint {
 
 export interface LocationSearchResult {
   formattedAddress: string;
+  houseNumber?: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
   city?: string;
   district?: string;
   state?: string;
   country?: string;
-  postalCode?: string;
+  postcode?: string;
+  postalCode?: string; // alias for compatibility
   locality?: string;
   subLocality?: string;
   latitude: number;

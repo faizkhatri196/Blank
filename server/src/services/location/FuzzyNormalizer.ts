@@ -1,66 +1,42 @@
 /**
  * Location query normalizer and typo corrector.
- * Handles common phonetic misspellings, colloquial state abbreviations,
- * and extracts postal codes or landmarks without silently guessing unreliably.
+ * Generic string sanitation and common spelling corrections.
+ * Never invents postal codes or hardcoded locations.
  */
 
 interface KnownLocationCorrection {
   pattern: RegExp;
-  suggestedQuery: string;
-  city?: string;
-  state?: string;
-  country?: string;
+  replacement: string;
 }
 
 const KNOWN_CORRECTIONS: KnownLocationCorrection[] = [
   {
-    pattern: /\b(ahmedbad|ahmdabad|ahmdavad|ahmdvd|amdavad|ahmedabd)\b/i,
-    suggestedQuery: 'Ahmedabad, Gujarat, India',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(ahmedbad|ahmdabad|ahmdavad|ahmdvd|amdavad|ahmedabd)\b/gi,
+    replacement: 'Ahmedabad',
   },
   {
-    pattern: /\b(rajkot\s*(guj|gujrat|gujarat)?)\b/i,
-    suggestedQuery: 'Rajkot, Gujarat, India',
-    city: 'Rajkot',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(rajkot\s*(guj|gujrat))\b/gi,
+    replacement: 'Rajkot, Gujarat',
   },
   {
-    pattern: /\b(modsa)\b/i,
-    suggestedQuery: 'Modasa, Gujarat, India',
-    city: 'Modasa',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(modsa)\b/gi,
+    replacement: 'Modasa',
   },
   {
-    pattern: /\b(mandvi\s*kutch|mandvi\s*kachchh)\b/i,
-    suggestedQuery: 'Mandvi, Kutch, Gujarat, India',
-    city: 'Mandvi',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(mandvi\s*kachchh)\b/gi,
+    replacement: 'Mandvi, Kutch',
   },
   {
-    pattern: /\b(satlite|satelite)\s*(ahmedabad)?\b/i,
-    suggestedQuery: 'Satellite, Ahmedabad, Gujarat, India',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(satlite|satelite)\b/gi,
+    replacement: 'Satellite',
   },
   {
-    pattern: /\b(s\.?g\.?\s*highway|sg\s*higway)\b/i,
-    suggestedQuery: 'SG Highway, Ahmedabad, Gujarat, India',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(sg\s*higway)\b/gi,
+    replacement: 'SG Highway',
   },
   {
-    pattern: /\b(kalawad\s*rd|kalavad\s*road|kalawad\s*road)\b/i,
-    suggestedQuery: 'Kalawad Road, Rajkot, Gujarat, India',
-    city: 'Rajkot',
-    state: 'Gujarat',
-    country: 'India',
+    pattern: /\b(kalawad\s*rd|kalavad\s*road)\b/gi,
+    replacement: 'Kalawad Road',
   },
 ];
 
@@ -80,31 +56,29 @@ export class FuzzyNormalizer {
 
     const trimmed = query.trim().replace(/\s+/g, ' ');
 
-    // Check for postal code (e.g. 6-digit India pincode or 5-digit US zip)
+    // Extract explicit postal code from search query if user typed one (e.g. 5 or 6 digits)
     const postalMatch = trimmed.match(/\b\d{5,6}\b/);
     const extractedPostalCode = postalMatch ? postalMatch[0] : undefined;
 
-    // Check against known typo/abbreviation corrections
+    let normalized = trimmed;
+    let hasTypoCorrection = false;
+
+    // Apply word-level typo corrections without inventing artificial addresses
     for (const correction of KNOWN_CORRECTIONS) {
-      if (correction.pattern.test(trimmed)) {
-        // If the query is strictly or predominantly the typo, provide the enhanced query
-        return {
-          rawQuery: query,
-          normalizedQuery: correction.suggestedQuery,
-          hasTypoCorrection: true,
-          correctionSuggestion: correction.suggestedQuery,
-          extractedPostalCode,
-        };
+      if (correction.pattern.test(normalized)) {
+        normalized = normalized.replace(correction.pattern, correction.replacement);
+        hasTypoCorrection = true;
       }
     }
 
-    // Clean basic punctuation and return normalized query
-    const cleaned = trimmed.replace(/[;]+/g, ',').trim();
+    // Clean basic punctuation
+    const cleaned = normalized.replace(/[;]+/g, ',').trim();
 
     return {
       rawQuery: query,
       normalizedQuery: cleaned,
-      hasTypoCorrection: false,
+      hasTypoCorrection,
+      correctionSuggestion: hasTypoCorrection ? cleaned : undefined,
       extractedPostalCode,
     };
   }

@@ -117,18 +117,22 @@ describe('Location System & Geospatial Verification Suite', () => {
       expect(mundra?.postalCode).toBe('370421');
     });
 
-    it('should return verified localities when searching within Mundra city context', async () => {
-      const results = await NominatimLocationProvider.search('Samaghoga', 'Mundra');
+    it('should return verified localities when searching within city context (e.g. Powai, Mumbai)', async () => {
+      const results = await NominatimLocationProvider.search('Powai', 'Mumbai');
       expect(results.length).toBeGreaterThan(0);
-      const samaghoga = results.find((r) => (r.locality || r.locationName).toLowerCase().includes('samaghoga'));
-      expect(samaghoga).toBeDefined();
-      expect(samaghoga?.city?.toLowerCase()).toBe('mundra');
+      const powai = results.find((r) => (r.locality || r.suburb || r.locationName || '').toLowerCase().includes('powai'));
+      expect(powai).toBeDefined();
+      expect(powai?.city?.toLowerCase()).toBe('mumbai');
     });
 
-    it('should return multiple verified areas when searching all areas in Mundra', async () => {
-      const results = await NominatimLocationProvider.search('Mundra', 'Mundra');
-      const areas = results.map((r) => (r.locality || r.locationName || r.formattedAddress || '').toLowerCase());
-      expect(areas.some((a) => a.includes('samaghoga') || a.includes('baroi') || a.includes('port'))).toBe(true);
+    it('should return verified localities when searching within city context (e.g. Satellite, Ahmedabad)', async () => {
+      const results = await NominatimLocationProvider.search('Satellite', 'Ahmedabad');
+      expect(results.length).toBeGreaterThan(0);
+      const sat = results.find((r) =>
+        [r.locality, r.suburb, r.road, r.formattedAddress].some((f) => f?.toLowerCase().includes('satellite'))
+      );
+      expect(sat).toBeDefined();
+      expect((sat?.city || sat?.district)?.toLowerCase()).toBe('ahmedabad');
     });
 
     it('should normalize Mundra pincode 370421 correctly', () => {

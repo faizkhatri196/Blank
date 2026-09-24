@@ -1,16 +1,20 @@
 export interface CustomerLocation {
-  placeId?: string;
   city: string;
   state?: string;
   country?: string;
   area?: string;
   pincode?: string;
+  postcode?: string;
+  houseNumber?: string;
+  road?: string;
+  neighbourhood?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
+  district?: string;
   latitude?: number;
   longitude?: number;
   formattedAddress?: string;
-  source?: 'MANUAL' | 'GPS' | 'SAVED';
-  accuracy?: number;
-  timestamp?: string;
 }
 
 const GUEST_STORAGE_KEY = 'servora.customer.guest_location';
@@ -55,19 +59,24 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
 
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed.city === 'string' && parsed.city.trim().length > 0) {
+      const pin = parsed.postcode || parsed.pincode;
       return {
-        placeId: parsed.placeId ? String(parsed.placeId).trim() : undefined,
         city: parsed.city.trim(),
         state: parsed.state ? String(parsed.state).trim() : undefined,
         country: parsed.country ? String(parsed.country).trim() : undefined,
         area: parsed.area ? String(parsed.area).trim() : undefined,
-        pincode: parsed.pincode ? String(parsed.pincode).trim() : undefined,
+        pincode: pin ? String(pin).trim() : undefined,
+        postcode: pin ? String(pin).trim() : undefined,
+        houseNumber: parsed.houseNumber ? String(parsed.houseNumber).trim() : undefined,
+        road: parsed.road ? String(parsed.road).trim() : undefined,
+        neighbourhood: parsed.neighbourhood ? String(parsed.neighbourhood).trim() : undefined,
+        suburb: parsed.suburb ? String(parsed.suburb).trim() : undefined,
+        village: parsed.village ? String(parsed.village).trim() : undefined,
+        town: parsed.town ? String(parsed.town).trim() : undefined,
+        district: parsed.district ? String(parsed.district).trim() : undefined,
         latitude: typeof parsed.latitude === 'number' ? parsed.latitude : undefined,
         longitude: typeof parsed.longitude === 'number' ? parsed.longitude : undefined,
         formattedAddress: parsed.formattedAddress ? String(parsed.formattedAddress).trim() : undefined,
-        source: 'SAVED',
-        accuracy: typeof parsed.accuracy === 'number' ? parsed.accuracy : undefined,
-        timestamp: parsed.timestamp ? String(parsed.timestamp) : undefined,
       };
     }
     return null;
@@ -85,19 +94,24 @@ export function saveCustomerLocation(location: CustomerLocation, userId?: string
 
   try {
     if (!location || !location.city || !location.city.trim()) return;
+    const pin = location.postcode || location.pincode;
     const cleanLocation: CustomerLocation = {
-      placeId: location.placeId ? String(location.placeId).trim() : undefined,
       city: location.city.trim(),
       state: location.state ? String(location.state).trim() : undefined,
       country: location.country ? String(location.country).trim() : undefined,
       area: location.area ? String(location.area).trim() : undefined,
-      pincode: location.pincode ? String(location.pincode).trim() : undefined,
+      pincode: pin ? String(pin).trim() : undefined,
+      postcode: pin ? String(pin).trim() : undefined,
+      houseNumber: location.houseNumber ? String(location.houseNumber).trim() : undefined,
+      road: location.road ? String(location.road).trim() : undefined,
+      neighbourhood: location.neighbourhood ? String(location.neighbourhood).trim() : undefined,
+      suburb: location.suburb ? String(location.suburb).trim() : undefined,
+      village: location.village ? String(location.village).trim() : undefined,
+      town: location.town ? String(location.town).trim() : undefined,
+      district: location.district ? String(location.district).trim() : undefined,
       latitude: typeof location.latitude === 'number' ? location.latitude : undefined,
       longitude: typeof location.longitude === 'number' ? location.longitude : undefined,
       formattedAddress: location.formattedAddress ? String(location.formattedAddress).trim() : undefined,
-      source: location.source || 'MANUAL',
-      accuracy: typeof location.accuracy === 'number' ? location.accuracy : undefined,
-      timestamp: location.timestamp || new Date().toISOString(),
     };
     const key = getScopedLocationKey(userId);
     localStorage.setItem(key, JSON.stringify(cleanLocation));

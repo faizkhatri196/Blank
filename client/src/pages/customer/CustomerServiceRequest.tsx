@@ -4,12 +4,9 @@ import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
-import { CustomerLocation, getCustomerSavedLocation } from '../../utils/customerLocation';
-import { saveTicketToStore } from '../../utils/customerTicketStore';
-import { reverseGeocodeCoords, geocodeAddressOrCity, acquireLiveLocation } from '../../utils/locationSearch';
+import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
-import { useCustomerLocation } from '../../contexts/LocationContext';
 import {
   Sun,
   Wind,
@@ -30,14 +27,12 @@ import {
   AlertCircle,
   Compass,
   Check,
-  Loader2,
 } from 'lucide-react';
 
 export const CustomerServiceRequest: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { setLocation } = useCustomerLocation();
 
   // Step state:
   // 1: Location Check ("Where do you need service?")
@@ -53,24 +48,19 @@ export const CustomerServiceRequest: React.FC = () => {
   const initialCity = searchParams.get('city') || savedLoc?.city || '';
   const initialArea = searchParams.get('area') || savedLoc?.area || '';
   const initialPincode = searchParams.get('pincode') || savedLoc?.pincode || '';
-  const rawLat = searchParams.get('lat');
-  const rawLng = searchParams.get('lng');
-  const initialLat = rawLat !== null && !isNaN(Number(rawLat)) ? Number(rawLat) : savedLoc?.latitude;
-  const initialLng = rawLng !== null && !isNaN(Number(rawLng)) ? Number(rawLng) : savedLoc?.longitude;
-  const initialAddress = searchParams.get('address') || savedLoc?.formattedAddress || '';
 
   const [city, setCity] = useState<string>(initialCity);
   const [area, setArea] = useState<string>(initialArea);
   const [pincode, setPincode] = useState<string>(initialPincode);
-  const [lat, setLat] = useState<number | undefined>(initialLat);
-  const [lng, setLng] = useState<number | undefined>(initialLng);
+  const [lat, setLat] = useState<number | undefined>(initialLat ?? savedLoc?.latitude);
+  const [lng, setLng] = useState<number | undefined>(initialLng ?? savedLoc?.longitude);
   const [address, setAddress] = useState<string>(initialAddress);
   const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
   const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
   const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>();
-  const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat);
-  const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng);
+  const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat ?? savedLoc?.latitude);
+  const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng ?? savedLoc?.longitude);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
   const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(false);
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);
@@ -105,48 +95,6 @@ export const CustomerServiceRequest: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleUseLiveLocation = async () => {
-    setIsLocating(true);
-    setLocationError(null);
-    try {
-      const result = await acquireLiveLocation(10000);
-      if (result) {
-        const { suggestion, latitude, longitude } = result;
-        setLat(latitude);
-        setLng(longitude);
-        setLocationSource('GPS');
-        setLocationAccuracy(result.accuracy);
-        setLocationTimestamp(new Date().toISOString());
-        setCity(suggestion.city);
-        if (suggestion.area) setArea(suggestion.area);
-        if (suggestion.pincode) setPincode(suggestion.pincode);
-        if (suggestion.formattedAddress) setAddress(suggestion.formattedAddress);
-        const selectedLocation: CustomerLocation = {
-          city: suggestion.city,
-          area: suggestion.area,
-          state: suggestion.state,
-          country: suggestion.country,
-          pincode: suggestion.pincode,
-          latitude,
-          longitude,
-          formattedAddress: suggestion.formattedAddress,
-          source: 'GPS',
-          accuracy: result.accuracy,
-          timestamp: new Date().toISOString(),
-        };
-        setLocation(selectedLocation);
-        await checkServiceAvailability(suggestion.city, suggestion.pincode || '', latitude, longitude);
-      } else {
-        setLocationError('Unable to detect live location. Please select your city manually.');
-      }
-    } catch (err: any) {
-      console.warn('Live location error:', err);
-      setLocationError('Failed to acquire live coordinates.');
-    } finally {
-      setIsLocating(false);
-    }
-  };
-
   // Structured location handler
   const handleStructuredLocationSelect = (selectedLoc: CustomerLocation) => {
     setCity(selectedLoc.city);
@@ -158,9 +106,9 @@ export const CustomerServiceRequest: React.FC = () => {
       setVerifiedLat(selectedLoc.latitude);
       setVerifiedLng(selectedLoc.longitude);
     }
-    setLocationSource(selectedLoc.source === 'GPS' ? 'GPS' : 'MANUAL');
-    setLocationAccuracy(selectedLoc.accuracy);
-    setLocationTimestamp(selectedLoc.timestamp || new Date().toISOString());
+    setLocationSource((selectedLoc as any).source === 'GPS' ? 'GPS' : 'MANUAL');
+    setLocationAccuracy((selectedLoc as any).accuracy);
+    setLocationTimestamp((selectedLoc as any).timestamp || new Date().toISOString());
     if (selectedLoc.area || selectedLoc.formattedAddress) {
       setAddress((prev) => prev ? prev : (selectedLoc.formattedAddress || selectedLoc.area || ''));
     }
@@ -172,17 +120,16 @@ export const CustomerServiceRequest: React.FC = () => {
     setPhotos([]);
     setAvailableServices([]);
 
-    setLocation(selectedLoc.source === 'GPS' ? selectedLoc : { ...selectedLoc, source: 'MANUAL' });
+    saveCustomerLocation(selectedLoc, user?.id);
     checkServiceAvailability(selectedLoc.city, selectedLoc.pincode || '', selectedLoc.latitude, selectedLoc.longitude);
   };
 
   // Location Change Handler (Rule 8 & 9: Clear downstream state when location changes)
-  // Location Change Handler (Rule 8 & 9: Clear downstream state when location changes)
-  const handleLocationChange = (newCity: string, newPincode: string, newLat?: number, newLng?: number) => {
+  const handleLocationChange = (newCity: string, newPincode: string) => {
     setCity(newCity);
     setPincode(newPincode);
-    setLat(newLat);
-    setLng(newLng);
+    setLat(undefined);
+    setLng(undefined);
     setServiceType('');
     setSelectedProblem(null);
     setComplaint('');
@@ -192,17 +139,8 @@ export const CustomerServiceRequest: React.FC = () => {
     setAvailableServices([]);
 
     if (newCity && newCity.trim()) {
-      setLocation({
-          city: newCity.trim(),
-          pincode: newPincode?.trim() || undefined,
-          latitude: newLat,
-          longitude: newLng,
-          source: 'MANUAL',
-        });
-      setLocationSource('MANUAL');
-      setLocationAccuracy(undefined);
-      setLocationTimestamp(new Date().toISOString());
-      checkServiceAvailability(newCity, newPincode, newLat, newLng);
+      saveCustomerLocation({ city: newCity.trim(), pincode: newPincode?.trim() || undefined }, user?.id);
+      checkServiceAvailability(newCity, newPincode);
     } else {
       setIsLocationAvailable(false);
     }
@@ -252,7 +190,6 @@ export const CustomerServiceRequest: React.FC = () => {
             setLng(resolvedLon);
           }
         }
-
         if (!isCovered) {
           setLocationError(res.data.data.message || `Servora services are not currently available in ${checkCity}.`);
         } else {
@@ -275,7 +212,7 @@ export const CustomerServiceRequest: React.FC = () => {
   // Run availability check on initial mount only if city is already explicitly known
   useEffect(() => {
     if (city && city.trim()) {
-      checkServiceAvailability(city, pincode, lat, lng);
+      checkServiceAvailability(city, pincode);
     }
   }, []);
 
@@ -289,27 +226,56 @@ export const CustomerServiceRequest: React.FC = () => {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const latitude = pos.coords.latitude;
-        const longitude = pos.coords.longitude;
-
         try {
-          const geo = await reverseGeocodeCoords(latitude, longitude);
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+            { headers: { Accept: 'application/json' } }
+          );
+          const data = await res.json();
+          const addr = data.address || {};
+          const houseNumber = addr.house_number?.trim() || undefined;
+          const road = addr.road?.trim() || undefined;
+          const neighbourhood = addr.neighbourhood?.trim() || undefined;
+          const suburb = addr.suburb?.trim() || undefined;
+          const village = addr.village?.trim() || undefined;
+          const town = addr.town?.trim() || undefined;
+          const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
+          const detectedCity =
+            addr.city?.trim() ||
+            addr.town?.trim() ||
+            addr.village?.trim() ||
+            addr.municipality?.trim() ||
+            district;
+          const detectedPin = addr.postcode ? String(addr.postcode).trim() : undefined;
+          const area = suburb || neighbourhood || village || town || road || undefined;
 
-          handleStructuredLocationSelect({
-            city: geo.city,
-            area: geo.area,
-            state: geo.state,
-            country: geo.country || 'India',
-            pincode: geo.pincode,
-            latitude,
-            longitude,
-            formattedAddress: geo.formattedAddress,
-            source: 'GPS',
-            accuracy: pos.coords.accuracy,
-            timestamp: new Date().toISOString(),
-          });
+          if (detectedCity && typeof detectedCity === 'string') {
+            const finalLoc: CustomerLocation = {
+              city: detectedCity.trim(),
+              area,
+              state: addr.state?.trim() || undefined,
+              country: addr.country?.trim() || undefined,
+              pincode: detectedPin,
+              postcode: detectedPin,
+              houseNumber,
+              road,
+              neighbourhood,
+              suburb,
+              village,
+              town,
+              district,
+              latitude: lat,
+              longitude: lon,
+              formattedAddress: data.display_name,
+            };
+            handleStructuredLocationSelect(finalLoc);
+          } else {
+            alert('Could not determine city from GPS. Please enter your city or area manually.');
+          }
         } catch {
-          setLocationError('Unable to determine your location. Please select your location manually.');
+          alert('Could not retrieve GPS location. Please enter your city or area manually.');
         } finally {
           setIsLocating(false);
         }
@@ -318,7 +284,7 @@ export const CustomerServiceRequest: React.FC = () => {
         setIsLocating(false);
         alert('Location permission denied. Please enter your city or area manually.');
       },
-      { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
+      { timeout: 8000 }
     );
   };
 
@@ -417,6 +383,10 @@ export const CustomerServiceRequest: React.FC = () => {
       const cleanAddress = address.trim() || 'Service Site Address';
       const cleanCity = city.trim();
       const cleanPincode = pincode.trim();
+
+      const finalLat = hasCoords ? resolvedLat : lat;
+      const finalLng = hasCoords ? resolvedLng : lng;
+
       const payload = {
         companyId: targetCompanyId,
         serviceType,
@@ -427,20 +397,12 @@ export const CustomerServiceRequest: React.FC = () => {
         location: {
           address: cleanAddress,
           city: cleanCity,
-          area: area?.trim() || undefined,
           pincode: cleanPincode,
-          latitude: resolvedLat,
-          longitude: resolvedLng,
-          coordinates: hasCoords ? { latitude: resolvedLat, longitude: resolvedLng } : undefined,
-          formattedAddress: cleanAddress !== 'Service Site Address'
-            ? `${cleanAddress}, ${cleanCity}${cleanPincode ? ' ' + cleanPincode : ''}`
-            : `${cleanCity}${cleanPincode ? ' ' + cleanPincode : ''}`,
-          locationSource,
-          accuracy: locationAccuracy,
-          timestamp: locationTimestamp || new Date().toISOString(),
+          latitude: finalLat,
+          longitude: finalLng,
         },
-        latitude: resolvedLat,
-        longitude: resolvedLng,
+        latitude: finalLat,
+        longitude: finalLng,
         customerDetails: {
           name: customerName.trim() || user?.name || 'Customer',
           phone: customerPhone.trim() || user?.phone || '+91 98765 00000',
@@ -452,14 +414,7 @@ export const CustomerServiceRequest: React.FC = () => {
       const res = await apiClient.post('/customer-portal/requests', payload);
 
       if (res.data.success && res.data.data._id) {
-        const newTicketId = res.data.data._id;
-        try {
-          saveTicketToStore(res.data.data);
-        } catch (storageErr) {
-          console.warn('[CustomerServiceRequest] Could not persist ticket to localStorage:', storageErr);
-        }
-
-        navigate(`/customer/requests/${newTicketId}`, { replace: true });
+        navigate(`/customer/requests/${res.data.data._id}`, { replace: true });
       } else {
         setSubmitError(res.data.error?.message || 'Failed to create request. Please try again.');
         setIsSubmitting(false);
@@ -520,34 +475,6 @@ export const CustomerServiceRequest: React.FC = () => {
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Select City & Service Area
-              </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {lat !== undefined && lng !== undefined && (
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live GPS: {lat.toFixed(4)}°N, {lng.toFixed(4)}°E
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={handleUseLiveLocation}
-                  disabled={isLocating}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-200 text-slate-700 text-xs font-bold transition-all disabled:opacity-50"
-                  title="Detect coordinates using GPS or Google Maps Geolocation"
-                >
-                  {isLocating ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
-                  ) : (
-                    <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                  )}
-                  <span>{isLocating ? 'Detecting...' : '📍 Use Live GPS'}</span>
-                </button>
-              </div>
-            </div>
-
             {/* Hierarchical Verified Location Selector (City -> Area / Locality) */}
             <LocationHierarchySelector
               currentLocation={city ? { city, area, pincode, latitude: lat, longitude: lng } : null}
