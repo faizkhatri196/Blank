@@ -121,6 +121,7 @@ export interface Technician {
   pincodes?: string[];
   availability: TechnicianAvailability;
   active: boolean;
+  baseLocation?: any;
 }
 
 export interface Customer {

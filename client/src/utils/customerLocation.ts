@@ -15,6 +15,10 @@ export interface CustomerLocation {
   latitude?: number;
   longitude?: number;
   formattedAddress?: string;
+  source?: string;
+  accuracy?: number;
+  timestamp?: string;
+  placeId?: string;
 }
 
 const GUEST_STORAGE_KEY = 'servora.customer.guest_location';

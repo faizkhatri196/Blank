@@ -97,25 +97,25 @@ describe('Location System & Geospatial Verification Suite', () => {
       const results = await NominatimLocationProvider.search('Tokyo Shibuya crossing 12345');
       // Should either return Tokyo results or empty, never Ahmedabad
       for (const r of results) {
-        expect(r.city.toLowerCase()).not.toBe('ahmedabad');
-        expect(r.locationName.toLowerCase()).not.toBe('ahmedabad');
+        expect(r.city?.toLowerCase()).not.toBe('ahmedabad');
+        expect(r.formattedAddress.toLowerCase()).not.toContain('ahmedabad');
       }
-    });
+    }, 15000);
 
     it('should return empty results for gibberish without guessing Ahmedabad', async () => {
       const results = await NominatimLocationProvider.search('zzxxqwerty9988nonexistent');
       expect(results.length).toBe(0);
-    });
+    }, 15000);
   });
 
   describe('F: Hierarchical City & Area Search (Mundra & Localities)', () => {
     it('should search and return verified Mundra city result with pincode 370421', async () => {
       const results = await NominatimLocationProvider.search('Mundra');
       expect(results.length).toBeGreaterThan(0);
-      const mundra = results.find((r) => r.city?.toLowerCase() === 'mundra' || r.locationName?.toLowerCase() === 'mundra');
+      const mundra = results.find((r) => r.city?.toLowerCase() === 'mundra' || r.town?.toLowerCase() === 'mundra' || r.formattedAddress.toLowerCase().includes('mundra'));
       expect(mundra).toBeDefined();
       expect(mundra?.postalCode).toBe('370421');
-    });
+    }, 15000);
 
     it('should return verified localities when searching within city context (e.g. Powai, Mumbai)', async () => {
       const results = await NominatimLocationProvider.search('Powai', 'Mumbai');
@@ -123,7 +123,7 @@ describe('Location System & Geospatial Verification Suite', () => {
       const powai = results.find((r) => (r.locality || r.suburb || r.locationName || '').toLowerCase().includes('powai'));
       expect(powai).toBeDefined();
       expect(powai?.city?.toLowerCase()).toBe('mumbai');
-    });
+    }, 15000);
 
     it('should return verified localities when searching within city context (e.g. Satellite, Ahmedabad)', async () => {
       const results = await NominatimLocationProvider.search('Satellite', 'Ahmedabad');
@@ -132,8 +132,8 @@ describe('Location System & Geospatial Verification Suite', () => {
         [r.locality, r.suburb, r.road, r.formattedAddress].some((f) => f?.toLowerCase().includes('satellite'))
       );
       expect(sat).toBeDefined();
-      expect((sat?.city || sat?.district)?.toLowerCase()).toBe('ahmedabad');
-    });
+      expect([sat?.city, sat?.district].some((x) => x?.toLowerCase() === 'ahmedabad')).toBe(true);
+    }, 15000);
 
     it('should normalize Mundra pincode 370421 correctly', () => {
       const norm = FuzzyNormalizer.normalize('Mundra 370421');

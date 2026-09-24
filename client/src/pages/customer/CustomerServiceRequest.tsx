@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
 import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
+import { geocodeAddressOrCity } from '../../utils/locationSearch';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
 import {
@@ -48,19 +49,22 @@ export const CustomerServiceRequest: React.FC = () => {
   const initialCity = searchParams.get('city') || savedLoc?.city || '';
   const initialArea = searchParams.get('area') || savedLoc?.area || '';
   const initialPincode = searchParams.get('pincode') || savedLoc?.pincode || '';
+  const initialLat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : savedLoc?.latitude;
+  const initialLng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : savedLoc?.longitude;
+  const initialAddress = searchParams.get('address') || savedLoc?.formattedAddress || '';
 
   const [city, setCity] = useState<string>(initialCity);
   const [area, setArea] = useState<string>(initialArea);
   const [pincode, setPincode] = useState<string>(initialPincode);
-  const [lat, setLat] = useState<number | undefined>(initialLat ?? savedLoc?.latitude);
-  const [lng, setLng] = useState<number | undefined>(initialLng ?? savedLoc?.longitude);
+  const [lat, setLat] = useState<number | undefined>(initialLat);
+  const [lng, setLng] = useState<number | undefined>(initialLng);
   const [address, setAddress] = useState<string>(initialAddress);
   const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
   const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
   const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>();
-  const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat ?? savedLoc?.latitude);
-  const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng ?? savedLoc?.longitude);
+  const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat);
+  const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
   const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(false);
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);

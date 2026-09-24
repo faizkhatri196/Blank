@@ -559,9 +559,33 @@ export async function getCustomerRequests(req: AuthenticatedRequest, res: Respon
     }
 
     // Customers are consumers — find ALL their requests across ALL companies.
-    // Do NOT filter by req.companyId (which is the registration company, not necessarily the service company).
-    const customerDocs = await Customer.find({ userId: req.userId });
+    // Query by userId, phone, and email to ensure guest/unlinked bookings are seamlessly accessible.
+    const userPhone = req.user?.phone?.trim();
+    const userEmail = req.user?.email?.trim().toLowerCase();
+
+    const customerConditions: any[] = [{ userId: req.userId }];
+    if (userPhone) {
+      const digits = userPhone.replace(/\D/g, '').slice(-10);
+      if (digits.length >= 10) {
+        customerConditions.push({ phone: { $regex: `${digits}$` } });
+      } else {
+        customerConditions.push({ phone: userPhone });
+      }
+    }
+    if (userEmail) {
+      customerConditions.push({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } });
+    }
+
+    const customerDocs = await Customer.find({ $or: customerConditions });
     const customerIds = customerDocs.map((c) => c._id);
+
+    // Proactively link unlinked customer records so future queries are instant
+    for (const c of customerDocs) {
+      if (!c.userId) {
+        c.userId = req.userId as any;
+        await c.save().catch(() => {});
+      }
+    }
 
     const query: any = {
       $or: [{ customerId: { $in: customerIds } }, { createdBy: req.userId }],
@@ -604,11 +628,39 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
 
     // Authorization & Tenant Isolation check
     if (req.userId) {
-      const customerDocs = await Customer.find({ userId: req.userId });
+      const userPhone = req.user?.phone?.trim();
+      const userEmail = req.user?.email?.trim().toLowerCase();
+
+      const customerConditions: any[] = [{ userId: req.userId }];
+      if (userPhone) {
+        const digits = userPhone.replace(/\D/g, '').slice(-10);
+        if (digits.length >= 10) {
+          customerConditions.push({ phone: { $regex: `${digits}$` } });
+        } else {
+          customerConditions.push({ phone: userPhone });
+        }
+      }
+      if (userEmail) {
+        customerConditions.push({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } });
+      }
+
+      const customerDocs = await Customer.find({ $or: customerConditions });
       const customerIds = customerDocs.map((c) => c._id.toString());
+
+      // Also inspect the ticket's customer directly
+      const ticketCustomer = await Customer.findById(ticket.customerId);
+      const userPhoneDigits = userPhone ? userPhone.replace(/\D/g, '').slice(-10) : '';
+      const custPhoneDigits = ticketCustomer?.phone ? ticketCustomer.phone.replace(/\D/g, '').slice(-10) : '';
+      const phoneMatches = Boolean(userPhoneDigits && custPhoneDigits && userPhoneDigits === custPhoneDigits);
+      const emailMatches = Boolean(
+        userEmail && ticketCustomer?.email && ticketCustomer.email.trim().toLowerCase() === userEmail
+      );
+
       const isOwner =
         customerIds.includes(ticket.customerId.toString()) ||
-        (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString());
+        (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString()) ||
+        phoneMatches ||
+        emailMatches;
 
       if (!isOwner) {
         res.status(403).json({
@@ -616,6 +668,12 @@ export async function getCustomerRequestById(req: AuthenticatedRequest, res: Res
           error: { code: 'FORBIDDEN', message: 'Access denied. You can only view your own service requests.' },
         });
         return;
+      }
+
+      // Proactively link customer to user
+      if (ticketCustomer && !ticketCustomer.userId) {
+        ticketCustomer.userId = req.userId as any;
+        await ticketCustomer.save().catch(() => {});
       }
     }
 
