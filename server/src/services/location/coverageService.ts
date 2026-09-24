@@ -92,8 +92,17 @@ export async function resolveServiceCoverage(input: CoverageCheckInput): Promise
               explanation: `Customer is ${(Math.round(distKm * 10) / 10)} km away, within configured ${radiusKm} km coverage radius.`,
             };
           }
-          // Explicitly out of radius for this area — do NOT fall back to fuzzy string matching
-          continue;
+
+          // If outside radius, check whether the area explicitly covers this locality or pincode
+          const compAreas = (a.areas || []).map((ar: string) => ar.trim().toLowerCase());
+          const areaExplicitlyListed = Boolean(
+            (cleanArea && compAreas.includes(cleanArea)) || (cleanCity && compAreas.includes(cleanCity))
+          );
+          const pincodeExplicitlyListed = Boolean(cleanPincode && a.pincodes && a.pincodes.includes(cleanPincode));
+
+          if (!areaExplicitlyListed && !pincodeExplicitlyListed) {
+            continue;
+          }
         }
       }
 

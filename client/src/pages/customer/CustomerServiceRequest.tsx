@@ -68,6 +68,9 @@ export const CustomerServiceRequest: React.FC = () => {
   const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
   const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
   const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>();
+  const [verifiedLat, setVerifiedLat] = useState<number | undefined>(initialLat);
+  const [verifiedLng, setVerifiedLng] = useState<number | undefined>(initialLng);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState<boolean>(false);
   const [isLocationAvailable, setIsLocationAvailable] = useState<boolean>(false);
   const [availableServices, setAvailableServices] = useState<AvailableServiceItem[]>([]);
@@ -151,6 +154,10 @@ export const CustomerServiceRequest: React.FC = () => {
     setPincode(selectedLoc.pincode || '');
     setLat(selectedLoc.latitude);
     setLng(selectedLoc.longitude);
+    if (typeof selectedLoc.latitude === 'number' && typeof selectedLoc.longitude === 'number') {
+      setVerifiedLat(selectedLoc.latitude);
+      setVerifiedLng(selectedLoc.longitude);
+    }
     setLocationSource(selectedLoc.source === 'GPS' ? 'GPS' : 'MANUAL');
     setLocationAccuracy(selectedLoc.accuracy);
     setLocationTimestamp(selectedLoc.timestamp || new Date().toISOString());
@@ -231,9 +238,15 @@ export const CustomerServiceRequest: React.FC = () => {
         const services: AvailableServiceItem[] = res.data.data.services || [];
         setAvailableServices(services);
 
+        if (res.data.data.companyId) {
+          setSelectedCompanyId(res.data.data.companyId);
+        }
+
         const resolvedLat = res.data.data.latitude;
         const resolvedLon = res.data.data.longitude;
         if (typeof resolvedLat === 'number' && typeof resolvedLon === 'number') {
+          setVerifiedLat(resolvedLat);
+          setVerifiedLng(resolvedLon);
           if (lat === undefined || lng === undefined) {
             setLat(resolvedLat);
             setLng(resolvedLon);
@@ -353,8 +366,8 @@ export const CustomerServiceRequest: React.FC = () => {
     setSubmitError(null);
 
     try {
-      let resolvedLat = lat;
-      let resolvedLng = lng;
+      let resolvedLat = lat ?? verifiedLat;
+      let resolvedLng = lng ?? verifiedLng;
       if (resolvedLat === undefined || resolvedLng === undefined) {
         const query = [address, area, city, pincode].filter(Boolean).join(', ') || city;
         if (query) {
@@ -370,13 +383,42 @@ export const CustomerServiceRequest: React.FC = () => {
             console.warn('Geocoding before submit failed:', e);
           }
         }
+
+        // If specific street address failed, fall back to area + city, then city itself
+        if (resolvedLat === undefined || resolvedLng === undefined) {
+          try {
+            const fallbackQuery = [area, city, pincode].filter(Boolean).join(', ') || city;
+            const geoFallback = await geocodeAddressOrCity(fallbackQuery, city);
+            if (geoFallback) {
+              resolvedLat = geoFallback.latitude;
+              resolvedLng = geoFallback.longitude;
+              setLat(resolvedLat);
+              setLng(resolvedLng);
+            } else if (city) {
+              const geoCity = await geocodeAddressOrCity(city);
+              if (geoCity) {
+                resolvedLat = geoCity.latitude;
+                resolvedLng = geoCity.longitude;
+                setLat(resolvedLat);
+                setLng(resolvedLng);
+              }
+            }
+          } catch (e) {
+            console.warn('City fallback geocoding failed:', e);
+          }
+        }
       }
+
+      // Determine matching service & companyId
+      const matchedService = availableServices.find((s) => s.serviceType === serviceType);
+      const targetCompanyId = matchedService?.primaryCompanyId || selectedCompanyId;
 
       const hasCoords = typeof resolvedLat === 'number' && typeof resolvedLng === 'number' && !isNaN(resolvedLat) && !isNaN(resolvedLng);
       const cleanAddress = address.trim() || 'Service Site Address';
       const cleanCity = city.trim();
       const cleanPincode = pincode.trim();
       const payload = {
+        companyId: targetCompanyId,
         serviceType,
         problemCode: selectedProblem?.code || 'OTHER',
         problemCategory: selectedProblem?.title || 'General Service',

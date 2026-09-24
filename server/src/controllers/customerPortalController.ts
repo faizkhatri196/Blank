@@ -342,8 +342,9 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     const custLon = location.coordinates?.longitude ?? location.longitude;
     const hasCustCoords = isValidApplicationCoordinate(custLat, custLon);
     // Unified authoritative coverage check — identical engine as service discovery
-    const requestedCompanyId = req.body.companyId || req.companyId;
-    const coverageResult = await resolveServiceCoverage({
+    // Note: Do not restrict customers to req.companyId (their registration tenant)
+    const requestedCompanyId = req.body.companyId;
+    let coverageResult = await resolveServiceCoverage({
       latitude: custLat,
       longitude: custLon,
       city: location.city,
@@ -352,6 +353,18 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       serviceType,
       requestedCompanyId,
     });
+
+    // If requested company did not match, fallback to evaluate all active providers in the area
+    if (!coverageResult.covered && requestedCompanyId) {
+      coverageResult = await resolveServiceCoverage({
+        latitude: custLat,
+        longitude: custLon,
+        city: location.city,
+        area: location.area,
+        pincode: cleanPincode,
+        serviceType,
+      });
+    }
 
     if (!coverageResult.covered || !coverageResult.companyId) {
       res.status(400).json({
