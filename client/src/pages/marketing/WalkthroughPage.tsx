@@ -333,110 +333,247 @@ export const WalkthroughPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Role-Based Explanation Cards */}
-        <section className="space-y-6">
-          <div className="text-center max-w-xl mx-auto space-y-2">
+        {/* All 3 Core Dashboards: Professional Operational Walkthrough & Manual Testing Guide */}
+        <section className="space-y-8">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Full Role Isolation & Workflows</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Role-Based Workspaces
+              All 3 Core Dashboards Explained
             </h2>
-            <p className="text-xs sm:text-sm text-slate-400">
-              SERVORA provides three distinct, specialized portals. Each role sees only what they need to operate.
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              SERVORA isolates operational capabilities into three distinct environments. Use the manual testing credentials below to experience the real software from each perspective.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Customer Role */}
-            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
-                  <User className="w-5 h-5" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 1. Operations Manager Dashboard */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl hover:border-amber-500/40 transition-all space-y-6">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <span className="font-mono text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                    Command Suite
+                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">CUSTOMER</h3>
-                <p className="text-xs font-semibold text-indigo-400 mb-4">
-                  Request and track service.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Location',
-                    'Service discovery',
-                    'Problem selection',
-                    'Photos',
-                    'AI understanding',
-                    'Request tracking',
-                    'Feedback',
-                  ].map((feat) => (
-                    <span
-                      key={feat}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] text-slate-300"
-                    >
-                      {feat}
-                    </span>
-                  ))}
+
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight">
+                    Operations Manager
+                  </h3>
+                  <p className="text-xs text-amber-400 font-semibold mt-0.5">
+                    Control Room & Central Dispatch
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Designed for operations leaders and dispatchers to triage incoming repair orders, dispatch qualified staff, and track field fleet execution in real time.
+                  </p>
                 </div>
+
+                {/* Workflow Breakdown */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-800 text-xs">
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px]">1</span>
+                    <span><strong>Live Ticket Ingestion:</strong> Incoming requests appear instantly with AI fault structuring and severity rank.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px]">2</span>
+                    <span><strong>5-Factor Dispatch:</strong> Match engine ranks technicians by proximity, skills, toolkit, and route workload.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px]">3</span>
+                    <span><strong>Live Fleet Telemetry:</strong> View technician locations with validated coordinate freshness (Fresh, Warm, Stale).</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px]">4</span>
+                    <span><strong>AI vs. Actual Audit:</strong> Compare initial AI predictions against physical field report multimeter readings.</span>
+                  </div>
+                </div>
+
+                {/* Demo Credentials Box */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>Demo Account</span>
+                    <span className="text-amber-400 font-bold">Manager Role</span>
+                  </div>
+                  <p className="font-mono text-slate-200 text-xs select-all">
+                    Email: <span className="text-white font-bold">manager@demo.com</span>
+                  </p>
+                  <p className="font-mono text-slate-400 text-[11px]">
+                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <Link
+                  to="/manager/dashboard"
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Launch Manager Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/login?portal=manager"
+                  className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Manager Sign In</span>
+                </Link>
               </div>
             </div>
 
-            {/* Manager Role */}
-            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-4">
-                  <Building2 className="w-5 h-5" />
+            {/* 2. Field Technician Mobile Terminal */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl hover:border-emerald-500/40 transition-all space-y-6">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                    <Wrench className="w-6 h-6" />
+                  </div>
+                  <span className="font-mono text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                    Field Terminal
+                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">MANAGER</h3>
-                <p className="text-xs font-semibold text-amber-400 mb-4">
-                  Operate your service business.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Requests',
-                    'Dispatch',
-                    'Technicians',
-                    'Active field operations',
-                    'Coverage',
-                    'Service history',
-                    'AI vs Actual',
-                    'Feedback',
-                  ].map((feat) => (
-                    <span
-                      key={feat}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] text-slate-300"
-                    >
-                      {feat}
-                    </span>
-                  ))}
+
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight">
+                    Field Technician
+                  </h3>
+                  <p className="text-xs text-emerald-400 font-semibold mt-0.5">
+                    Mobile Execution & Diagnostics
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    High-contrast mobile interface for engineers on the road to navigate assigned jobs, follow diagnostic checklists, and log proof of work.
+                  </p>
                 </div>
+
+                {/* Workflow Breakdown */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-800 text-xs">
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">1</span>
+                    <span><strong>Job Notification & Map:</strong> Receive instant dispatch alert with customer address and navigation links.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">2</span>
+                    <span><strong>Strict Status Milestones:</strong> Single-tap progression: Accepted → On The Way → On Site with timestamp audit.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">3</span>
+                    <span><strong>Technical Readings Log:</strong> Enter real electrical and pressure measurements (e.g. Voc voltage, refrigerant PSI).</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">4</span>
+                    <span><strong>Photo Evidence & Signoff:</strong> Upload before-and-after photographic evidence to generate digital report.</span>
+                  </div>
+                </div>
+
+                {/* Demo Credentials Box */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>Demo Account</span>
+                    <span className="text-emerald-400 font-bold">Technician Role</span>
+                  </div>
+                  <p className="font-mono text-slate-200 text-xs select-all">
+                    Email: <span className="text-white font-bold">rahul@demo.com</span>
+                  </p>
+                  <p className="font-mono text-slate-400 text-[11px]">
+                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <Link
+                  to="/technician/dashboard"
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Launch Technician Terminal</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/login?portal=technician"
+                  className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Technician Sign In</span>
+                </Link>
               </div>
             </div>
 
-            {/* Technician Role */}
-            <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-4">
-                  <Wrench className="w-5 h-5" />
+            {/* 3. Customer Portal & Tracking */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-7 flex flex-col justify-between shadow-xl hover:border-indigo-500/40 transition-all space-y-6">
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <span className="font-mono text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/25">
+                    Customer Experience
+                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">TECHNICIAN</h3>
-                <p className="text-xs font-semibold text-emerald-400 mb-4">
-                  Execute service in the field.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Assigned jobs',
-                    'Job status',
-                    'Location',
-                    'Diagnosis',
-                    'Photos',
-                    'Readings',
-                    'Parts',
-                    'Service report',
-                  ].map((feat) => (
-                    <span
-                      key={feat}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] text-slate-300"
-                    >
-                      {feat}
-                    </span>
-                  ))}
+
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight">
+                    Customer Portal
+                  </h3>
+                  <p className="text-xs text-indigo-400 font-semibold mt-0.5">
+                    Self-Service Discovery & Live Tracking
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Designed for facility owners and homeowners to book certified Solar & AC services, view technician progress, and access repair history.
+                  </p>
                 </div>
+
+                {/* Workflow Breakdown */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-800 text-xs">
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px]">1</span>
+                    <span><strong>Location-First Discovery:</strong> Enter locality or use GPS. SERVORA checks coverage before showing service lines.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px]">2</span>
+                    <span><strong>Transparent AI Triage:</strong> Customer picks visual symptom card; AI explains how the operations team interprets it.</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px]">3</span>
+                    <span><strong>Real-Time Tracking & SLA:</strong> Follow status milestones with ETA and masked company contact (protecting privacy).</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-slate-300">
+                    <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px]">4</span>
+                    <span><strong>Verified Closeout & Review:</strong> Inspect digital completion report with photo evidence and submit rating.</span>
+                  </div>
+                </div>
+
+                {/* Demo Credentials Box */}
+                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>Demo Account</span>
+                    <span className="text-indigo-400 font-bold">Customer Role</span>
+                  </div>
+                  <p className="font-mono text-slate-200 text-xs select-all">
+                    Email: <span className="text-white font-bold">customer@demo.com</span>
+                  </p>
+                  <p className="font-mono text-slate-400 text-[11px]">
+                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-2">
+                <Link
+                  to="/customer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <span>Launch Customer Portal</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/login?portal=customer"
+                  className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs border border-slate-700 flex items-center justify-center gap-1.5"
+                >
+                  <span>Customer Sign In</span>
+                </Link>
               </div>
             </div>
           </div>
