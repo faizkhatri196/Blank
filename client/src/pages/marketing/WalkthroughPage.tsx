@@ -71,15 +71,15 @@ export const WalkthroughPage: React.FC = () => {
         <section className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 text-xs font-bold uppercase tracking-wider">
             <PlayCircle className="w-4 h-4" />
-            <span>End-to-End Operational Lifecycle</span>
+            <span>3-Minute Y Combinator Demo Walkthrough</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-            See how a service request moves through SERVORA.
+            See how a service request moves through SERVORA in 3 minutes.
           </h1>
 
           <p className="text-sm sm:text-base text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto">
-            From the first customer location check to field technician execution and AI verification, experience how SERVORA connects the entire service operation.
+            Experience the complete closed-loop lifecycle across all 3 personas: Customer Intake in Mandvi &bull; Manager 5-Factor Dispatch &bull; Field Technician Mobile Execution &bull; AI Ground-Truth Audit.
           </p>
         </section>
 
@@ -393,18 +393,10 @@ export const WalkthroughPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Demo Credentials Box */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                    <span>Demo Account</span>
-                    <span className="text-amber-400 font-bold">Manager Role</span>
-                  </div>
-                  <p className="font-mono text-slate-200 text-xs select-all">
-                    Email: <span className="text-white font-bold">manager@demo.com</span>
-                  </p>
-                  <p className="font-mono text-slate-400 text-[11px]">
-                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
-                  </p>
+                {/* Enterprise Access Badge */}
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs flex items-center justify-between text-slate-400">
+                  <span className="font-mono text-[11px]">Access Level</span>
+                  <span className="text-amber-400 font-bold text-[11px] uppercase tracking-wider">Operations Command</span>
                 </div>
               </div>
 
@@ -469,18 +461,10 @@ export const WalkthroughPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Demo Credentials Box */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                    <span>Demo Account</span>
-                    <span className="text-emerald-400 font-bold">Technician Role</span>
-                  </div>
-                  <p className="font-mono text-slate-200 text-xs select-all">
-                    Email: <span className="text-white font-bold">rahul@demo.com</span>
-                  </p>
-                  <p className="font-mono text-slate-400 text-[11px]">
-                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
-                  </p>
+                {/* Enterprise Access Badge */}
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs flex items-center justify-between text-slate-400">
+                  <span className="font-mono text-[11px]">Access Level</span>
+                  <span className="text-emerald-400 font-bold text-[11px] uppercase tracking-wider">Field Engineer Mobile</span>
                 </div>
               </div>
 
@@ -545,18 +529,10 @@ export const WalkthroughPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Demo Credentials Box */}
-                <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                    <span>Demo Account</span>
-                    <span className="text-indigo-400 font-bold">Customer Role</span>
-                  </div>
-                  <p className="font-mono text-slate-200 text-xs select-all">
-                    Email: <span className="text-white font-bold">customer@demo.com</span>
-                  </p>
-                  <p className="font-mono text-slate-400 text-[11px]">
-                    Password: <span className="text-slate-300 font-medium">Demo@12345</span>
-                  </p>
+                {/* Enterprise Access Badge */}
+                <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs flex items-center justify-between text-slate-400">
+                  <span className="font-mono text-[11px]">Access Level</span>
+                  <span className="text-indigo-400 font-bold text-[11px] uppercase tracking-wider">Client & Facility Portal</span>
                 </div>
               </div>
 
