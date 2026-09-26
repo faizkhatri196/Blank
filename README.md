@@ -25,6 +25,23 @@ Servora is architected from day one to support two high-demand physical service 
 
 ---
 
+## 🎬 3-Minute Y Combinator Product Walkthrough
+
+Servora includes an end-to-end recorded 3-minute video demonstration (`SERVORA_3MIN_YC_DEMO.mp4`) captured live from the operational environment without slides or mockups, showing how a high-priority service request moves through all three system portals in Mandvi, Kutch:
+
+```mermaid
+timeline
+    title Servora Closed-Loop Operational Lifecycle (3 Minutes)
+    00:00 - 00:55 : Act 1 - Customer Portal : Mandvi Location Check (PIN 370465) : Rooftop Solar EPC Selection : AI Problem Intake & Error E-031 Triage : Live Ticket #SOL-2026-0084 Created
+    00:55 - 01:55 : Act 2 - Manager Command Center : HQ Operational Suite Overview : AI Root-Cause Diagnostic Analysis (88% Surge Failure) : 5-Factor Match Engine : Rahul Sharma Dispatched with 1-Click
+    01:55 - 03:00 : Act 3 - Field Technician Mobile PWA : Mobile Queue : Status Transitions (Accepted -> En Route -> On Site) : Multimeter Voc = 382V Recorded : Blown DC Surge Cartridge Replaced : Proof-of-Work Photo Upload : Customer Signoff & Closeout
+```
+
+- **Video File**: [`SERVORA_3MIN_YC_DEMO.mp4`](./SERVORA_3MIN_YC_DEMO.mp4) (Full HD 1080p, 24fps, H.264)
+- **Interactive In-App Walkthrough**: Launch the app and visit `/walkthrough` to scrub through all 8 interactive milestones with real-time HUD telemetry.
+
+---
+
 ## 🎯 The Operational Problem & The Servora Solution
 
 | Operational Bottleneck | Industry Status Quo | The Servora Solution |
