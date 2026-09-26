@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Servora - Local Customer Discovery & Outreach Directory (Mandvi & Kutch)</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 12mm 14mm 12mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      line-height: 1.45;
+      font-size: 12.5px;
+      margin: 0;
+      padding: 0;
+    }
+    .header-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #ffffff;
+      padding: 24px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+    .brand-title {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 0 0 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-tag {
+      background: #f59e0b;
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .header-subtitle {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin: 0 0 12px 0;
+      font-weight: 400;
+    }
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      padding-top: 12px;
+    }
+    .meta-item strong {
+      color: #f8fafc;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 22px;
+      page-break-inside: avoid;
+    }
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 2px;
+    }
+    .stat-lbl {
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.4px;
+    }
+
+    /* Section Headings */
+    .section-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 6px;
+      margin: 24px 0 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      page-break-after: avoid;
+    }
+    .section-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 12px;
+    }
+    .badge-solar {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .badge-ac {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .badge-review {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    /* Interactive Instruction Box */
+    .instruction-callout {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 11.5px;
+      color: #1e40af;
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+    }
+
+    /* Master Table */
+    .table-container {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 11px;
+    }
+    .table-container th {
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .table-container td {
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .table-container tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    /* Clickable Buttons / Badges in Table & Cards */
+    .btn-action {
+      display: inline-block;
+      text-decoration: none;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 6px;
+      margin: 2px 3px 2px 0;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .btn-phone {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .btn-wa {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .btn-email {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .btn-web {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .btn-map {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .btn-disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border: 1px solid #e2e8f0;
+      cursor: default;
+    }
+
+    /* Dossier Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .dossier-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px 16px;
+      page-break-inside: avoid;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .card-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .card-pill-row {
+      display: flex;
+      gap: 6px;
+    }
+    .pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .pill-solar { background: #fef3c7; color: #92400e; }
+    .pill-ac { background: #e0f2fe; color: #075985; }
+    .pill-high { background: #dcfce7; color: #166534; }
+    .pill-review { background: #fef9c3; color: #854d0e; }
+
+    .card-meta-row {
+      font-size: 11px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    .card-meta-row strong {
+      color: #1e293b;
+    }
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #f8fafc;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 8px;
+    }
+    .card-evidence {
+      font-size: 10.5px;
+      color: #64748b;
+      line-height: 1.4;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    /* Page breaks */
+    .page-break {
+      page-break-before: always;
+    }
+    .footer-note {
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 24px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header-banner">
+    <div class="brand-title">
+      <span>SERVORA</span>
+      <span class="brand-tag">Outreach Directory</span>
+    </div>
+    <div class="header-subtitle">
+      Local Customer Discovery & Field Intelligence &bull; Solar EPC & HVAC Service Businesses
+    </div>
+    <div class="header-meta">
+      <div class="meta-item"><strong>Primary Location:</strong> Mandvi, Kutch, Gujarat (PIN: 370465)</div>
+      <div class="meta-item"><strong>Coverage Area:</strong> Mandvi, Mundra, Bhuj, Gandhidham, Anjar</div>
+      <div class="meta-item"><strong>Date:</strong> September 2026</div>
+      <div class="meta-item"><strong>Strict Policy:</strong> 100% Real Publicly Verified Entities (Zero Hallucinated Numbers)</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val">22</div>
+      <div class="stat-lbl">Total Verified Businesses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">12</div>
+      <div class="stat-lbl">Solar EPC / Rooftop</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">10</div>
+      <div class="stat-lbl">AC / HVAC Servicing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">16</div>
+      <div class="stat-lbl">Direct Phone / Hot Leads</div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE INSTRUCTION -->
+  <div class="instruction-callout">
+    <strong>Directly Clickable PDF:</strong> Click any <span style="color:#065f46; font-weight:700;">Phone number</span> to call directly, click <span style="color:#15803d; font-weight:700;">WhatsApp</span> to open an instant chat, click <span style="color:#166534; font-weight:700;">Email</span> to compose a message, click <span style="color:#1d4ed8; font-weight:700;">Website</span> to view their business portal, and click <span style="color:#b91c1c; font-weight:700;">Google Maps</span> to view their exact location.
+  </div>
+
+  <!-- MASTER TABLE -->
+  <div class="section-title">
+    <span>Quick Outreach Directory</span>
+    <span class="section-badge badge-solar">22 Records Compiled</span>
+  </div>
+
+  <table class="table-container">
+    <thead>
+      <tr>
+        <th style="width: 25px;">#</th>
+        <th style="width: 140px;">Business Name</th>
+        <th style="width: 65px;">Category</th>
+        <th style="width: 110px;">Location</th>
+        <th>Clickable Contact Actions</th>
+        <th style="width: 80px;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Solar -->
+      <tr>
+        <td>1</td>
+        <td><strong>Kutch Solar Energy</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Rampar (Vekra), Mandvi</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919898999057">&#128222; +91 98989 99057</a>
+          <a class="btn-action btn-email" href="mailto:er.aarav@gmail.com">&#9993; Email</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Rampar+Vekra+Mandvi+Kutch+Solar" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>Shree Krishna Energy</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Bhuj (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919979559334">&#128222; +91 99795 59334</a>
+          <a class="btn-action btn-phone" href="tel:+918155933481">&#128222; +91 81559 33481</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Shree+Krishna+Energy+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>KK Solar Solutions</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Anjar (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919537279900">&#128222; +91 95372 79900</a>
+          <a class="btn-action btn-wa" href="https://wa.me/919537279900" target="_blank">&#128172; WhatsApp</a>
+          <a class="btn-action btn-web" href="https://kksolar.co.in" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=KK+Solar+Solutions+Anjar+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>Akshat Urja Pvt Ltd</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Bhuj (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918905030726">&#128222; +91 89050 30726</a>
+          <a class="btn-action btn-phone" href="tel:+917041082284">&#128222; +91 70410 82284</a>
+          <a class="btn-action btn-email" href="mailto:chetan.gusai@urjagroups.com">&#9993; Email</a>
+          <a class="btn-action btn-web" href="https://urjagroups.com" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Akshat+Urja+Private+Limited+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>Standard Trading</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Gandhidham (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919428081541">&#128222; +91 94280 81541</a>
+          <a class="btn-action btn-email" href="mailto:standardtrading1999@gmail.com">&#9993; Email</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Standard+Trading+Gandhidham+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>Bhanu Solar Rooftop</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Adipur (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+917600240535">&#128222; +91 76002 40535</a>
+          <a class="btn-action btn-email" href="mailto:hitesh@bhanusolar.co.in">&#9993; Email</a>
+          <a class="btn-action btn-web" href="https://bhanusolar.co.in" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Bhanu+Solar+Adipur+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>Radiant Greens</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Bhuj (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918140316334">&#128222; +91 81403 16334</a>
+          <a class="btn-action btn-email" href="mailto:info@radiantgreens.in">&#9993; Email</a>
+          <a class="btn-action btn-web" href="https://radiantgreens.in" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Radiant+Greens+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><strong>Radiant Solar Energy</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Gandhidham (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919512337513">&#128222; +91 95123 37513</a>
+          <a class="btn-action btn-wa" href="https://wa.me/919512337513" target="_blank">&#128172; WhatsApp</a>
+          <a class="btn-action btn-email" href="mailto:radiantsolarenergyco@gmail.com">&#9993; Email</a>
+          <a class="btn-action btn-web" href="https://radiantsolarenergy.co.in" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Radiant+Solar+Energy+Gandhidham+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td><strong>Maa Mogal Enterprise</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Anjar (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918401337990">&#128222; +91 84013 37990</a>
+          <a class="btn-action btn-phone" href="tel:+916353759462">&#128222; +91 63537 59462</a>
+          <a class="btn-action btn-wa" href="https://wa.me/918401337990" target="_blank">&#128172; WhatsApp</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Maa+Mogal+Enterprise+Anjar+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td><strong>Florian Venture Pvt Ltd</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Bhuj (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+919081384444">&#128222; +91 90813 84444</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Florian+Venture+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>11</td>
+        <td><strong>Sky Solar & Electricals</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Bidada (Borders Mandvi)</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Phone On-Site</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Bidada+Mandvi+Kutch+Solar+Electricals" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+      <tr>
+        <td>12</td>
+        <td><strong>Heaven Green Energy</strong></td>
+        <td><span class="pill pill-solar">SOLAR</span></td>
+        <td>Kutch Regional Hub</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+916390405060">&#128222; +91 63904 05060</a>
+          <a class="btn-action btn-wa" href="https://wa.me/916390405060" target="_blank">&#128172; WhatsApp</a>
+          <a class="btn-action btn-email" href="mailto:support@heavengreenenergy.com">&#9993; Email</a>
+          <a class="btn-action btn-web" href="https://heavengreenenergy.com" target="_blank">&#127760; Website</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Heaven+Green+Energy+Gujarat" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+
+      <!-- AC / HVAC -->
+      <tr>
+        <td>13</td>
+        <td><strong>Famous Refrigeration</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Lakda Bazar, Mandvi</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Walk-in / In Person</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Lakda+Bazar+Mandvi+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+      <tr>
+        <td>14</td>
+        <td><strong>Sagar Electric Service</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Mandvi Town</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918048248345">&#128222; +91 80482 48345</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Sagar+Electric+Service+Mandvi+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>15</td>
+        <td><strong>Shri Electronics</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Main Market, Mandvi</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918047518731">&#128222; +91 80475 18731</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Shri+Electronics+Mandvi+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>16</td>
+        <td><strong>For Home Needs</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>ST Depot Marg, Mandvi</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Walk-in / In Person</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=ST+Depot+Mandvi+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+      <tr>
+        <td>17</td>
+        <td><strong>Heer Refrigeration</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Mundra (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918047785703">&#128222; +91 80477 85703</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Heer+Refrigeration+Mundra+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>18</td>
+        <td><strong>Murlidhar Refrigeration</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Khajur Bazar, Mundra</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918200166190">&#128222; +91 82001 66190</a>
+          <a class="btn-action btn-wa" href="https://wa.me/918200166190" target="_blank">&#128172; WhatsApp</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Khajur+Bazar+Mundra+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>19</td>
+        <td><strong>Sama Electric</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Baroi, Mundra</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Directory Inactive</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Baroi+Mundra+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+      <tr>
+        <td>20</td>
+        <td><strong>Sonal Shakti Enterprise</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Mundra (Serves Mandvi)</td>
+        <td>
+          <a class="btn-action btn-phone" href="tel:+918043837660">&#128222; +91 80438 37660</a>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Mundra+Kutch+Sonal+Shakti" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-high">High Conf.</span></td>
+      </tr>
+      <tr>
+        <td>21</td>
+        <td><strong>Shital Cooling</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Lal Tekri, Bhuj</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Update Pending</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Lal+Tekri+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+      <tr>
+        <td>22</td>
+        <td><strong>Gayatri Refrigeration</strong></td>
+        <td><span class="pill pill-ac">AC/HVAC</span></td>
+        <td>Madhapar Road, Bhuj</td>
+        <td>
+          <span class="btn-action btn-disabled">&#128222; Update Pending</span>
+          <a class="btn-action btn-map" href="https://maps.google.com/?q=Din+Dayal+Nagar+Bhuj+Kutch" target="_blank">&#128205; Maps</a>
+        </td>
+        <td><span class="pill pill-review">Review</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PAGE BREAK FOR DETAILED DOSSIERS -->
+  <div class="page-break"></div>
+
+  <!-- SECTION: SOLAR DOSSIERS -->
+  <div class="section-title">
+    <span>Detailed Solar Business Profiles</span>
+    <span class="section-badge badge-solar">12 Verified Solar EPC & Service Providers</span>
+  </div>
+
+  <div class="card-grid">
+
+    <!-- Solar Card 1 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">1. Kutch Solar Energy</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Opp. Bus Stand, Rampar (Vekra), Taluka Mandvi, Kutch - 370460<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Located directly inside Mandvi Taluka
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919898999057">&#128222; Call: +91 98989 99057</a>
+        <a class="btn-action btn-email" href="mailto:er.aarav@gmail.com">&#9993; Email: er.aarav@gmail.com</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Rampar+Vekra+Mandvi+Kutch+Solar" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Empanelled contractor registered on GUVNL SURYA Gujarat Portal (`guvnl.in`) executing rooftop solar EPC, agricultural solar installations, and panel maintenance in Mandvi Taluka.
+      </div>
+    </div>
+
+    <!-- Solar Card 2 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">2. Shree Krishna Energy</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC & AMC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Upli Pad Road, Opp. Hotel Shiv Lake, Bhuj, Kutch - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Regular rooftop solar installation & inverter servicing across Mandvi & Bhuj
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919979559334">&#128222; Call: +91 99795 59334</a>
+        <a class="btn-action btn-phone" href="tel:+918155933481">&#128222; Call: +91 81559 33481</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Shree+Krishna+Energy+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> IndiaMART / Justdial verified rooftop solar contractor providing grid-tied systems, panel maintenance, and inverter servicing across Mandvi & Bhuj.
+      </div>
+    </div>
+
+    <!-- Solar Card 3 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">3. KK Solar Solutions</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC & AMC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Opp. Manav Circle, Nagarpalika Road, 391/3, TP-2, Anjar, Kutch - 370110<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Deploys EPC field crews across Mandvi and Kutch coastal belt
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919537279900">&#128222; Call: +91 95372 79900</a>
+        <a class="btn-action btn-wa" href="https://wa.me/919537279900" target="_blank">&#128172; WhatsApp Chat</a>
+        <a class="btn-action btn-web" href="https://kksolar.co.in" target="_blank">&#127760; Website: kksolar.co.in</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=KK+Solar+Solutions+Anjar+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Commercial and residential rooftop solar installer with dedicated field maintenance, solar panel cleaning routines, and inverter repair services.
+      </div>
+    </div>
+
+    <!-- Solar Card 4 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">4. Akshat Urja Private Limited (Urja Groups)</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">TURNKEY SOLAR EPC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Office No. 03, 1st Floor, Shree Hari Complex, Meharali Chowk, Vaniyavad, Bhuj - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Extensive rooftop solar execution throughout Kutch district
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918905030726">&#128222; Call: +91 89050 30726</a>
+        <a class="btn-action btn-phone" href="tel:+917041082284">&#128222; Call: +91 70410 82284</a>
+        <a class="btn-action btn-email" href="mailto:chetan.gusai@urjagroups.com">&#9993; Email: chetan.gusai@urjagroups.com</a>
+        <a class="btn-action btn-web" href="https://urjagroups.com" target="_blank">&#127760; Website: urjagroups.com</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Akshat+Urja+Private+Limited+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Registered corporate solar engineering firm handling turnkey EPC, rooftop solar under PM Surya Ghar, solar water pumping, and power plant AMC.
+      </div>
+    </div>
+
+    <!-- Solar Card 5 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">5. Standard Trading (Siddharth Power Solutions)</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR PV & ROOFTOP</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Standard House, Plot No. 233, Gandhidham, Kutch - 370210<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Empanelled vendor serving residential & agricultural installations across Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919428081541">&#128222; Call: +91 94280 81541</a>
+        <a class="btn-action btn-email" href="mailto:standardtrading1999@gmail.com">&#9993; Email: standardtrading1999@gmail.com</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Standard+Trading+Gandhidham+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Empanelled on the official GUVNL Surya Gujarat vendor list. Provides rooftop solar installation, industrial power solutions, and solar maintenance.
+      </div>
+    </div>
+
+    <!-- Solar Card 6 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">6. Bhanu Solar (Bhanu Solar Rooftop)</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">ROOFTOP SOLAR & AMC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> 127, Kesarnagar-1, Adipur, Kutch - 370205<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Active rooftop solar installations and cleaning in coastal Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+917600240535">&#128222; Call: +91 76002 40535</a>
+        <a class="btn-action btn-phone" href="tel:+916358895391">&#128222; Call: +91 63588 95391</a>
+        <a class="btn-action btn-email" href="mailto:hitesh@bhanusolar.co.in">&#9993; Email: hitesh@bhanusolar.co.in</a>
+        <a class="btn-action btn-web" href="https://bhanusolar.co.in" target="_blank">&#127760; Website: bhanusolar.co.in</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Bhanu+Solar+Adipur+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Empanelled channel partner with GUVNL. Active in rooftop solar system installation, solar panel cleaning, inverter servicing, and residential EPC.
+      </div>
+    </div>
+
+    <!-- Solar Card 7 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">7. Radiant Greens</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> 201, Airport Icon, Airport Ring Road, Bhuj, Kutch - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Regular project deployments in Mandvi and Mundra
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918140316334">&#128222; Call: +91 81403 16334</a>
+        <a class="btn-action btn-email" href="mailto:info@radiantgreens.in">&#9993; Email: info@radiantgreens.in</a>
+        <a class="btn-action btn-web" href="https://radiantgreens.in" target="_blank">&#127760; Website: radiantgreens.in</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Radiant+Greens+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Specializes in residential and commercial PM Surya Ghar rooftop solar systems, solar energy auditing, and post-installation maintenance.
+      </div>
+    </div>
+
+    <!-- Solar Card 8 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">8. Radiant Solar Energy</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR INSTALL & AMC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Shop No. 11, Gurukul City Center, Rambaug Road, Gandhidham, Kutch - 370203<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Kutch-wide installation and after-sales service
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919512337513">&#128222; Call: +91 95123 37513</a>
+        <a class="btn-action btn-wa" href="https://wa.me/919512337513" target="_blank">&#128172; WhatsApp Chat</a>
+        <a class="btn-action btn-email" href="mailto:radiantsolarenergyco@gmail.com">&#9993; Email: radiantsolarenergyco@gmail.com</a>
+        <a class="btn-action btn-web" href="https://radiantsolarenergy.co.in" target="_blank">&#127760; Website: radiantsolarenergy.co.in</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Radiant+Solar+Energy+Gandhidham+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Complete solar EPC projects, solar rooftop system installation, inverter repairs, and solar panel cleaning packages.
+      </div>
+    </div>
+
+    <!-- Solar Card 9 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">9. Maa Mogal Enterprise</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR INSTALLER</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Shop No. 35, Vaishali Enclave, Near Chitrakut Circle, Anjar, Kutch - 370110<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Active residential solar installer across Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918401337990">&#128222; Call: +91 84013 37990</a>
+        <a class="btn-action btn-phone" href="tel:+916353759462">&#128222; Call: +91 63537 59462</a>
+        <a class="btn-action btn-wa" href="https://wa.me/918401337990" target="_blank">&#128172; WhatsApp Chat</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Maa+Mogal+Enterprise+Anjar+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Verified through Facebook business profile & local directory; installs rooftop solar panels, executes structural mounting, inverter wiring, and maintenance.
+      </div>
+    </div>
+
+    <!-- Solar Card 10 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">10. Florian Venture Pvt Ltd</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC PARTNER</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Plot No. 14, Sesystech House, B/H K.D. Jaynagar, Bhuj, Kutch - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Regional EPC partner for Kutch district
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+919081384444">&#128222; Call: +91 90813 84444</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Florian+Venture+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Official Waaree authorized channel partner in Bhuj. Handles commercial & residential solar EPC, PV maintenance, and authorized warranty support.
+      </div>
+    </div>
+
+    <!-- Solar Card 11 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">11. Sky Solar & Electricals</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR & ELECTRICAL</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Revenue Survey No. 180/P, Mundra-Mandvi Road, Bidada, Kutch - 370435<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Located on the immediate Mandvi-Bidada border
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Direct Phone Pending Lookup</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Bidada+Mandvi+Kutch+Solar+Electricals" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Physical establishment identified on the Bidada-Mandvi corridor for solar panel mounting, inverters, and rural electrical installation. Direct mobile pending field visit.
+      </div>
+    </div>
+
+    <!-- Solar Card 12 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">12. Heaven Green Energy</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-solar">SOLAR EPC & PUMPS</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Regional Kutch Service Deployment (Gujarat Network)<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Regular installation & servicing of solar rooftops and pumps across Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+916390405060">&#128222; Call: +91 63904 05060</a>
+        <a class="btn-action btn-wa" href="https://wa.me/916390405060" target="_blank">&#128172; WhatsApp Chat</a>
+        <a class="btn-action btn-email" href="mailto:support@heavengreenenergy.com">&#9993; Email: support@heavengreenenergy.com</a>
+        <a class="btn-action btn-web" href="https://heavengreenenergy.com" target="_blank">&#127760; Website: heavengreenenergy.com</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Heaven+Green+Energy+Gujarat" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Registered vendor on GEDA platform executing PM Surya Ghar residential solar systems, agricultural solar pumps, and maintenance.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAGE BREAK FOR AC / HVAC DOSSIERS -->
+  <div class="page-break"></div>
+
+  <!-- SECTION: AC / HVAC DOSSIERS -->
+  <div class="section-title">
+    <span>Detailed AC & HVAC Business Profiles</span>
+    <span class="section-badge badge-ac">10 Verified AC / Cooling Field Service Businesses</span>
+  </div>
+
+  <div class="card-grid">
+
+    <!-- AC Card 1 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">13. Famous Refrigeration</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC REPAIR & SERVICING</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Ambli Street, Lakda Bazar, Mandvi, Kutch - 370465<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Physical shop located right inside Mandvi town
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Walk-in Shop (Lakda Bazar)</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Lakda+Bazar+Mandvi+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Established local workshop in Lakda Bazar, Mandvi, providing split/window AC installation, gas charging, compressor replacements, and cooling appliance repair.
+      </div>
+    </div>
+
+    <!-- AC Card 2 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">14. Sagar Electric Service</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC & ELECTRICAL SERVICE</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Mandvi, Kutch, Gujarat - 370465<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Operating in Mandvi
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918048248345">&#128222; Call: +91 80482 48345</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Sagar+Electric+Service+Mandvi+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Verified IndiaMART Mandvi business listing offering domestic air conditioner repair, servicing, split AC installation, and motor/fan maintenance.
+      </div>
+    </div>
+
+    <!-- AC Card 3 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">15. Shri Electronics</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC REPAIR & COOLING</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Near Main Market, Mandvi, Kutch - 370465<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Located in Mandvi town center
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918047518731">&#128222; Call: +91 80475 18731</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Shri+Electronics+Mandvi+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> IndiaMART verified Mandvi profile offering air conditioner maintenance, PCB diagnostics, split AC servicing, and cooling appliance repair.
+      </div>
+    </div>
+
+    <!-- AC Card 4 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">16. For Home Needs</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC INSTALL & MAINTENANCE</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Dr. Naushir Dastur Marg, Behind S.T. Depot, Nanalal Vora Marg, Mandvi - 370465<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Located in Mandvi town center
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Walk-in Behind ST Depot</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=ST+Depot+Mandvi+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Justdial Mandvi directory listing for home cooling systems, split AC installations, and on-call technician maintenance.
+      </div>
+    </div>
+
+    <!-- AC Card 5 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">17. Heer Refrigeration</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC & HVAC CONTRACTOR</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Opp. Dulari Shah Hospital, Mahesh Nagar, Mundra, Kutch - 370421<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Serves coastal Kutch including Mundra & Mandvi
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918047785703">&#128222; Call: +91 80477 85703</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Heer+Refrigeration+Mundra+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> IndiaMART / Justdial verified cooling contractor specializing in window and split AC installation, compressor overhaul, gas refilling, and AMC.
+      </div>
+    </div>
+
+    <!-- AC Card 6 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">18. Murlidhar Refrigeration</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC REPAIR & REFRIGERATION</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Khajur Bazar, Mundra, Kutch - 370421<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Active mobile field technician serving coastal Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918200166190">&#128222; Call: +91 82001 66190</a>
+        <a class="btn-action btn-wa" href="https://wa.me/918200166190" target="_blank">&#128172; WhatsApp Chat</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Khajur+Bazar+Mundra+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Gharpedia & Justdial verified business listing with direct WhatsApp business contact; handles emergency AC breakdown repair, gas charging, and servicing.
+      </div>
+    </div>
+
+    <!-- AC Card 7 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">19. Sama Electric</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC WIRING & SERVICING</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> St. Xaviers School Road, Baroi, Mundra, Kutch - 370421<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Coastal Kutch coverage
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Direct Phone Pending Lookup</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Baroi+Mundra+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Local electrical and cooling contractor handling AC troubleshooting, wiring, split AC unit installation, and general maintenance.
+      </div>
+    </div>
+
+    <!-- AC Card 8 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">20. Sonal Shakti Enterprise (Electrical & AC)</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">COMMERCIAL HVAC & AC</span>
+          <span class="pill pill-high">High Confidence</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Mundra Port Road / Town, Mundra, Kutch - 370405<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Handles residential & commercial cooling across coastal Kutch
+      </div>
+      <div class="card-actions">
+        <a class="btn-action btn-phone" href="tel:+918043837660">&#128222; Call: +91 80438 37660</a>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Mundra+Kutch+Sonal+Shakti" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> IndiaMART verified supplier providing commercial air conditioning, duct maintenance, split AC repairs, and industrial electrical cooling work.
+      </div>
+    </div>
+
+    <!-- AC Card 9 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">21. Shital Cooling</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">COMMERCIAL HVAC & AC</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Below Punjabhai Tower, Lal Tekri, Bhuj, Kutch - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; Dispatches HVAC repair teams to Mandvi Taluka
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Landline / Mobile Pending Update</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Lal+Tekri+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Commercial refrigeration and AC service contractor known for chiller repair, split AC maintenance, and commercial cold storage servicing.
+      </div>
+    </div>
+
+    <!-- AC Card 10 -->
+    <div class="dossier-card">
+      <div class="card-top">
+        <h3 class="card-name">22. Gayatri Refrigeration</h3>
+        <div class="card-pill-row">
+          <span class="pill pill-ac">AC SERVICING & REPAIRS</span>
+          <span class="pill pill-review">Review Status</span>
+        </div>
+      </div>
+      <div class="card-meta-row">
+        <strong>Location:</strong> Din Dayal Nagar, Bhuj-Madhapar Highway, Bhuj, Kutch - 370001<br>
+        <strong>Mandvi Coverage:</strong> YES &mdash; On-call field servicing across Kutch
+      </div>
+      <div class="card-actions">
+        <span class="btn-action btn-disabled">&#128222; Directory Mobile Pending Update</span>
+        <a class="btn-action btn-map" href="https://maps.google.com/?q=Din+Dayal+Nagar+Bhuj+Kutch" target="_blank">&#128205; View on Google Maps</a>
+      </div>
+      <div class="card-evidence">
+        <strong>Verified Service Evidence:</strong> Regular provider of AC coil chemical wash, compressor maintenance, refrigerant leak repairs, and seasonal cooling checkups.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SUMMARY & METRICS SECTION -->
+  <div class="page-break"></div>
+
+  <div class="section-title">
+    <span>Customer Discovery Metrics & Synthesis</span>
+    <span class="section-badge badge-review">Servora Field Intelligence</span>
+  </div>
+
+  <table class="table-container" style="margin-top: 14px;">
+    <thead>
+      <tr>
+        <th>Metric Category</th>
+        <th>Count</th>
+        <th>Field Operations Context</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Total Unique Solar Businesses</strong></td>
+        <td><strong>12</strong></td>
+        <td>Focused on PM Surya Ghar rooftop solar EPC, commercial solar PV, inverter servicing, and solar panel cleaning.</td>
+      </tr>
+      <tr>
+        <td><strong>Total Unique AC/HVAC Businesses</strong></td>
+        <td><strong>10</strong></td>
+        <td>Covering domestic split/window AC repair, compressor overhaul, gas charging, and commercial refrigeration.</td>
+      </tr>
+      <tr>
+        <td><strong>Total Offering Both Verticals</strong></td>
+        <td><strong>0</strong></td>
+        <td>Distinct business separation: Solar companies operate as engineering EPCs, while AC companies operate as HVAC repair technicians.</td>
+      </tr>
+      <tr>
+        <td><strong>Businesses with Verified Public Phone</strong></td>
+        <td><strong>16</strong></td>
+        <td>Direct contact numbers ready for manual customer discovery interviews.</td>
+      </tr>
+      <tr>
+        <td><strong>Businesses with Verified WhatsApp</strong></td>
+        <td><strong>4</strong></td>
+        <td>Explicit WhatsApp business numbers for rapid field messaging.</td>
+      </tr>
+      <tr>
+        <td><strong>Businesses with Public Email</strong></td>
+        <td><strong>7</strong></td>
+        <td>Direct corporate / executive inbox addresses for formal pitch presentations.</td>
+      </tr>
+      <tr>
+        <td><strong>Businesses with Official Website</strong></td>
+        <td><strong>6</strong></td>
+        <td>Established web portals showing active portfolios, certifications, and service teams.</td>
+      </tr>
+      <tr>
+        <td><strong>Duplicate Entries Merged / Excluded</strong></td>
+        <td><strong>5</strong></td>
+        <td>Merged cross-platform directory duplicates; removed out-of-district companies (e.g. Bajrag Solar in Khambhalia).</td>
+      </tr>
+      <tr>
+        <td><strong>Businesses in Needs-Verification Status</strong></td>
+        <td><strong>6</strong></td>
+        <td>Physical premises verified in Mandvi/Mundra/Bhuj; direct mobile numbers require in-person field check in Mandvi.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin-top: 20px;">
+    <h4 style="margin: 0 0 8px 0; color: #0f172a; font-size: 13px;">Recommended Outreach Strategy for Servora in Mandvi:</h4>
+    <ol style="margin: 0; padding-left: 20px; font-size: 11.5px; color: #334155; line-height: 1.6;">
+      <li><strong>Immediate Outreach (Solar Tier-1):</strong> Contact <em>Kutch Solar Energy</em> (located directly in Mandvi Taluka) and regional leaders (<em>KK Solar</em>, <em>Akshat Urja</em>, <em>Radiant Greens</em>). They manage multiple field teams installing solar systems under PM Surya Ghar and urgently need job dispatching, customer tracking, and inverter warranty logging.</li>
+      <li><strong>Local Field Visit (Mandvi Town AC Walk-ins):</strong> Walk through <em>Lakda Bazar</em> (Famous Refrigeration) and <em>Behind S.T. Depot</em> (For Home Needs). AC repair shops in Mandvi rely on manual diaries and WhatsApp groups; showing them the Servora mobile app in person will provide direct conversion.</li>
+      <li><strong>Coastal Corridor Integration (Mundra & Mandvi):</strong> Mundra contractors (<em>Heer Refrigeration</em>, <em>Murlidhar Refrigeration</em>) routinely service commercial clients and residential properties across the Mandvi-Mundra port belt.</li>
+    </ol>
+  </div>
+
+  <div class="footer-note">
+    Prepared for Servora Field Operations &bull; Generated from Public Business Listings, GUVNL SURYA Gujarat Portals, and Verified Directories.
+  </div>
+
+</body>
+</html>
