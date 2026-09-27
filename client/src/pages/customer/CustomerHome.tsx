@@ -29,6 +29,7 @@ import {
   clearCustomerLocation,
 } from '../../utils/customerLocation';
 import { LOCATION_CHANGE_EVENT } from '../../contexts/LocationContext';
+import { gpsEngine } from '../../services/gpsEngine';
 
 /** Dispatch after any location save/clear so header pill stays in sync */
 function notifyLocationChanged() {
@@ -183,90 +184,50 @@ export const CustomerHome: React.FC = () => {
     setLocationFeedback(null);
   };
 
-  // Browser Geolocation (strictly user-initiated, NO fallback to Ahmedabad!)
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationFeedback(
-        'Geolocation is not supported by your browser. Please enter your city manually.'
-      );
-      return;
-    }
-
+  // Browser Geolocation (strictly user-initiated, NO fallback to Ahmedabad or any other city!)
+  const handleUseCurrentLocation = async () => {
     setIsLocating(true);
     setLocationFeedback(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          );
+    const result = await gpsEngine.acquireCurrentLocation();
+    setIsLocating(false);
 
-          if (geoRes.ok) {
-            const data = await geoRes.json();
-            const addr = data.address || {};
-            const houseNumber = addr.house_number?.trim() || undefined;
-            const road = addr.road?.trim() || undefined;
-            const neighbourhood = addr.neighbourhood?.trim() || undefined;
-            const suburb = addr.suburb?.trim() || undefined;
-            const village = addr.village?.trim() || undefined;
-            const town = addr.town?.trim() || undefined;
-            const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
-            const detectedCity =
-              addr.city?.trim() ||
-              addr.town?.trim() ||
-              addr.village?.trim() ||
-              addr.municipality?.trim() ||
-              district;
-            const detectedPin = addr.postcode ? String(addr.postcode).trim() : undefined;
-            const area = suburb || neighbourhood || village || town || road || undefined;
+    if (result.success && result.location) {
+      const loc = result.location;
+      const newLoc: CustomerLocation = {
+        city: loc.cityDisplayName,
+        area: loc.localityDisplayName,
+        state: loc.address.state,
+        country: loc.address.country,
+        pincode: loc.address.postcode || undefined,
+        postcode: loc.address.postcode || undefined,
+        houseNumber: loc.address.houseNumber,
+        road: loc.address.road,
+        neighbourhood: loc.address.neighbourhood,
+        suburb: loc.address.suburb,
+        village: loc.address.village,
+        town: loc.address.town,
+        district: loc.address.district,
+        latitude: loc.coordinates.latitude,
+        longitude: loc.coordinates.longitude,
+        accuracy: loc.accuracy,
+        source: 'gps',
+        timestamp: loc.timestamp,
+        formattedAddress: loc.formattedAddress,
+        canonical: loc,
+      };
 
-            if (detectedCity && typeof detectedCity === 'string') {
-              const newLoc: CustomerLocation = {
-                city: detectedCity.trim(),
-                area,
-                state: addr.state?.trim() || undefined,
-                country: addr.country?.trim() || undefined,
-                pincode: detectedPin,
-                postcode: detectedPin,
-                houseNumber,
-                road,
-                neighbourhood,
-                suburb,
-                village,
-                town,
-                district,
-                latitude: lat,
-                longitude: lon,
-                formattedAddress: data.display_name,
-              };
-
-              setAvailableServices([]);
-              setLocation(newLoc);
-              saveCustomerLocation(newLoc, user?.id);
-              notifyLocationChanged(); // ← keeps header pill in sync
-              setIsLocating(false);
-              setIsEditingLocation(false);
-              return;
-            }
-          }
-          // If reverse geocoding cannot determine city, prompt manual entry (NEVER fallback to Ahmedabad)
-          setLocationFeedback('Could not determine city from GPS. Please enter your city or area manually.');
-        } catch (e) {
-          setLocationFeedback('Unable to reach location service. Please enter your city manually.');
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (_err) => {
-        setIsLocating(false);
-        setLocationFeedback('Location permission denied. Please enter your city or area manually.');
-      },
-      { timeout: 8000 }
-    );
+      setAvailableServices([]);
+      setLocation(newLoc);
+      saveCustomerLocation(newLoc, user?.id);
+      notifyLocationChanged(); // keeps header pill in sync
+      setIsEditingLocation(false);
+    } else {
+      setLocationFeedback(
+        result.error?.userMessage ||
+          'Unable to get your exact location. You can enter your location manually.'
+      );
+    }
   };
 
   return (
@@ -382,7 +343,7 @@ export const CustomerHome: React.FC = () => {
               className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5"
             >
               <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
-              <span>{isLocating ? 'Detecting...' : 'Use GPS'}</span>
+              <span>{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
             </button>
           </div>
         </div>

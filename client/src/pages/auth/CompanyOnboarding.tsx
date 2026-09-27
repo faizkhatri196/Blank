@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
+import { gpsEngine } from '../../services/gpsEngine';
 import {
   Building2,
   MapPin,
@@ -110,67 +111,41 @@ export const CompanyOnboarding: React.FC = () => {
   const [radiusInputs, setRadiusInputs] = useState<Record<number, string>>({});
   const [isLocatingArea, setIsLocatingArea] = useState<Record<number, boolean>>({});
 
-  const handleUseCurrentLocationForArea = (idx: number) => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
-      return;
-    }
+  const handleUseCurrentLocationForArea = async (idx: number) => {
     setIsLocatingArea((prev) => ({ ...prev, [idx]: true }));
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          );
-          const data = await res.json();
-          const addr = data.address || {};
-          const detectedCity =
-            addr.city?.trim() ||
-            addr.town?.trim() ||
-            addr.village?.trim() ||
-            addr.municipality?.trim() ||
-            addr.state_district?.trim() ||
-            addr.district?.trim() ||
-            '';
-          const detectedState = addr.state?.trim() || '';
-          const detectedPin = addr.postcode ? String(addr.postcode).trim() : '';
-          const locality = addr.suburb?.trim() || addr.neighbourhood?.trim() || addr.road?.trim() || '';
+    const result = await gpsEngine.acquireCurrentLocation();
+    setIsLocatingArea((prev) => ({ ...prev, [idx]: false }));
 
-          setServiceAreas((prev) => {
-            const copy = [...prev];
-            copy[idx] = {
-              ...copy[idx],
-              city: detectedCity || copy[idx].city,
-              state: detectedState || copy[idx].state,
-              country: addr.country?.trim() || 'India',
-              latitude: lat,
-              longitude: lon,
-              pincodes:
-                detectedPin && !copy[idx].pincodes.includes(detectedPin)
-                  ? [...copy[idx].pincodes, detectedPin]
-                  : copy[idx].pincodes,
-              areas:
-                locality && !copy[idx].areas.includes(locality)
-                  ? [...copy[idx].areas, locality]
-                  : copy[idx].areas,
-            };
-            return copy;
-          });
-        } catch {
-          alert('Could not determine address from GPS coordinates.');
-        } finally {
-          setIsLocatingArea((prev) => ({ ...prev, [idx]: false }));
-        }
-      },
-      (_err) => {
-        setIsLocatingArea((prev) => ({ ...prev, [idx]: false }));
-        alert('Location permission denied or unavailable.');
-      },
-      { timeout: 8000 }
-    );
+    if (result.success && result.location) {
+      const loc = result.location;
+      const detectedCity = loc.cityDisplayName;
+      const detectedState = loc.address.state || '';
+      const detectedPin = loc.address.postcode || '';
+      const locality = loc.localityDisplayName || '';
+
+      setServiceAreas((prev) => {
+        const copy = [...prev];
+        copy[idx] = {
+          ...copy[idx],
+          city: detectedCity || copy[idx].city,
+          state: detectedState || copy[idx].state,
+          country: loc.address.country || copy[idx].country || '',
+          latitude: loc.coordinates.latitude,
+          longitude: loc.coordinates.longitude,
+          pincodes:
+            detectedPin && !copy[idx].pincodes.includes(detectedPin)
+              ? [...copy[idx].pincodes, detectedPin]
+              : copy[idx].pincodes,
+          areas:
+            locality && !copy[idx].areas.includes(locality)
+              ? [...copy[idx].areas, locality]
+              : copy[idx].areas,
+        };
+        return copy;
+      });
+    } else {
+      alert(result.error?.userMessage || 'Could not determine address from GPS coordinates.');
+    }
   };
 
   const addAreaChip = (index: number) => {

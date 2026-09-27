@@ -322,10 +322,54 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
 
     const location = req.body.location || req.body.serviceLocation;
 
-    if (!location || !location.address || !location.city) {
+    if (!location) {
       res.status(400).json({
         success: false,
-        error: { code: 'INVALID_LOCATION', message: 'Full address and city are required.' },
+        error: { code: 'INVALID_LOCATION', message: 'Service location is required.' },
+      });
+      return;
+    }
+
+    const rawLat = location.coordinates?.latitude ?? location.latitude;
+    const rawLon = location.coordinates?.longitude ?? location.longitude;
+
+    // Validate coordinates if provided — reject (0,0) and out-of-range
+    if ((rawLat !== undefined && rawLat !== null) || (rawLon !== undefined && rawLon !== null)) {
+      if (!isValidApplicationCoordinate(rawLat, rawLon)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_COORDINATES',
+            message: 'Provided coordinates are invalid or represent [0,0]. Valid latitude (-90..90) and longitude (-180..180) are required.',
+          },
+        });
+        return;
+      }
+    }
+
+    const effectiveCity = (
+      location.city ||
+      location.cityDisplayName ||
+      location.address?.city ||
+      location.address?.town ||
+      location.address?.village ||
+      location.address?.municipality ||
+      location.address?.suburb ||
+      location.address?.district ||
+      ''
+    ).trim();
+
+    const effectiveAddress = (
+      (typeof location.address === 'string' ? location.address : '') ||
+      location.formattedAddress ||
+      location.displayName ||
+      ''
+    ).trim();
+
+    if (!effectiveCity || !effectiveAddress) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_LOCATION', message: 'A verified location address and city/area name are required.' },
       });
       return;
     }
@@ -339,20 +383,22 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     }
 
     const rawInput = complaint.trim();
-    const cleanCity = location.city.trim().toLowerCase();
-    const cleanPincode = location.pincode ? String(location.pincode).trim() : (location.postalCode ? String(location.postalCode).trim() : undefined);
-    const custLat = location.coordinates?.latitude ?? location.latitude;
-    const custLon = location.coordinates?.longitude ?? location.longitude;
+    const rawPin = location.pincode ?? location.postalCode ?? location.address?.postcode;
+    const cleanPincode = rawPin ? String(rawPin).trim() : undefined;
+    const custLat = rawLat !== undefined && rawLat !== null ? Number(rawLat) : undefined;
+    const custLon = rawLon !== undefined && rawLon !== null ? Number(rawLon) : undefined;
     const hasCustCoords = isValidApplicationCoordinate(custLat, custLon);
     // Unified authoritative coverage check — identical engine as service discovery
     // Prefer requested company (or user company context if manager/customer is testing)
     const userRole = (req.user as any)?.role;
     const requestedCompanyId = req.body.companyId || (userRole === 'SERVICE_MANAGER' || userRole === 'ADMIN' ? (req.user as any)?.companyId : undefined);
+    const effectiveArea = location.area || location.localityDisplayName || location.address?.suburb || location.address?.neighbourhood || undefined;
+
     let coverageResult = await resolveServiceCoverage({
       latitude: custLat,
       longitude: custLon,
-      city: location.city,
-      area: location.area,
+      city: effectiveCity,
+      area: effectiveArea,
       pincode: cleanPincode,
       serviceType,
       requestedCompanyId,
@@ -363,8 +409,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       coverageResult = await resolveServiceCoverage({
         latitude: custLat,
         longitude: custLon,
-        city: location.city,
-        area: location.area,
+        city: effectiveCity,
+        area: effectiveArea,
         pincode: cleanPincode,
         serviceType,
       });
@@ -375,7 +421,7 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         success: false,
         error: {
           code: 'SERVICE_UNAVAILABLE_AT_LOCATION',
-          message: `Servora ${serviceType} service is not currently available in ${location.city}${cleanPincode ? ' (' + cleanPincode + ')' : ''}.`,
+          message: `Servora ${serviceType} service is not currently available in ${effectiveCity}${cleanPincode ? ' (' + cleanPincode + ')' : ''}.`,
         },
       });
       return;
@@ -410,10 +456,10 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
         name: custName,
         phone: custPhone,
         email: custEmail,
-        address: location.address,
-        city: location.city,
-        pincode: location.pincode,
-        coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
+        address: effectiveAddress,
+        city: effectiveCity,
+        pincode: cleanPincode,
+        coordinates: hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined,
       });
     }
 
@@ -425,25 +471,25 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
 
     // Snapshot service location
     const legacyLocationSnapshot = {
-      address: location.address,
-      city: location.city,
-      area: location.area || '',
-      pincode: location.pincode || '',
-      coordinates: location.coordinates || (hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined),
-      locationSource: location.locationSource || 'MANUAL',
+      address: effectiveAddress,
+      city: effectiveCity,
+      area: effectiveArea || '',
+      pincode: cleanPincode || '',
+      coordinates: hasCustCoords ? { latitude: custLat, longitude: custLon } : undefined,
+      locationSource: location.locationSource || location.source || 'MANUAL',
     };
 
     const richLocationSnapshot = {
-      inputText: location.inputText || location.formattedAddress || location.address,
-      formattedAddress: location.formattedAddress || location.address,
-      city: location.city,
-      state: location.state,
-      country: location.country || 'India',
+      inputText: location.inputText || location.formattedAddress || effectiveAddress,
+      formattedAddress: location.formattedAddress || effectiveAddress,
+      city: effectiveCity,
+      state: location.state || location.address?.state || '',
+      country: location.country || location.address?.country || '',
       postalCode: cleanPincode,
-      latitude: custLat,
-      longitude: custLon,
-      provider: location.provider || 'nominatim',
-      placeId: location.placeId,
+      latitude: hasCustCoords ? custLat : 0,
+      longitude: hasCustCoords ? custLon : 0,
+      provider: location.provider || location.rawProviderData?.provider || 'nominatim',
+      placeId: location.placeId || location.rawProviderData?.placeId,
       resolvedAt: new Date(),
     };
 

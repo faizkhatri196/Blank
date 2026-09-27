@@ -4,31 +4,31 @@ import { calculateHaversineDistanceKm, createGeoPoint, isValidCoordinate } from 
 import { NominatimLocationProvider } from '../../src/services/location/NominatimProvider';
 
 describe('Location System & Geospatial Verification Suite', () => {
-  describe('A: Fuzzy Normalizer & Typo Tolerance', () => {
-    it('should normalize city typos e.g. Ahmedbad -> Ahmedabad', () => {
-      const norm = FuzzyNormalizer.normalize('Ahmedbad');
-      expect(norm.normalizedQuery.toLowerCase()).toContain('ahmedabad');
-      expect(norm.hasTypoCorrection).toBe(true);
+  describe('A: Fuzzy Normalizer & Generic Sanitization', () => {
+    it('should sanitize whitespace and punctuation without inventing city names', () => {
+      const norm = FuzzyNormalizer.normalize('   Random Town ; Area  ');
+      expect(norm.normalizedQuery).toBe('Random Town, Area');
+      expect(norm.normalizedQuery.toLowerCase()).not.toContain('ahmedabad');
     });
 
-    it('should extract postal codes correctly', () => {
+    it('should extract postal codes correctly from any query', () => {
       const norm1 = FuzzyNormalizer.normalize('380015');
       expect(norm1.extractedPostalCode).toBe('380015');
 
-      const norm2 = FuzzyNormalizer.normalize('Kalawad road, Rajkot 360005');
-      expect(norm2.extractedPostalCode).toBe('360005');
-      expect(norm2.normalizedQuery.toLowerCase()).toContain('rajkot');
+      const norm2 = FuzzyNormalizer.normalize('Main road, Sector 5 110001');
+      expect(norm2.extractedPostalCode).toBe('110001');
+      expect(norm2.normalizedQuery.toLowerCase()).toContain('sector 5');
     });
 
-    it('should normalize colloquial inputs e.g. Mandvi kutch', () => {
+    it('should normalize colloquial inputs without hardcoded city mapping', () => {
       const norm = FuzzyNormalizer.normalize('Mandvi kutch');
       expect(norm.normalizedQuery.toLowerCase()).toContain('mandvi');
       expect(norm.normalizedQuery.toLowerCase()).toContain('kutch');
     });
 
-    it('should handle partial addresses e.g. SG highway or Satellite', () => {
-      const norm = FuzzyNormalizer.normalize('SG highway');
-      expect(norm.normalizedQuery.toLowerCase()).toContain('sg highway');
+    it('should handle partial addresses e.g. Highway or Street', () => {
+      const norm = FuzzyNormalizer.normalize('Highway 44 ; Main road');
+      expect(norm.normalizedQuery.toLowerCase()).toContain('highway 44, main road');
     });
   });
 
@@ -108,34 +108,107 @@ describe('Location System & Geospatial Verification Suite', () => {
     }, 15000);
   });
 
-  describe('F: Hierarchical City & Area Search (Mundra & Localities)', () => {
-    it('should search and return verified Mundra city result with pincode 370421', async () => {
-      const results = await NominatimLocationProvider.search('Mundra');
-      expect(results.length).toBeGreaterThan(0);
-      const mundra = results.find((r) => r.city?.toLowerCase() === 'mundra' || r.town?.toLowerCase() === 'mundra' || r.formattedAddress.toLowerCase().includes('mundra'));
-      expect(mundra).toBeDefined();
-      expect(mundra?.postalCode).toBe('370421');
-    }, 15000);
+  describe('F: Hierarchical City & Area Search', () => {
+    it('should search and return verified city result with provider postcode', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => [
+          {
+            place_id: 12345,
+            lat: '22.8314',
+            lon: '69.7214',
+            display_name: 'Mundra, Kutch, Gujarat, 370421, India',
+            address: {
+              town: 'Mundra',
+              district: 'Kutch',
+              state: 'Gujarat',
+              country: 'India',
+              postcode: '370421',
+            },
+          },
+        ],
+      }) as any;
+
+      try {
+        const results = await NominatimLocationProvider.search('Mundra');
+        expect(results.length).toBeGreaterThan(0);
+        const mundra = results.find((r) => r.city?.toLowerCase() === 'mundra' || r.town?.toLowerCase() === 'mundra' || r.formattedAddress.toLowerCase().includes('mundra'));
+        expect(mundra).toBeDefined();
+        expect(mundra?.postalCode).toBe('370421');
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
 
     it('should return verified localities when searching within city context (e.g. Powai, Mumbai)', async () => {
-      const results = await NominatimLocationProvider.search('Powai', 'Mumbai');
-      expect(results.length).toBeGreaterThan(0);
-      const powai = results.find((r) => (r.locality || r.suburb || r.locationName || '').toLowerCase().includes('powai'));
-      expect(powai).toBeDefined();
-      expect(powai?.city?.toLowerCase()).toBe('mumbai');
-    }, 15000);
+      const originalFetch = global.fetch;
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => [
+          {
+            place_id: 67890,
+            lat: '19.1176',
+            lon: '72.9060',
+            display_name: 'Powai, Mumbai, Maharashtra, 400076, India',
+            address: {
+              suburb: 'Powai',
+              city: 'Mumbai',
+              state: 'Maharashtra',
+              country: 'India',
+              postcode: '400076',
+            },
+          },
+        ],
+      }) as any;
+
+      try {
+        const results = await NominatimLocationProvider.search('Powai', 'Mumbai');
+        expect(results.length).toBeGreaterThan(0);
+        const powai = results.find((r) => (r.locality || r.suburb || r.locationName || '').toLowerCase().includes('powai'));
+        expect(powai).toBeDefined();
+        expect(powai?.city?.toLowerCase()).toBe('mumbai');
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
 
     it('should return verified localities when searching within city context (e.g. Satellite, Ahmedabad)', async () => {
-      const results = await NominatimLocationProvider.search('Satellite', 'Ahmedabad');
-      expect(results.length).toBeGreaterThan(0);
-      const sat = results.find((r) =>
-        [r.locality, r.suburb, r.road, r.formattedAddress].some((f) => f?.toLowerCase().includes('satellite'))
-      );
-      expect(sat).toBeDefined();
-      expect([sat?.city, sat?.district].some((x) => x?.toLowerCase() === 'ahmedabad')).toBe(true);
-    }, 15000);
+      const originalFetch = global.fetch;
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => [
+          {
+            place_id: 11223,
+            lat: '23.0300',
+            lon: '72.5175',
+            display_name: 'Satellite, Ahmedabad, Gujarat, 380015, India',
+            address: {
+              suburb: 'Satellite',
+              city: 'Ahmedabad',
+              district: 'Ahmedabad',
+              state: 'Gujarat',
+              country: 'India',
+              postcode: '380015',
+            },
+          },
+        ],
+      }) as any;
 
-    it('should normalize Mundra pincode 370421 correctly', () => {
+      try {
+        const results = await NominatimLocationProvider.search('Satellite', 'Ahmedabad');
+        expect(results.length).toBeGreaterThan(0);
+        const sat = results.find((r) =>
+          [r.locality, r.suburb, r.road, r.formattedAddress].some((f) => f?.toLowerCase().includes('satellite'))
+        );
+        expect(sat).toBeDefined();
+        expect([sat?.city, sat?.district].some((x) => x?.toLowerCase() === 'ahmedabad')).toBe(true);
+      } finally {
+        global.fetch = originalFetch;
+      }
+    });
+
+    it('should normalize query with pincode correctly', () => {
       const norm = FuzzyNormalizer.normalize('Mundra 370421');
       expect(norm.extractedPostalCode).toBe('370421');
       expect(norm.normalizedQuery.toLowerCase()).toContain('mundra');

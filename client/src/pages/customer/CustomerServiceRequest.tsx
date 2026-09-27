@@ -8,6 +8,7 @@ import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from
 import { geocodeAddressOrCity } from '../../utils/locationSearch';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
 import { LocationHierarchySelector } from '../../components/common/LocationHierarchySelector';
+import { gpsEngine } from '../../services/gpsEngine';
 import {
   Sun,
   Wind,
@@ -60,7 +61,7 @@ export const CustomerServiceRequest: React.FC = () => {
   const [lng, setLng] = useState<number | undefined>(initialLng);
   const [address, setAddress] = useState<string>(initialAddress);
   const [locationSource, setLocationSource] = useState<'MANUAL' | 'GPS'>(savedLoc?.source === 'GPS' ? 'GPS' : 'MANUAL');
-  const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(savedLoc?.accuracy ?? undefined);
   const [locationTimestamp, setLocationTimestamp] = useState<string | undefined>(savedLoc?.timestamp);
   const initialCompanyId = searchParams.get('companyId') || undefined;
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | undefined>(initialCompanyId);
@@ -228,76 +229,43 @@ export const CustomerServiceRequest: React.FC = () => {
     }
   }, []);
 
-  // Browser Geolocation with real reverse geocoding (ZERO fallback to Ahmedabad)
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser. Please enter your city manually.');
-      return;
-    }
-
+  // Browser Geolocation with real reverse geocoding via gpsEngine
+  const handleUseCurrentLocation = async () => {
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          );
-          const data = await res.json();
-          const addr = data.address || {};
-          const houseNumber = addr.house_number?.trim() || undefined;
-          const road = addr.road?.trim() || undefined;
-          const neighbourhood = addr.neighbourhood?.trim() || undefined;
-          const suburb = addr.suburb?.trim() || undefined;
-          const village = addr.village?.trim() || undefined;
-          const town = addr.town?.trim() || undefined;
-          const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
-          const detectedCity =
-            addr.city?.trim() ||
-            addr.town?.trim() ||
-            addr.village?.trim() ||
-            addr.municipality?.trim() ||
-            district;
-          const detectedPin = addr.postcode ? String(addr.postcode).trim() : undefined;
-          const area = suburb || neighbourhood || village || town || road || undefined;
+    const result = await gpsEngine.acquireCurrentLocation();
+    setIsLocating(false);
 
-          if (detectedCity && typeof detectedCity === 'string') {
-            const finalLoc: CustomerLocation = {
-              city: detectedCity.trim(),
-              area,
-              state: addr.state?.trim() || undefined,
-              country: addr.country?.trim() || undefined,
-              pincode: detectedPin,
-              postcode: detectedPin,
-              houseNumber,
-              road,
-              neighbourhood,
-              suburb,
-              village,
-              town,
-              district,
-              latitude: lat,
-              longitude: lon,
-              formattedAddress: data.display_name,
-            };
-            handleStructuredLocationSelect(finalLoc);
-          } else {
-            alert('Could not determine city from GPS. Please enter your city or area manually.');
-          }
-        } catch {
-          alert('Could not retrieve GPS location. Please enter your city or area manually.');
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (_err) => {
-        setIsLocating(false);
-        alert('Location permission denied. Please enter your city or area manually.');
-      },
-      { timeout: 8000 }
-    );
+    if (result.success && result.location) {
+      const loc = result.location;
+      const finalLoc: CustomerLocation = {
+        city: loc.cityDisplayName,
+        area: loc.localityDisplayName,
+        state: loc.address.state,
+        country: loc.address.country,
+        pincode: loc.address.postcode || undefined,
+        postcode: loc.address.postcode || undefined,
+        houseNumber: loc.address.houseNumber,
+        road: loc.address.road,
+        neighbourhood: loc.address.neighbourhood,
+        suburb: loc.address.suburb,
+        village: loc.address.village,
+        town: loc.address.town,
+        district: loc.address.district,
+        latitude: loc.coordinates.latitude,
+        longitude: loc.coordinates.longitude,
+        accuracy: loc.accuracy,
+        source: 'gps',
+        timestamp: loc.timestamp,
+        formattedAddress: loc.formattedAddress,
+        canonical: loc,
+      };
+      handleStructuredLocationSelect(finalLoc);
+    } else {
+      alert(
+        result.error?.userMessage ||
+          'Unable to get your exact location. You can enter your location manually.'
+      );
+    }
   };
 
   // Handle Photo Upload

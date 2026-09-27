@@ -37,3 +37,5 @@ scratch/
 client/public/*.webp
 client/public/*.mp4
 *.tmp
+__pycache__/
+*.pyc

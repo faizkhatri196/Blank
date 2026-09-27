@@ -268,38 +268,62 @@ export async function fetchCityLocalities(city: string): Promise<StructuredLocat
  * Reverse geocodes coordinates via internal server endpoint to avoid CORS and browser rate-limits.
  * Guarantees that live GPS coordinates are NEVER dropped.
  */
+import { gpsEngine } from '../services/gpsEngine';
+import { ClientAddressParser } from './universalLocation';
+
+/**
+ * Reverse geocodes coordinates via internal server endpoint to avoid CORS and browser rate-limits.
+ * Universal and coordinate-driven without hardcoded city/country fallbacks.
+ */
 export async function reverseGeocodeCoords(
   latitude: number,
   longitude: number
 ): Promise<StructuredLocationSuggestion> {
+  if (!isValidApplicationCoordinate(latitude, longitude)) {
+    throw new Error('Invalid coordinates supplied for reverse geocoding');
+  }
+
   // 1. Try internal server endpoint first
   try {
-    const apiKey = getStoredGoogleMapsKey();
-    const headers: Record<string, string> = {};
-    if (apiKey) {
-      headers['x-google-maps-api-key'] = apiKey;
-    }
-
     const res = await apiClient.get('/location/reverse', {
       params: { lat: latitude, lon: longitude },
-      headers,
     });
 
     if (res.data?.success && res.data.data) {
       const d = res.data.data;
-      const city = d.city || d.locationName;
-      if (city) {
-        const area = d.area || d.locality;
-        const pincode = d.postalCode || undefined;
+      const canonical = d.canonicalLocation || ClientAddressParser.parse({
+        rawAddress: {
+          house_number: d.houseNumber,
+          road: d.road,
+          neighbourhood: d.neighbourhood,
+          suburb: d.suburb || d.area,
+          village: d.village,
+          town: d.town,
+          city: d.city,
+          district: d.district,
+          state: d.state,
+          country: d.country,
+          postcode: d.postcode || d.postalCode,
+        },
+        displayName: d.formattedAddress,
+        latitude,
+        longitude,
+        source: 'gps',
+        provider: 'server_nominatim',
+      });
+
+      if (canonical) {
         return {
-          city: city.trim(),
-          state: d.state || '',
-          country: d.country || 'India',
-          area: area?.trim(),
-          pincode,
+          city: canonical.cityDisplayName,
+          state: canonical.address.state || '',
+          country: canonical.address.country || '',
+          area: canonical.localityDisplayName,
+          pincode: canonical.address.postcode || undefined,
+          postcode: canonical.address.postcode || undefined,
           latitude,
           longitude,
-          formattedAddress: d.formattedAddress || `${city}, India`,
+          formattedAddress: canonical.formattedAddress,
+          geocodingStatus: 'VERIFIED',
         };
       }
     }
@@ -311,45 +335,33 @@ export async function reverseGeocodeCoords(
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
     const res = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     });
 
     if (res.ok) {
       const item = await res.json();
-      const addr = item.address || {};
-      const city =
-        addr.city ||
-        addr.town ||
-        addr.village ||
-        addr.municipality ||
-        addr.district ||
-        addr.state_district ||
-        addr.county ||
-        '';
-      const state = addr.state || '';
-      const country = addr.country || 'India';
-      const area =
-        addr.suburb ||
-        addr.neighbourhood ||
-        addr.residential ||
-        addr.road ||
-        undefined;
-      const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
-      const parts = [area, city, state, country].filter(Boolean);
-      const formattedAddress = parts.length > 0 ? parts.join(', ') : item.display_name;
+      const canonical = ClientAddressParser.parse({
+        rawAddress: item.address || {},
+        displayName: item.display_name,
+        latitude,
+        longitude,
+        source: 'gps',
+        provider: 'client_nominatim',
+        placeId: String(item.place_id),
+      });
 
-      if (city || formattedAddress) {
+      if (canonical) {
         return {
-          city: city.trim() || 'Detected Location',
-          state: state.trim(),
-          country: country.trim(),
-          area: area?.trim(),
-          pincode,
+          city: canonical.cityDisplayName,
+          state: canonical.address.state || '',
+          country: canonical.address.country || '',
+          area: canonical.localityDisplayName,
+          pincode: canonical.address.postcode || undefined,
+          postcode: canonical.address.postcode || undefined,
           latitude,
           longitude,
-          formattedAddress: formattedAddress || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+          formattedAddress: canonical.formattedAddress,
+          geocodingStatus: 'VERIFIED',
         };
       }
     }
@@ -357,64 +369,56 @@ export async function reverseGeocodeCoords(
     console.warn('Client reverse geocoding fallback failed:', err);
   }
 
-  // 3. Fallback: NEVER DROP LIVE COORDINATES!
+  // 3. Fallback: preserve live coordinates honestly without inventing place names
   return {
     city: 'Current Location',
     state: '',
-    country: 'India',
+    country: '',
     latitude,
     longitude,
     formattedAddress: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+    geocodingStatus: 'VERIFIED',
   };
 }
 
 export interface LiveLocationResult {
   latitude: number;
   longitude: number;
-  accuracy?: number;
+  accuracy?: number | null;
   source: 'gps';
   suggestion: StructuredLocationSuggestion;
 }
 
 /**
  * Authoritative live location acquirer:
- * 1. Attempts HTML5 Geolocation (browser GPS / WiFi) with maximumAge: 0 for fresh location
- * 2. If blocked, denied, or unavailable, falls back to Google Maps Geolocation API via server
- * 3. Falls back to network IP geolocation if available
- * 4. Enriches coordinates with reverse geocoding
+ * Uses 2-stage retry GPS Engine (high-accuracy -> standard accuracy).
+ * Never uses IP or server location.
  */
-export async function acquireLiveLocation(
-  timeoutMs: number = 8000
-): Promise<LiveLocationResult | null> {
-  // 1. Try Browser HTML5 Geolocation
-  if (typeof window !== 'undefined' && navigator.geolocation) {
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: timeoutMs,
-          maximumAge: 0,
-        });
-      });
-
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      const accuracy = pos.coords.accuracy;
-      const suggestion = await reverseGeocodeCoords(lat, lon);
-
-      return {
-        latitude: lat,
-        longitude: lon,
-        accuracy,
-        source: 'gps',
-        suggestion,
-      };
-    } catch (err: any) {
-      console.warn('HTML5 geolocation not available or denied, trying fallbacks:', err.message);
-    }
+export async function acquireLiveLocation(): Promise<LiveLocationResult | null> {
+  const result = await gpsEngine.acquireCurrentLocation();
+  if (!result.success || !result.location) {
+    return null;
   }
 
-  return null;
+  const loc = result.location;
+  return {
+    latitude: loc.coordinates.latitude,
+    longitude: loc.coordinates.longitude,
+    accuracy: loc.accuracy,
+    source: 'gps',
+    suggestion: {
+      city: loc.cityDisplayName,
+      state: loc.address.state || '',
+      country: loc.address.country || '',
+      area: loc.localityDisplayName,
+      pincode: loc.address.postcode || undefined,
+      postcode: loc.address.postcode || undefined,
+      latitude: loc.coordinates.latitude,
+      longitude: loc.coordinates.longitude,
+      formattedAddress: loc.formattedAddress,
+      geocodingStatus: 'VERIFIED',
+    },
+  };
 }
 
 /**

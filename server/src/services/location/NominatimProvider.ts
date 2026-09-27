@@ -1,5 +1,7 @@
 import { LocationSearchResult } from './types';
 import { FuzzyNormalizer } from './FuzzyNormalizer';
+import { UniversalAddressParser, CanonicalLocation } from './UniversalAddressParser';
+import { isValidApplicationCoordinate } from './geospatial';
 
 interface NominatimAddress {
   house_number?: string;
@@ -21,6 +23,7 @@ interface NominatimAddress {
 
 interface NominatimItem {
   place_id: number;
+  osm_id?: number;
   lat: string;
   lon: string;
   display_name: string;
@@ -31,6 +34,10 @@ interface NominatimItem {
 // In-memory cache for geocoding queries
 const cache = new Map<string, { data: LocationSearchResult[]; timestamp: number }>();
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
+
+export interface EnrichedReverseGeocodeResult extends LocationSearchResult {
+  canonicalLocation?: CanonicalLocation;
+}
 
 export class NominatimLocationProvider {
   /**
@@ -74,7 +81,7 @@ export class NominatimLocationProvider {
       if (response.ok) {
         const rawResults = (await response.json()) as NominatimItem[];
         if (Array.isArray(rawResults) && rawResults.length > 0) {
-          const mapped = rawResults.map((item) => this.mapNominatimItem(item, norm.hasTypoCorrection));
+          const mapped = rawResults.map((item) => this.mapNominatimItem(item));
           cache.set(cacheKey, { data: mapped, timestamp: Date.now() });
           return mapped;
         }
@@ -87,17 +94,11 @@ export class NominatimLocationProvider {
   }
 
   /**
-   * Reverse geocode coordinates to structured address.
+   * Reverse geocode coordinates to structured address using UniversalAddressParser.
+   * Coordinate-driven, zero city defaults.
    */
-  public static async reverseGeocode(latitude: number, longitude: number): Promise<LocationSearchResult | null> {
-    if (typeof latitude !== 'number' || typeof longitude !== 'number' || isNaN(latitude) || isNaN(longitude)) {
-      return null;
-    }
-    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      return null;
-    }
-    // Reject (0,0) - Gulf of Guinea / Null Island
-    if (latitude === 0 && longitude === 0) {
+  public static async reverseGeocode(latitude: number, longitude: number): Promise<EnrichedReverseGeocodeResult | null> {
+    if (!isValidApplicationCoordinate(latitude, longitude)) {
       return null;
     }
 
@@ -117,21 +118,47 @@ export class NominatimLocationProvider {
 
       if (response.ok) {
         const item = (await response.json()) as NominatimItem;
-        const mapped = this.mapNominatimItem(item, false);
+        const latNum = parseFloat(item.lat);
+        const lonNum = parseFloat(item.lon);
+        const finalLat = isFinite(latNum) ? latNum : latitude;
+        const finalLon = isFinite(lonNum) ? lonNum : longitude;
+
+        // Parse through UniversalAddressParser
+        const canonical = UniversalAddressParser.parse({
+          rawAddress: item.address,
+          displayName: item.display_name,
+          latitude: finalLat,
+          longitude: finalLon,
+          source: 'gps',
+          provider: 'nominatim',
+          placeId: String(item.place_id),
+          osmId: item.osm_id ? String(item.osm_id) : undefined,
+        });
+
+        if (!canonical) {
+          return null;
+        }
+
         const hasResolvedPlace = Boolean(
-          mapped.city ||
-          mapped.town ||
-          mapped.village ||
-          mapped.suburb ||
-          mapped.neighbourhood ||
-          mapped.road ||
-          mapped.locality ||
-          mapped.district
+          canonical.address.city ||
+          canonical.address.town ||
+          canonical.address.village ||
+          canonical.address.suburb ||
+          canonical.address.neighbourhood ||
+          canonical.address.road ||
+          canonical.address.district ||
+          canonical.localityDisplayName
         );
+
         if (!hasResolvedPlace) {
           return null;
         }
-        return mapped;
+
+        const legacy = this.mapNominatimItem(item);
+        return {
+          ...legacy,
+          canonicalLocation: canonical,
+        };
       }
     } catch {
       // Geocoding failure non-blocking, return null
@@ -140,22 +167,45 @@ export class NominatimLocationProvider {
     return null;
   }
 
-  public static mapNominatimItem(item: NominatimItem, wasCorrected = false): LocationSearchResult {
+  public static mapNominatimItem(item: NominatimItem): LocationSearchResult {
+    const latNum = parseFloat(item.lat);
+    const lonNum = parseFloat(item.lon);
+
+    const canonical = UniversalAddressParser.parse({
+      rawAddress: item.address,
+      displayName: item.display_name,
+      latitude: latNum,
+      longitude: lonNum,
+      source: 'manual_search',
+      provider: 'nominatim',
+      placeId: String(item.place_id),
+      osmId: item.osm_id ? String(item.osm_id) : undefined,
+    });
+
     const addr = item.address || {};
-    const houseNumber = addr.house_number?.trim() || undefined;
-    const road = addr.road?.trim() || undefined;
-    const neighbourhood = addr.neighbourhood?.trim() || undefined;
-    const suburb = addr.suburb?.trim() || undefined;
-    const village = addr.village?.trim() || undefined;
-    const town = addr.town?.trim() || undefined;
-    const countyName = addr.county?.replace(/\s+(taluka|tehsil|mandal|subdistrict|block)\b/gi, '').trim() || undefined;
-    const city = addr.city?.trim() || addr.town?.trim() || addr.village?.trim() || addr.municipality?.trim() || countyName || undefined;
-    const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
-    const state = addr.state?.trim() || undefined;
-    const country = addr.country?.trim() || undefined;
-    // Rule: Postal PIN/postcode MUST come only from the geocoder's actual postcode field. If unavailable, undefined.
-    const postcode = addr.postcode ? String(addr.postcode).trim() : undefined;
-    const locality = suburb || neighbourhood || village || town || road || undefined;
+    const houseNumber = canonical?.address.houseNumber;
+    const road = canonical?.address.road;
+    const neighbourhood = canonical?.address.neighbourhood;
+    const suburb = canonical?.address.suburb;
+    const village = canonical?.address.village;
+    const town = canonical?.address.town;
+    const hasPlace = Boolean(
+      canonical?.address.city ||
+      canonical?.address.town ||
+      canonical?.address.village ||
+      canonical?.address.suburb ||
+      canonical?.address.neighbourhood ||
+      canonical?.address.road ||
+      canonical?.address.district ||
+      canonical?.localityDisplayName
+    );
+    const city = hasPlace ? canonical?.cityDisplayName : undefined;
+    const district = canonical?.address.district;
+    const state = canonical?.address.state;
+    const country = canonical?.address.country;
+    // Strict postcode preservation: If missing from provider, undefined. Never guess!
+    const postcode = canonical?.address.postcode || undefined;
+    const locality = canonical?.localityDisplayName;
 
     return {
       formattedAddress: item.display_name,
@@ -172,11 +222,11 @@ export class NominatimLocationProvider {
       postcode,
       postalCode: postcode,
       locality,
-      latitude: parseFloat(item.lat),
-      longitude: parseFloat(item.lon),
+      latitude: latNum,
+      longitude: lonNum,
       placeId: String(item.place_id),
       provider: 'nominatim',
-      confidence: wasCorrected ? 0.85 : 0.98,
+      confidence: 0.98,
     };
   }
 }

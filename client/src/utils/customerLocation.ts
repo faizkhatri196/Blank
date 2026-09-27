@@ -1,3 +1,5 @@
+import { CanonicalLocation } from './universalLocation';
+
 export interface CustomerLocation {
   city: string;
   state?: string;
@@ -16,9 +18,10 @@ export interface CustomerLocation {
   longitude?: number;
   formattedAddress?: string;
   source?: string;
-  accuracy?: number;
+  accuracy?: number | null;
   timestamp?: string;
   placeId?: string;
+  canonical?: CanonicalLocation;
 }
 
 const GUEST_STORAGE_KEY = 'servora.customer.guest_location';
@@ -62,10 +65,19 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.city === 'string' && parsed.city.trim().length > 0) {
+    const effectiveCity = (
+      parsed.city ||
+      parsed.town ||
+      parsed.village ||
+      parsed.district ||
+      parsed.suburb ||
+      (parsed.formattedAddress ? parsed.formattedAddress.split(',')[0].trim() : '')
+    );
+
+    if (effectiveCity && typeof effectiveCity === 'string' && effectiveCity.trim().length > 0) {
       const pin = parsed.postcode || parsed.pincode;
       return {
-        city: parsed.city.trim(),
+        city: effectiveCity.trim(),
         state: parsed.state ? String(parsed.state).trim() : undefined,
         country: parsed.country ? String(parsed.country).trim() : undefined,
         area: parsed.area ? String(parsed.area).trim() : undefined,
@@ -80,6 +92,9 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
         district: parsed.district ? String(parsed.district).trim() : undefined,
         latitude: typeof parsed.latitude === 'number' ? parsed.latitude : undefined,
         longitude: typeof parsed.longitude === 'number' ? parsed.longitude : undefined,
+        accuracy: typeof parsed.accuracy === 'number' ? parsed.accuracy : null,
+        source: parsed.source ? String(parsed.source) : 'saved',
+        timestamp: parsed.timestamp ? String(parsed.timestamp) : undefined,
         formattedAddress: parsed.formattedAddress ? String(parsed.formattedAddress).trim() : undefined,
       };
     }
@@ -90,17 +105,28 @@ export function getCustomerSavedLocation(userId?: string): CustomerLocation | nu
 }
 
 /**
- * Save customer location explicitly selected by the customer.
+ * Save customer location explicitly selected or confirmed by the customer.
  */
 export function saveCustomerLocation(location: CustomerLocation, userId?: string): void {
   if (typeof window === 'undefined') return;
   purgeLegacyLocationKeys();
 
   try {
-    if (!location || !location.city || !location.city.trim()) return;
+    if (!location) return;
+    const effectiveCity = (
+      location.city ||
+      location.town ||
+      location.village ||
+      location.district ||
+      location.suburb ||
+      (location.formattedAddress ? location.formattedAddress.split(',')[0].trim() : '')
+    );
+
+    if (!effectiveCity || !effectiveCity.trim()) return;
+
     const pin = location.postcode || location.pincode;
     const cleanLocation: CustomerLocation = {
-      city: location.city.trim(),
+      city: effectiveCity.trim(),
       state: location.state ? String(location.state).trim() : undefined,
       country: location.country ? String(location.country).trim() : undefined,
       area: location.area ? String(location.area).trim() : undefined,
@@ -115,6 +141,9 @@ export function saveCustomerLocation(location: CustomerLocation, userId?: string
       district: location.district ? String(location.district).trim() : undefined,
       latitude: typeof location.latitude === 'number' ? location.latitude : undefined,
       longitude: typeof location.longitude === 'number' ? location.longitude : undefined,
+      accuracy: typeof location.accuracy === 'number' ? location.accuracy : null,
+      source: location.source ? String(location.source) : 'saved',
+      timestamp: location.timestamp || new Date().toISOString(),
       formattedAddress: location.formattedAddress ? String(location.formattedAddress).trim() : undefined,
     };
     const key = getScopedLocationKey(userId);

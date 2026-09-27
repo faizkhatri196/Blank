@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import { Search, MapPin, Navigation, Loader2 } from 'lucide-react';
 import { searchLocations, reverseGeocodeLocation, LocationSuggestion } from '../../api/location';
+import { gpsEngine } from '../../services/gpsEngine';
 
 interface LocationMapPickerProps {
   latitude?: number | null;
@@ -268,25 +269,18 @@ export const LocationMapPicker: React.FC<LocationMapPickerProps> = ({
     }
   };
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
-      return;
+  const handleUseCurrentLocation = async () => {
+    const result = await gpsEngine.acquireCurrentLocation();
+    if (result.success && result.location) {
+      const lat = result.location.coordinates.latitude;
+      const lng = result.location.coordinates.longitude;
+      updateLocationFromCoords(lat, lng, currentRadius);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.setView([lat, lng], 13, { animate: true });
+      }
+    } else {
+      alert(result.error?.userMessage || 'Could not retrieve current location.');
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        updateLocationFromCoords(lat, lng, currentRadius);
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView([lat, lng], 13, { animate: true });
-        }
-      },
-      (err) => {
-        alert('Could not retrieve current location: ' + err.message);
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
   };
 
   return (

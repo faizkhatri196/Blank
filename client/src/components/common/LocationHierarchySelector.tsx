@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2, X, Compass, Building, ChevronRight } from 'lucide-react';
 import { searchLocations, fetchCityLocalities, StructuredLocationSuggestion } from '../../utils/locationSearch';
 import { CustomerLocation } from '../../utils/customerLocation';
+import { gpsEngine } from '../../services/gpsEngine';
 
 interface LocationHierarchySelectorProps {
   currentLocation?: CustomerLocation | null;
@@ -228,120 +229,49 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
   };
 
   // GPS Detection — explicit user action only, never auto-called on page load
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser. Please search for your location manually.');
-      return;
-    }
-
+  const handleUseCurrentLocation = async () => {
     setIsLocating(true);
     setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
+    citySearchRequestId.current++; // Invalidate any in-flight search queries
 
-          // Validate GPS coordinates — (0,0) would be Gulf of Guinea, not India
-          if (lat === 0 && lon === 0) {
-            setGpsError('GPS returned an invalid location (0°, 0°). Please search manually.');
-            setIsLocating(false);
-            return;
-          }
+    const result = await gpsEngine.acquireCurrentLocation();
+    setIsLocating(false);
 
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { Accept: 'application/json' } }
-          );
-          if (res.ok) {
-            const data = await res.json();
-            const addr = data.address || {};
-            const houseNumber = addr.house_number?.trim() || undefined;
-            const road = addr.road?.trim() || undefined;
-            const neighbourhood = addr.neighbourhood?.trim() || undefined;
-            const suburb = addr.suburb?.trim() || undefined;
-            const village = addr.village?.trim() || undefined;
-            const town = addr.town?.trim() || undefined;
-            const district = addr.state_district?.trim() || addr.district?.trim() || addr.county?.trim() || undefined;
-            const city =
-              addr.city?.trim() ||
-              addr.town?.trim() ||
-              addr.village?.trim() ||
-              addr.municipality?.trim() ||
-              district;
+    if (result.success && result.location) {
+      const loc = result.location;
+      const finalLoc: CustomerLocation = {
+        city: loc.cityDisplayName,
+        area: loc.localityDisplayName,
+        state: loc.address.state,
+        country: loc.address.country,
+        pincode: loc.address.postcode || undefined,
+        postcode: loc.address.postcode || undefined,
+        houseNumber: loc.address.houseNumber,
+        road: loc.address.road,
+        neighbourhood: loc.address.neighbourhood,
+        suburb: loc.address.suburb,
+        village: loc.address.village,
+        town: loc.address.town,
+        district: loc.address.district,
+        latitude: loc.coordinates.latitude,
+        longitude: loc.coordinates.longitude,
+        accuracy: loc.accuracy,
+        source: 'gps',
+        timestamp: loc.timestamp,
+        formattedAddress: loc.formattedAddress,
+        canonical: loc,
+      };
 
-            if (!city) {
-              setGpsError('GPS detected your location but could not determine the city name. Please search manually.');
-              setIsLocating(false);
-              return;
-            }
-            const state = addr.state?.trim() || undefined;
-            const country = addr.country?.trim() || undefined;
-            const area = suburb || neighbourhood || village || town || road || undefined;
-            const pincode = addr.postcode ? String(addr.postcode).trim() : undefined;
-
-            const finalLoc: CustomerLocation = {
-              city,
-              area,
-              state,
-              country,
-              pincode,
-              postcode: pincode,
-              houseNumber,
-              road,
-              neighbourhood,
-              suburb,
-              village,
-              town,
-              district,
-              latitude: lat,
-              longitude: lon,
-              formattedAddress: data.display_name,
-            };
-
-            setSelectedCity({
-              city,
-              state: state || '',
-              country: country || '',
-              area,
-              pincode,
-              postcode: pincode,
-              houseNumber,
-              road,
-              neighbourhood,
-              suburb,
-              village,
-              town,
-              district,
-              latitude: lat,
-              longitude: lon,
-              formattedAddress: data.display_name,
-            });
-            setAreaQuery(area || '');
-            setMode('confirmed');
-            onLocationSelected(finalLoc);
-          } else {
-            setGpsError('Could not resolve GPS coordinates to a city. Please search manually.');
-          }
-        } catch (err) {
-          console.error('Reverse geocode failed:', err);
-          setGpsError('GPS location service failed. Please search for your city manually.');
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (err) => {
-        setIsLocating(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          setGpsError('Location permission denied. Please search for your city manually.');
-        } else if (err.code === err.TIMEOUT) {
-          setGpsError('GPS timed out. Please search for your city manually.');
-        } else {
-          setGpsError('Unable to get GPS location. Please search for your city manually.');
-        }
-      },
-      { timeout: 8000, enableHighAccuracy: false }
-    );
+      setSelectedCity(finalLoc);
+      setAreaQuery(loc.localityDisplayName || '');
+      setMode('confirmed');
+      onLocationSelected(finalLoc);
+    } else {
+      setGpsError(
+        result.error?.userMessage ||
+          'Unable to get your exact location. You can enter your location manually.'
+      );
+    }
   };
 
   return (
@@ -416,8 +346,8 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
               disabled={isLocating}
               className="text-[11px] font-semibold text-slate-500 hover:text-emerald-600 flex items-center gap-1 transition-colors"
             >
-              <Compass className={`w-3 h-3 ${isLocating ? 'animate-spin text-emerald-600' : ''}`} />
-              <span>{isLocating ? 'Locating...' : 'Use GPS'}</span>
+              <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-emerald-600' : ''}`} />
+              <span>{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
             </button>
           </div>
 
@@ -441,7 +371,7 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
               onFocus={() => {
                 if (citySuggestions.length > 0) setIsCityOpen(true);
               }}
-              placeholder="Type city name (e.g. Mandvi, Mundra, Ahmedabad, Rajkot)..."
+              placeholder="Type city, town, village, or postal code..."
               className="w-full pl-10 pr-9 py-2.5 text-sm border border-slate-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white text-slate-900 font-medium shadow-2xs"
               autoFocus
             />
@@ -482,7 +412,7 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
                           {s.city || s.formattedAddress.split(',')[0]}
                         </div>
                         <div className="text-xs text-slate-500 truncate mt-0.5">
-                          {s.state} {s.pincode ? `• Pincode: ${s.pincode}` : ''} • {s.country || 'India'}
+                          {[s.state, s.pincode ? `Pincode: ${s.pincode}` : null, s.country].filter(Boolean).join(' • ')}
                         </div>
                       </div>
                     </div>
@@ -495,37 +425,8 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 pt-1">
-            <span className="text-slate-400 font-medium">Quick Select:</span>
-            {['Mandvi', 'Mundra', 'Ahmedabad', 'Rajkot', 'Surat', 'Wankaner'].map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => {
-                  setCityQuery(c);
-                  // Use the backend search which uses KNOWN_PLACES (guaranteed to resolve Mandvi/Wankaner)
-                  searchLocations(c).then((results) => {
-                    if (results.length > 0) {
-                      handleSelectCity(results[0]);
-                    } else {
-                      // Fallback: construct a city-only location from the known quick-select name
-                      handleSelectCity({
-                        city: c,
-                        state: 'Gujarat',
-                        country: 'India',
-                        formattedAddress: `${c}, Gujarat, India`,
-                        latitude: undefined as any,
-                        longitude: undefined as any,
-                        geocodingStatus: 'MISSING',
-                      });
-                    }
-                  });
-                }}
-                className="px-2 py-0.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-md font-semibold text-slate-700 transition-colors text-[11px]"
-              >
-                {c}
-              </button>
-            ))}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-1">
+            <span>Enter your city, town, village, or PIN code to find verified coverage.</span>
           </div>
         </div>
       )}
