@@ -2,13 +2,28 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-console.log('=== SERVORA DEMO PITCH DECK PDF BUILDER ===');
+console.log('=== SERVORA DEMO PITCH DECK PDF BUILDER (WITH OFFICIAL LOGO) ===');
+
+// Load Servora Official Logo as Base64 Data URI
+const projectDir = path.join(__dirname, '..');
+const galleryDir = path.join(projectDir, '..', 'Servora Gallery');
+
+let logoPath = path.join(galleryDir, 'Servora.png');
+if (!fs.existsSync(logoPath)) {
+  logoPath = path.join(projectDir, 'client', 'public', 'servora-logo.png');
+}
+
+console.log('Reading official logo from:', logoPath);
+const logoBuffer = fs.readFileSync(logoPath);
+const logoBase64 = logoBuffer.toString('base64');
+const logoDataUri = `data:image/png;base64,${logoBase64}`;
+console.log('Logo loaded successfully! Size:', (logoBuffer.length / 1024).toFixed(1), 'KB');
 
 const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Servora — Executive Demo Pitch Deck</title>
+  <title>Servora — Executive Product & Architecture Presentation</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
 
@@ -51,7 +66,7 @@ const htmlContent = `<!DOCTYPE html>
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 22px;
+      padding-bottom: 20px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       position: relative;
       z-index: 10;
@@ -63,18 +78,14 @@ const htmlContent = `<!DOCTYPE html>
       gap: 16px;
     }
 
-    .brand-logo-badge {
-      width: 44px;
-      height: 44px;
+    .brand-logo-img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
       border-radius: 12px;
-      background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 24px;
-      color: #FFFFFF;
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
     }
 
     .brand-name {
@@ -351,23 +362,27 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora Logo" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Smarter Field Service Operations</div>
         </div>
       </div>
       <div class="header-category">
-        <span class="category-badge">YC W26 APPLICATION &bull; INVESTOR DEMO</span>
+        <span class="category-badge">EXECUTIVE PRODUCT DEMO &bull; PILOT LAUNCH DECK</span>
         <span class="slide-number">01 / 10</span>
       </div>
     </div>
 
     <div style="margin: auto 0; max-width: 1400px;">
-      <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-        <span class="pill pill-indigo">SOLAR PV &bull; AC / HVAC INFRASTRUCTURE</span>
-        <span class="pill pill-emerald">CLOSED-LOOP AI COPILOT</span>
-        <span class="pill pill-amber">MANDVI &bull; KUTCH PILOT GROUNDED</span>
+      <!-- Hero Logo & Badges -->
+      <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px;">
+        <img src="${logoDataUri}" style="width: 76px; height: 76px; object-fit: contain; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 0 35px rgba(99, 102, 241, 0.4);" alt="Servora" />
+        <div style="display: flex; gap: 12px;">
+          <span class="pill pill-indigo">SOLAR PV &bull; AC / HVAC INFRASTRUCTURE</span>
+          <span class="pill pill-emerald">CLOSED-LOOP AI COPILOT</span>
+          <span class="pill pill-amber">MANDVI &bull; KUTCH PILOT GROUNDED</span>
+        </div>
       </div>
 
       <h1 class="hero-title">
@@ -399,13 +414,13 @@ const htmlContent = `<!DOCTYPE html>
 
         <div style="font-size: 15px; color: #94A3B8;">
           <strong style="color: #FFFFFF;">Founder & CEO:</strong> Faiz Khatri &bull; Gujarat, India<br>
-          <strong style="color: #FFFFFF;">Live 3-Min Demonstration:</strong> <code>SERVORA_3MIN_YC_DEMO.mp4</code>
+          <strong style="color: #FFFFFF;">Live 3-Min Video Walkthrough:</strong> <code>SERVORA_3MIN_YC_DEMO.mp4</code>
         </div>
       </div>
     </div>
 
     <div class="slide-footer">
-      <div>CONFIDENTIAL &bull; FOR AUTHORIZED INVESTOR & PILOT EVALUATION ONLY</div>
+      <div>CONFIDENTIAL &bull; FOR AUTHORIZED ENTERPRISE PILOT EVALUATION ONLY</div>
       <div>SERVORA TECHNOLOGIES &copy; 2026 &bull; <span class="footer-highlight">PROPRIETARY OPERATIONS IP</span></div>
     </div>
   </section>
@@ -414,7 +429,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Problem Validation</div>
@@ -464,7 +479,7 @@ const htmlContent = `<!DOCTYPE html>
           <div class="pill pill-emerald" style="margin-bottom: 16px;">Bottleneck 3: Random Dispatch</div>
           <h3 style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin-bottom: 12px;">Unskilled Assignment</h3>
           <p style="font-size: 15px; color: #94A3B8; line-height: 1.5; margin-bottom: 20px;">
-            Legacy dispatch tools match solely on GPS proximity. They send an AC duct cleaner to a 10kW high-voltage solar string inverter issue, creating severe safety risks and warranty voidance.
+            Legacy dispatch tools match solely on GPS proximity. They send a junior apprentice to a 10kW high-voltage solar string inverter issue, creating severe safety risks and warranty voidance.
           </p>
           <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 14px; border: 1px dashed rgba(16, 185, 129, 0.3);">
             <div style="font-size: 12px; font-weight: 700; color: #10B981; text-transform: uppercase;">The AI Hallucination Fear:</div>
@@ -484,7 +499,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">System Architecture</div>
@@ -499,7 +514,7 @@ const htmlContent = `<!DOCTYPE html>
     <div>
       <h2 class="section-title">The Servora Closed-Loop Execution Platform</h2>
       <p class="section-subtitle">
-        Not another CRM or ticketing tool. An operational intelligence system that connects physical field reality to deterministic dispatch.
+        Not another CRM or generic ticketing tool. An operational intelligence system that connects physical field reality to deterministic dispatch.
       </p>
 
       <div class="grid-3">
@@ -527,7 +542,7 @@ const htmlContent = `<!DOCTYPE html>
             <li><strong>Tools Onboard (20%)</strong>: Multimeter, clamp meter verified</li>
             <li><strong>Status (20%)</strong>: Available route slot</li>
             <li><strong>Proximity (10%)</strong>: Travel overhead cut by 34%</li>
-            <li><strong>Experience (10%)</strong>: Years on specific OEM models</li>
+            <li><strong>Experience (10%)</strong>: Years on specific equipment types</li>
           </ul>
         </div>
 
@@ -556,7 +571,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Interactive Demonstration</div>
@@ -571,7 +586,7 @@ const htmlContent = `<!DOCTYPE html>
     <div>
       <h2 class="section-title">The 3-Minute Live App Choreography (Mandvi, Kutch)</h2>
       <p class="section-subtitle">
-        Captured live without slides or mockups in <code>SERVORA_3MIN_YC_DEMO.mp4</code> across all 3 portals.
+        Recorded live without slides or mockups in <code>SERVORA_3MIN_YC_DEMO.mp4</code> across all 3 portals.
       </p>
 
       <div class="grid-4">
@@ -635,7 +650,7 @@ const htmlContent = `<!DOCTYPE html>
       <div style="margin-top: 24px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
         <div style="display: flex; gap: 16px; align-items: center;">
           <span class="pill pill-indigo">VIDEO SPECS</span>
-          <span style="font-size: 14px; color: #CBD5E1;">Exact 180.00s Duration &bull; 1920x1080 Full HD @ 24fps &bull; Size: 18.41 MB (YC Format Optimized)</span>
+          <span style="font-size: 14px; color: #CBD5E1;">Exact 180.00s Duration &bull; 1920x1080 Full HD @ 24fps &bull; Size: 18.41 MB &bull; H.264 Progressive</span>
         </div>
         <div style="font-size: 13px; color: #818CF8; font-weight: 600;">
           File location: <code>SERVORA_3MIN_YC_DEMO.mp4</code>
@@ -653,7 +668,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">User Experience</div>
@@ -732,7 +747,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Defensibility</div>
@@ -811,7 +826,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Customer Discovery</div>
@@ -833,12 +848,12 @@ const htmlContent = `<!DOCTYPE html>
         <div class="glass-card">
           <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin-bottom: 14px;">The Kutch Operational Reality</h3>
           <p style="font-size: 15px; color: #94A3B8; line-height: 1.5; margin-bottom: 16px;">
-            Mandvi and Kutch represent Gujarat's highest rooftop solar density per capita under the SURYA Gujarat initiative, but suffer unique coastal operating challenges:
+            Mandvi and Kutch represent Gujarat's highest rooftop solar density per capita under regional solar initiatives, but suffer unique coastal operating challenges:
           </p>
           <ul class="feature-list">
             <li><strong>Severe Coastal Salt Corrosion</strong>: High salinity causes frequent DC isolator cartridge burnout and copper oxidation on inverters within 18 months.</li>
             <li><strong>Critical Technician Scarcity</strong>: Contractors employ general electricians who misdiagnose inverter firmware cutoffs as dead panels, wasting days.</li>
-            <li><strong>Delayed Billing & Churn</strong>: 30–60 day paperwork turnaround before contractors can collect government subsidy maintenance payouts.</li>
+            <li><strong>Delayed Billing & Churn</strong>: 30–60 day paperwork turnaround before contractors can collect service payments.</li>
           </ul>
         </div>
 
@@ -897,7 +912,7 @@ const htmlContent = `<!DOCTYPE html>
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
           <div class="brand-tagline">Business Model</div>
@@ -953,7 +968,7 @@ const htmlContent = `<!DOCTYPE html>
           <p style="font-size: 13px; color: #94A3B8; margin-bottom: 16px;">($480/mo &bull; Multi-Branch & OEM Integration)</p>
           <ul class="feature-list" style="font-size: 14px;">
             <li>Unlimited Field Technicians & Branch Depots</li>
-            <li>Direct OEM Inverter Telemetry API integration</li>
+            <li>Direct OEM Telemetry API integration</li>
             <li>Custom Warranty Claim Automation</li>
             <li>Dedicated Enterprise SLA & Account Manager</li>
           </ul>
@@ -979,18 +994,18 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </section>
 
-  <!-- ==================== SLIDE 9: COMPETITION ==================== -->
+  <!-- ==================== SLIDE 9: COMPETITIVE POSITIONING ==================== -->
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
-          <div class="brand-tagline">Competitive Landscape</div>
+          <div class="brand-tagline">Competitive Positioning</div>
         </div>
       </div>
       <div class="header-category">
-        <span class="category-badge">MARKET POSITIONING</span>
+        <span class="category-badge">MARKET ADVANTAGE</span>
         <span class="slide-number">09 / 10</span>
       </div>
     </div>
@@ -998,7 +1013,7 @@ const htmlContent = `<!DOCTYPE html>
     <div>
       <h2 class="section-title">Why Servora Wins: High-Voltage Vertical Specialization</h2>
       <p class="section-subtitle">
-        Generic CRMs don't understand inverters; consumer marketplaces commoditize technicians instead of empowering operations.
+        Legacy desktop software doesn't understand inverters; generic gig portals commoditize technicians without solving operational failures.
       </p>
 
       <table class="deck-table" style="background: rgba(15, 23, 42, 0.7); border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08);">
@@ -1006,9 +1021,9 @@ const htmlContent = `<!DOCTYPE html>
           <tr>
             <th>Operational Capability</th>
             <th style="color: #818CF8; font-size: 14px;">⚡ Servora</th>
-            <th>Generic CRMs (HubSpot / SFDC)</th>
-            <th>Legacy FSM (Jobber / ServiceTitan)</th>
-            <th>Consumer Apps (Urban Company)</th>
+            <th>Legacy Desktop CRMs</th>
+            <th>Generic Work Order Tools</th>
+            <th>Consumer Gig Portals</th>
           </tr>
         </thead>
         <tbody>
@@ -1057,14 +1072,14 @@ const htmlContent = `<!DOCTYPE html>
     </div>
   </section>
 
-  <!-- ==================== SLIDE 10: ROADMAP & ASK ==================== -->
+  <!-- ==================== SLIDE 10: ROADMAP & CONTACT ==================== -->
   <section class="slide">
     <div class="slide-header">
       <div class="brand-area">
-        <div class="brand-logo-badge">S</div>
+        <img src="${logoDataUri}" class="brand-logo-img" alt="Servora" />
         <div>
           <div class="brand-name">SERVORA</div>
-          <div class="brand-tagline">Vision & Next Steps</div>
+          <div class="brand-tagline">Vision & Roadmap</div>
         </div>
       </div>
       <div class="header-category">
@@ -1074,7 +1089,7 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <div>
-      <h2 class="section-title">Milestone Roadmap & Y Combinator Acceleration</h2>
+      <h2 class="section-title">Milestone Roadmap & Enterprise Scaling</h2>
       <p class="section-subtitle">
         Scaling from verified Gujarat pilot contractors to global clean-energy and electrification field operations.
       </p>
@@ -1096,7 +1111,7 @@ const htmlContent = `<!DOCTYPE html>
           <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 8px 0 12px 0;">National Clean-Tech Expansion</h3>
           <ul class="feature-list" style="font-size: 14px;">
             <li>Expand across India's top 6 solar states (Gujarat, Rajasthan, Maharashtra, Karnataka).</li>
-            <li>Automated inverter warranty claim processing directly with Microtek, Luminous & Havells.</li>
+            <li>Automated inverter warranty claim processing directly with Tier-1 OEM manufacturers.</li>
             <li>Surpass ₹1.5 Crore ($180,000) ARR with 120+ active fleets.</li>
           </ul>
         </div>
@@ -1113,9 +1128,12 @@ const htmlContent = `<!DOCTYPE html>
       </div>
 
       <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 16px; padding: 22px 32px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-size: 20px; font-weight: 900; color: #FFFFFF;">Faiz Khatri &bull; Founder & CEO</div>
-          <div style="font-size: 14px; color: #94A3B8; margin-top: 4px;">Servora Technologies &bull; Building the Future of Clean-Tech Operations</div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+          <img src="${logoDataUri}" style="width: 52px; height: 52px; object-fit: contain; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);" alt="Servora" />
+          <div>
+            <div style="font-size: 20px; font-weight: 900; color: #FFFFFF;">Faiz Khatri &bull; Founder & CEO</div>
+            <div style="font-size: 14px; color: #94A3B8; margin-top: 4px;">Servora Technologies &bull; Building the Future of Clean-Tech Operations</div>
+          </div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 14px; font-weight: 700; color: #818CF8;">Full HD 3-Minute Video Demo Available</div>
@@ -1125,7 +1143,7 @@ const htmlContent = `<!DOCTYPE html>
     </div>
 
     <div class="slide-footer">
-      <div>SERVORA &bull; BUILT FOR THE REALITIES OF PHYSICAL SERVICE &bull; Y COMBINATOR W26</div>
+      <div>SERVORA &bull; BUILT FOR THE REALITIES OF PHYSICAL SERVICE OPERATIONS</div>
       <div>THANK YOU &bull; <span class="footer-highlight">faizkhatri196@gmail.com</span></div>
     </div>
   </section>
@@ -1135,8 +1153,6 @@ const htmlContent = `<!DOCTYPE html>
 `;
 
 // Paths
-const projectDir = path.join(__dirname, '..');
-const galleryDir = path.join(projectDir, '..', 'Servora Gallery');
 const htmlOutputProject = path.join(projectDir, 'SERVORA_DEMO_PITCH_DECK.html');
 const htmlOutputGallery = path.join(galleryDir, 'SERVORA_DEMO_PITCH_DECK.html');
 const pdfOutputProject = path.join(projectDir, 'SERVORA_DEMO_PITCH_DECK.pdf');
@@ -1148,7 +1164,7 @@ if (!fs.existsSync(galleryDir)) {
 }
 
 // 1. Write HTML
-console.log('Writing pitch deck HTML...');
+console.log('Writing pitch deck HTML with embedded official Servora logo...');
 fs.writeFileSync(htmlOutputProject, htmlContent, 'utf8');
 fs.writeFileSync(htmlOutputGallery, htmlContent, 'utf8');
 console.log('Saved HTML to:', htmlOutputProject);
@@ -1178,7 +1194,7 @@ if (fs.existsSync(pdfOutputProject)) {
   // Copy to Servora Gallery
   fs.copyFileSync(pdfOutputProject, pdfOutputGallery);
   console.log(`Successfully copied to Servora Gallery: ${pdfOutputGallery}`);
-  console.log('\nALL DONE! Executive Pitch Deck PDF Ready.');
+  console.log('\nALL DONE! Executive Pitch Deck PDF Ready without any external company mentions & with real logo.');
 } else {
   console.error('Failed to create PDF!');
   process.exit(1);
