@@ -334,9 +334,9 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
       {/* ========================================================================= */}
       {mode === 'select_city' && (
         <div className="space-y-2.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center font-black">1</span>
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 xs:gap-2">
+            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5 flex-wrap">
+              <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center font-black shrink-0">1</span>
               <span>Where do you need service? (Search City)</span>
               <span className="text-rose-500">*</span>
             </label>
@@ -344,18 +344,19 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
               type="button"
               onClick={handleUseCurrentLocation}
               disabled={isLocating}
-              className="text-[11px] font-semibold text-slate-500 hover:text-emerald-600 flex items-center gap-1 transition-colors"
+              className="text-[11px] font-semibold text-slate-500 hover:text-emerald-600 active:text-emerald-700 flex items-center gap-1 transition-colors self-start xs:self-auto min-h-[28px]"
+              aria-label="Use my current GPS location"
             >
-              <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-emerald-600' : ''}`} />
-              <span>{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
+              <Compass className={`w-3.5 h-3.5 shrink-0 ${isLocating ? 'animate-spin text-emerald-600' : ''}`} />
+              <span className="truncate">{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
             </button>
           </div>
 
           {/* GPS Error Message — shown when GPS fails or city cannot be determined */}
           {gpsError && (
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2">
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-start gap-2 break-words">
               <span className="shrink-0 mt-0.5">⚠️</span>
-              <span>{gpsError}</span>
+              <span className="flex-1 min-w-0">{gpsError}</span>
             </div>
           )}
 

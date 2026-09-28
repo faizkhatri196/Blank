@@ -17,6 +17,8 @@ import {
   Search,
   X,
   Loader2,
+  Share2,
+  Check,
 } from 'lucide-react';
 import { AvailableServiceItem, CustomerSafeTicket } from '../../types';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
@@ -60,6 +62,33 @@ export const CustomerHome: React.FC = () => {
 
   // Active ticket state
   const [activeTicket, setActiveTicket] = useState<CustomerSafeTicket | null>(null);
+
+  // Local Awareness Community Share CTA state
+  const [shareCopied, setShareCopied] = useState<boolean>(false);
+
+  const handleShareServora = async () => {
+    const shareData = {
+      title: 'Servora — Smarter Field Service Operations',
+      text: 'Check out Servora — an AI-powered field service operations platform for Solar & AC/HVAC service businesses. Help your local service business manage customer requests, technicians, service visits and updates more efficiently.',
+      url: window.location.origin,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled or dismissed share dialogue
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 3000);
+      } catch (err) {
+        // Fallback: clipboard permission denied
+      }
+    }
+  };
 
   // Fetch available services whenever an explicit location is present
   useEffect(() => {
@@ -233,9 +262,9 @@ export const CustomerHome: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fadeIn">
       {/* Top Multi-Portal Directory Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-3 sm:px-4 sm:py-3 shadow-sm border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-3 sm:px-4 sm:py-3 shadow-sm border border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 overflow-hidden">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0"></span>
           <span className="text-xs font-semibold text-slate-200">
             Viewing: <strong className="text-white">Customer Portal</strong>
           </span>
@@ -244,14 +273,14 @@ export const CustomerHome: React.FC = () => {
             Homeowner & Facility Service Gateway
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
             to="/portals"
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg border border-white/10 transition-colors"
+            className="inline-flex items-center justify-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/10 transition-colors w-full sm:w-auto text-center"
           >
-            <Building2 className="w-3 h-3" />
-            <span>Switch to Manager / Technician Portal</span>
-            <ChevronRight className="w-3 h-3" />
+            <Building2 className="w-3 h-3 shrink-0" />
+            <span>Switch to Manager / Technician</span>
+            <ChevronRight className="w-3 h-3 shrink-0" />
           </Link>
         </div>
       </div>
@@ -288,18 +317,18 @@ export const CustomerHome: React.FC = () => {
       )}
 
       {/* Location Bar / Selector Header */}
-      <section className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+      <section className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200 shadow-xs overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Service Location
               </span>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-slate-900 text-base sm:text-lg">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-slate-900 text-base sm:text-lg truncate">
                   {location ? (
                     <span>
                       {location.city} {location.pincode ? `(${location.pincode})` : ''}
@@ -309,7 +338,7 @@ export const CustomerHome: React.FC = () => {
                   )}
                 </h3>
                 {location && (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
                     Active
                   </span>
                 )}
@@ -317,13 +346,14 @@ export const CustomerHome: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto pt-1 sm:pt-0">
             {location && (
               <button
                 type="button"
                 onClick={handleClearLocation}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                className="w-full sm:w-auto px-3 py-2.5 sm:py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors text-center border border-slate-200 sm:border-transparent min-h-[38px] flex items-center justify-center"
                 title="Clear location"
+                aria-label="Clear location"
               >
                 Clear
               </button>
@@ -333,17 +363,19 @@ export const CustomerHome: React.FC = () => {
                 setIsEditingLocation(!isEditingLocation);
                 setLocationFeedback(null);
               }}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+              className="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-center min-h-[38px] flex items-center justify-center"
+              aria-label={isEditingLocation ? 'Close location editor' : location ? 'Change service location' : 'Enter service location'}
             >
               {isEditingLocation ? 'Close' : location ? 'Change Location' : 'Enter Location'}
             </button>
             <button
               onClick={handleUseCurrentLocation}
               disabled={isLocating}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center gap-1.5"
+              className="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center justify-center gap-1.5 text-center min-h-[38px]"
+              aria-label="Use my current GPS location"
             >
-              <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
-              <span>{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
+              <Compass className={`w-3.5 h-3.5 shrink-0 ${isLocating ? 'animate-spin text-indigo-600' : ''}`} />
+              <span className="truncate">{isLocating ? 'Getting your current location…' : 'Use my current location'}</span>
             </button>
           </div>
         </div>
@@ -527,6 +559,46 @@ export const CustomerHome: React.FC = () => {
           )}
         </>
       )}
+
+      {/* Help Servora Grow Locally Community CTA */}
+      <section className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5 max-w-xl">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5">
+              <Share2 className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">
+                Know a service business in your area?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Help us bring Servora to more local service businesses. If you know a Solar or AC/HVAC service business that could benefit from better service management, share Servora with them.
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full sm:w-auto shrink-0 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShareServora}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 min-h-[40px]"
+              aria-label="Share Servora with local service businesses"
+            >
+              {shareCopied ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 text-white" />
+                  <span>Share Servora</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Trust & Quality Banner */}
       <section className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80">
