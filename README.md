@@ -31,15 +31,25 @@ Servora is architected from day one to support two high-demand physical service 
 Servora includes an end-to-end recorded 3-minute video demonstration (`SERVORA_3MIN_YC_DEMO.mp4`) captured live from the operational environment without slides or mockups, showing how a high-priority service request moves through all three system portals in Mandvi, Kutch:
 
 ```mermaid
-timeline
-    title Servora Closed-Loop Operational Lifecycle (3 Minutes)
-    00:00 - 00:55 : Act 1 - Customer Portal : Mandvi Location Check (PIN 370465) : Rooftop Solar EPC Selection : AI Problem Intake & Error E-031 Triage : Live Ticket #SOL-2026-0084 Created
-    00:55 - 01:55 : Act 2 - Manager Command Center : HQ Operational Suite Overview : AI Root-Cause Diagnostic Analysis (88% Surge Failure) : 5-Factor Match Engine : Rahul Sharma Dispatched with 1-Click
-    01:55 - 03:00 : Act 3 - Field Technician Mobile PWA : Mobile Queue : Status Transitions (Accepted -> En Route -> On Site) : Multimeter Voc = 382V Recorded : Blown DC Surge Cartridge Replaced : Proof-of-Work Photo Upload : Customer Signoff & Closeout
+graph LR
+    subgraph Act1["Act 1: Customer Portal"]
+        A["Location & Equipment Check"] --> B["AI Diagnostic Intake"]
+        B --> C["Live Ticket Created"]
+    end
+    subgraph Act2["Act 2: Operations Command Center"]
+        C --> D["Root-Cause Diagnostic Analysis"]
+        D --> E["5-Factor Match Engine"]
+        E --> F["1-Click Technician Dispatch"]
+    end
+    subgraph Act3["Act 3: Field Technician Mobile"]
+        F --> G["Mobile Work Queue"]
+        G --> H["Physical Readings Verified"]
+        H --> I["Photo Proof & Customer Signoff"]
+    end
 ```
 
-- **Video File**: [`SERVORA_3MIN_YC_DEMO.mp4`](./SERVORA_3MIN_YC_DEMO.mp4) (Full HD 1080p, 24fps, H.264)
-- **Interactive In-App Walkthrough**: Launch the app and visit `/walkthrough` to scrub through all 8 interactive milestones with real-time HUD telemetry.
+- **Video Demonstration**: [`SERVORA_3MIN_YC_DEMO.mp4`](./SERVORA_3MIN_YC_DEMO.mp4) (Full HD 1080p, 24fps, H.264)
+- **Interactive In-App Walkthrough**: Visit `/walkthrough` in the portal to scrub through all 8 interactive milestones with real-time HUD telemetry.
 
 ---
 
@@ -256,32 +266,14 @@ npm test
 
 ---
 
-## 🌐 Production Cloud Deployment
+## 🌐 Production Infrastructure Architecture
 
-### Backend: [Render](https://render.com)
-1. Create a **New Web Service** pointing to your repository `faizkhatri196/Servora`.
-2. Configure settings:
-   - **Root Directory**: `server`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
-3. Add Environment Variables:
-   - `PORT`: `5000` *(or auto-assigned)*
-   - `NODE_ENV`: `production`
-   - `MONGODB_URI`: *Your MongoDB Atlas connection URI*
-   - `JWT_SECRET`: *Secure random string*
-   - `CLIENT_URL`: *Your Vercel deployment URL*
-   - `AI_PROVIDER`: `demo` *(or `gemini` with `GEMINI_API_KEY`)*
+Servora is designed for cloud-native deployment with distributed frontend and microservice backend separation:
 
-### Frontend: [Vercel](https://vercel.com)
-1. Create a **New Project** importing `faizkhatri196/Servora`.
-2. Configure settings:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: `client`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-3. Add Environment Variable:
-   - `VITE_API_URL`: *Your Render backend URL (e.g., `https://servora-api.onrender.com`)*
-4. Single-Page Application (SPA) client rewrites are pre-configured in `client/vercel.json`.
+- **Frontend Tier**: Single-Page Application (SPA) built with React 18, Vite, and Tailwind CSS.
+- **Backend Tier**: Node.js & Express REST API with TypeScript, JWT authentication, and real-time operational state machine.
+- **Data Tier**: MongoDB Atlas multi-tenant cluster with geospatial indexing and automated telemetry collection.
+- **AI Processing**: Grounded field diagnostic preparation engine supporting dynamic provider switching.
 
 ---
 
@@ -317,7 +309,6 @@ npm test
 ## 🌐 Connect with Servora
 
 - 💼 **Official LinkedIn**: [Servora Technologies on LinkedIn](https://www.linkedin.com/company/servoraaiop/)
-- 🚀 **Live Deployment**: [Servora Cloud Operations Gateway](https://server-pink-beta-54.vercel.app)
 - 🏢 **Operations Verticals**: Solar Photovoltaics (PV) & AC / HVAC Field Operations
 
 ---
