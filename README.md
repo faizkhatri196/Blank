@@ -9,6 +9,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-Passing_100%25-green?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Servora-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/company/servoraaiop/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](#-license--intellectual-property)
 
 ---
@@ -310,6 +311,14 @@ npm test
 - **Physical Safety First**: Fall protection PPE, Arc-Flash safety, and Lockout-Tagout (LOTO) isolation are enforced in both the AI checklist and field reporting forms.
 - **Transparent AI Disclaimers**: All AI outputs carry clear assistance notices (`AI ASSISTANCE — VERIFY ON SITE`).
 - **Zero Public Secret Leaks**: All credentials and database connection strings are stored in environment variables, excluded from git via strict `.gitignore` rules.
+
+---
+
+## 🌐 Connect with Servora
+
+- 💼 **Official LinkedIn**: [Servora Technologies on LinkedIn](https://www.linkedin.com/company/servoraaiop/)
+- 🚀 **Live Deployment**: [Servora Cloud Operations Gateway](https://server-pink-beta-54.vercel.app)
+- 🏢 **Operations Verticals**: Solar Photovoltaics (PV) & AC / HVAC Field Operations
 
 ---
 
