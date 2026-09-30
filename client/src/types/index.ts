@@ -232,6 +232,13 @@ export interface ServiceTicket {
   }>;
   startedAt?: string;
   completedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  cancelledBy?: {
+    role: string;
+    userId?: string;
+    name?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -415,6 +422,12 @@ export interface CustomerSafeTicket {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  cancelledBy?: {
+    role: string;
+    name?: string;
+  };
   feedback?: {
     rating: number;
     comment?: string;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { apiClient } from '../../api/client';
+import { apiClient, getAssetUrl } from '../../api/client';
 import {
   ServiceTicket,
   AIAnalysis,
@@ -216,6 +216,37 @@ export const TicketDetail: React.FC = () => {
         </div>
       </div>
 
+      {ticket.status === 'CANCELLED' && (
+        <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
+          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-rose-900">
+                {ticket.cancelledBy?.role === 'CUSTOMER' ? 'Cancelled by customer' : 'Request Cancelled'}
+              </h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-200/80 text-rose-800 px-2 py-0.5 rounded-full">
+                CANCELLED
+              </span>
+            </div>
+            {ticket.cancellationReason && (
+              <p className="text-xs text-rose-800">
+                <strong>Reason:</strong> {ticket.cancellationReason}
+              </p>
+            )}
+            {ticket.cancelledAt && (
+              <p className="text-[11px] text-rose-700">
+                <strong>Timestamp:</strong> {new Date(ticket.cancelledAt).toLocaleString()}
+              </p>
+            )}
+            {ticket.cancelledBy?.name && (
+              <p className="text-[11px] text-rose-600">
+                <strong>Action by:</strong> {ticket.cancelledBy.name} ({ticket.cancelledBy.role})
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Grid: Left 2 Cols (Complaint & AI & Report) / Right 1 Col (Customer & Asset & Timeline) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Columns */}
@@ -335,18 +366,26 @@ export const TicketDetail: React.FC = () => {
             )}
 
             {ticket.photos && ticket.photos.length > 0 && (
-              <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Customer Uploaded Photos
-                </span>
-                <div className="flex gap-2">
+              <div className="space-y-2 pt-1 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Customer-Uploaded Evidence ({ticket.photos.length})
+                  </span>
+                  <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full border border-indigo-200">
+                    Customer Submitted
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
                   {ticket.photos.map((p, idx) => (
-                    <a key={idx} href={p} target="_blank" rel="noreferrer">
+                    <a key={idx} href={getAssetUrl(p)} target="_blank" rel="noreferrer" className="group relative block">
                       <img
-                        src={p}
-                        alt="Customer site"
-                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity"
+                        src={getAssetUrl(p)}
+                        alt={`Customer site evidence ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity shadow-xs"
                       />
+                      <span className="absolute bottom-1 right-1 bg-slate-900/70 text-white text-[9px] px-1 rounded font-mono">
+                        #{idx + 1}
+                      </span>
                     </a>
                   ))}
                 </div>
@@ -612,6 +651,55 @@ export const TicketDetail: React.FC = () => {
                     • {serviceReport.aiHelpful ? 'Helpful in field preparation' : 'Partial help'}
                   </span>
                 </div>
+
+                {/* Technician Field Photos (Distinguished from customer photos) */}
+                {((serviceReport.beforePhotos && serviceReport.beforePhotos.length > 0) ||
+                  (serviceReport.afterPhotos && serviceReport.afterPhotos.length > 0)) && (
+                  <div className="border-t border-slate-200/80 pt-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        Technician Field Verification Photos
+                      </span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                        Field Report Origin
+                      </span>
+                    </div>
+
+                    {serviceReport.beforePhotos && serviceReport.beforePhotos.length > 0 && (
+                      <div>
+                        <span className="text-xs text-slate-500 font-semibold block mb-1">Before Service:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {serviceReport.beforePhotos.map((p, i) => (
+                            <a key={i} href={getAssetUrl(p)} target="_blank" rel="noreferrer">
+                              <img
+                                src={getAssetUrl(p)}
+                                alt={`Before Service ${i + 1}`}
+                                className="w-20 h-20 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity shadow-xs"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {serviceReport.afterPhotos && serviceReport.afterPhotos.length > 0 && (
+                      <div>
+                        <span className="text-xs text-slate-500 font-semibold block mb-1">After Service / Completion:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {serviceReport.afterPhotos.map((p, i) => (
+                            <a key={i} href={getAssetUrl(p)} target="_blank" rel="noreferrer">
+                              <img
+                                src={getAssetUrl(p)}
+                                alt={`After Service ${i + 1}`}
+                                className="w-20 h-20 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity shadow-xs"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

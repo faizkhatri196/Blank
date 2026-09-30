@@ -67,6 +67,13 @@ export interface IServiceTicket extends Document {
   }>;
   startedAt?: Date;
   completedAt?: Date;
+  cancelledAt?: Date;
+  cancellationReason?: string;
+  cancelledBy?: {
+    role: 'CUSTOMER' | 'SERVICE_MANAGER' | 'TECHNICIAN';
+    userId?: mongoose.Types.ObjectId;
+    name?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -177,6 +184,13 @@ const ServiceTicketSchema = new Schema<IServiceTicket>(
     ],
     startedAt: { type: Date },
     completedAt: { type: Date },
+    cancelledAt: { type: Date },
+    cancellationReason: { type: String, trim: true },
+    cancelledBy: {
+      role: { type: String, enum: ['CUSTOMER', 'SERVICE_MANAGER', 'TECHNICIAN'] },
+      userId: { type: Schema.Types.ObjectId, ref: 'User' },
+      name: { type: String, trim: true },
+    },
   },
   { timestamps: true }
 );

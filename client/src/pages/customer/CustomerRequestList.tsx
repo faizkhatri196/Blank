@@ -142,7 +142,9 @@ export const CustomerRequestList: React.FC = () => {
                       </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          isDone
+                          ticket.status === 'CANCELLED'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : isDone
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : 'bg-blue-50 text-blue-700 border border-blue-200'
                         }`}

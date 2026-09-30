@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { apiClient } from '../../api/client';
+import { apiClient, getAssetUrl } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { SERVICE_CATALOG_MAP } from '../../config/serviceCatalog';
 import { CustomerProblemCard, ServiceType, AvailableServiceItem } from '../../types';
+import { VoiceInput } from '../../components/common/VoiceInput';
 import { CustomerLocation, getCustomerSavedLocation, saveCustomerLocation } from '../../utils/customerLocation';
 import { geocodeAddressOrCity } from '../../utils/locationSearch';
 import { LocationAutocompleteInput } from '../../components/common/LocationAutocompleteInput';
@@ -268,19 +269,23 @@ export const CustomerServiceRequest: React.FC = () => {
     }
   };
 
-  // Handle Photo Upload
+  // Handle Photo Upload (Supports multiple photos)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const file = files[0];
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('Image size exceeds 5MB limit. Please upload a smaller photo.');
+    const fileList = Array.from(files);
+    const oversized = fileList.find((f) => f.size > 5 * 1024 * 1024);
+    if (oversized) {
+      setUploadError(`File "${oversized.name}" exceeds 5MB limit. Please upload smaller photos.`);
       return;
     }
 
     const formData = new FormData();
-    formData.append('photo', file);
+    fileList.forEach((f) => {
+      formData.append('photos', f);
+      formData.append('photo', f); // backward compatibility
+    });
 
     setIsUploadingPhoto(true);
     setUploadError(null);
@@ -289,12 +294,15 @@ export const CustomerServiceRequest: React.FC = () => {
       const res = await apiClient.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      if (res.data.success && res.data.data.url) {
-        setPhotos((prev) => [...prev, res.data.data.url]);
+      if (res.data.success) {
+        const newUrls: string[] = res.data.data.urls || (res.data.data.url ? [res.data.data.url] : []);
+        if (newUrls.length > 0) {
+          setPhotos((prev) => [...prev, ...newUrls]);
+        }
       }
     } catch (err: any) {
       console.error('Upload failed:', err);
-      setUploadError('Failed to upload image. Please try again.');
+      setUploadError(err.response?.data?.error?.message || 'Failed to upload image. Please try again.');
     } finally {
       setIsUploadingPhoto(false);
       e.target.value = '';
@@ -899,6 +907,10 @@ export const CustomerServiceRequest: React.FC = () => {
               <p className="text-[11px] text-slate-400 mt-1">
                 Tip: Vernacular phrases like "invrtr not wrkng" or "ac cool nai karto" are automatically understood.
               </p>
+              <VoiceInput
+                onTranscript={(text) => setComplaint(text)}
+                currentValue={complaint}
+              />
             </div>
 
             {/* If "I'm Not Sure" was selected, show adaptive triage questions */}
@@ -1061,11 +1073,12 @@ export const CustomerServiceRequest: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <UploadCloud className="w-6 h-6" />
                 </div>
-                <span className="text-sm font-bold text-slate-800">Click to upload photo</span>
-                <span className="text-xs text-slate-400">PNG, JPG up to 5MB</span>
+                <span className="text-sm font-bold text-slate-800">Click to upload photo(s)</span>
+                <span className="text-xs text-slate-400">PNG, JPG up to 5MB (multiple allowed)</span>
                 <input
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileUpload}
                   disabled={isUploadingPhoto}
                   className="hidden"
@@ -1092,7 +1105,7 @@ export const CustomerServiceRequest: React.FC = () => {
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {photos.map((url, idx) => (
                     <div key={idx} className="relative group rounded-2xl overflow-hidden border border-slate-200 aspect-square bg-slate-100">
-                      <img src={url} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={getAssetUrl(url)} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removePhoto(idx)}

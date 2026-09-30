@@ -312,6 +312,12 @@ export interface CustomerSafeTicketResponse {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  cancelledBy?: {
+    role: string;
+    name?: string;
+  };
   feedback?: {
     rating: number;
     comment?: string;

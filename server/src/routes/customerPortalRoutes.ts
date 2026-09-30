@@ -6,6 +6,7 @@ import {
   getCustomerRequests,
   getCustomerRequestById,
   submitCustomerFeedback,
+  cancelCustomerRequest,
 } from '../controllers/customerPortalController';
 import { optionalAuthenticate, authenticate } from '../middleware/auth';
 
@@ -21,6 +22,7 @@ router.post('/requests', optionalAuthenticate, createCustomerRequest);
 // Authenticated Customer Actions
 router.get('/requests', authenticate, getCustomerRequests);
 router.get('/requests/:id', optionalAuthenticate, getCustomerRequestById);
+router.post('/requests/:id/cancel', optionalAuthenticate, cancelCustomerRequest);
 router.post('/requests/:id/feedback', optionalAuthenticate, submitCustomerFeedback);
 
 export default router;

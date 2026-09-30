@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { apiClient } from '../../api/client';
+import { apiClient, getAssetUrl } from '../../api/client';
 import {
   CheckCircle2,
   Clock,
@@ -15,6 +15,8 @@ import {
   Camera,
   AlertCircle,
   HelpCircle,
+  Ban,
+  X,
 } from 'lucide-react';
 import { CustomerSafeTicket } from '../../types';
 
@@ -33,6 +35,22 @@ export const CustomerRequestTracking: React.FC = () => {
   const [resolved, setResolved] = useState<boolean>(true);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState<boolean>(false);
+
+  // Cancellation State
+  const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false);
+  const [cancelReason, setCancelReason] = useState<string>('Changed my mind');
+  const [customReason, setCustomReason] = useState<string>('');
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+  const [cancelSuccessMsg, setCancelSuccessMsg] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  const CANCELLATION_REASONS = [
+    'Changed my mind',
+    'Issue resolved',
+    'Appointment no longer required',
+    'Requested by mistake',
+    'Other',
+  ];
 
   // Poll ticket details every 12 seconds
   useEffect(() => {
@@ -90,6 +108,33 @@ export const CustomerRequestTracking: React.FC = () => {
     }
   };
 
+  // Handle Cancellation Submission
+  const handleCancelRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || isCancelling) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      const res = await apiClient.post(`/customer-portal/requests/${id}/cancel`, {
+        reason: cancelReason,
+        customReason: cancelReason === 'Other' ? customReason : undefined,
+      });
+
+      if (res.data.success) {
+        setCancelSuccessMsg('Request cancelled successfully.');
+        setTicket(res.data.data);
+        setCancelModalOpen(false);
+      }
+    } catch (err: any) {
+      console.error('Cancellation failed:', err);
+      setCancelError(err.response?.data?.error?.message || 'Failed to cancel request. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
@@ -116,6 +161,8 @@ export const CustomerRequestTracking: React.FC = () => {
   }
 
   const isCompleted = ticket.status === 'COMPLETED';
+  const isCancelled = ticket.status === 'CANCELLED';
+  const canCancel = ticket.status !== 'COMPLETED' && ticket.status !== 'CANCELLED';
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
@@ -129,10 +176,62 @@ export const CustomerRequestTracking: React.FC = () => {
           <span>My Requests</span>
         </button>
 
-        <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-          #{ticket.ticketNumber}
-        </span>
+        <div className="flex items-center gap-2">
+          {canCancel && (
+            <button
+              onClick={() => {
+                setCancelError(null);
+                setCancelModalOpen(true);
+              }}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-xl transition-all flex items-center gap-1 active:scale-95 shadow-2xs"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              <span>Cancel Request</span>
+            </button>
+          )}
+
+          <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+            #{ticket.ticketNumber}
+          </span>
+        </div>
       </div>
+
+      {/* Cancellation Banner */}
+      {isCancelled && (
+        <div className="bg-rose-50/90 border-2 border-rose-200 rounded-3xl p-5 sm:p-6 text-rose-950 flex items-start gap-4 animate-fadeIn shadow-2xs">
+          <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-black text-sm text-rose-900 tracking-tight">
+                Request Cancelled
+              </h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-200 text-rose-800 px-2 py-0.5 rounded-full">
+                CANCELLED
+              </span>
+            </div>
+            <p className="text-xs text-rose-800">
+              {ticket.cancellationReason
+                ? `Reason: ${ticket.cancellationReason}`
+                : 'This service request was cancelled.'}
+            </p>
+            {ticket.cancelledAt && (
+              <p className="text-[11px] text-rose-700 pt-0.5">
+                Cancelled on: {new Date(ticket.cancelledAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Success Notification if just cancelled */}
+      {cancelSuccessMsg && isCancelled && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{cancelSuccessMsg}</span>
+        </div>
+      )}
 
       {/* Main Status Header Card */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
@@ -154,12 +253,14 @@ export const CustomerRequestTracking: React.FC = () => {
                 </span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isCompleted
+                    isCancelled
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                      : isCompleted
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                       : 'bg-blue-50 text-blue-700 border border-blue-200'
                   }`}
                 >
-                  {isCompleted ? 'Completed' : 'Active'}
+                  {isCancelled ? 'Cancelled' : isCompleted ? 'Completed' : 'Active'}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
@@ -285,17 +386,17 @@ export const CustomerRequestTracking: React.FC = () => {
 
         {ticket.photos.length > 0 && (
           <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase">Uploaded Evidence</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase">Uploaded Evidence ({ticket.photos.length})</span>
             <div className="flex flex-wrap gap-2.5">
               {ticket.photos.map((url, i) => (
                 <a
                   key={i}
-                  href={url}
+                  href={getAssetUrl(url)}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 block hover:opacity-90 transition-opacity"
+                  className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 block hover:opacity-90 transition-opacity shadow-2xs"
                 >
-                  <img src={url} alt={`Evidence ${i + 1}`} className="w-full h-full object-cover" />
+                  <img src={getAssetUrl(url)} alt={`Evidence ${i + 1}`} className="w-full h-full object-cover" />
                 </a>
               ))}
             </div>
@@ -399,6 +500,102 @@ export const CustomerRequestTracking: React.FC = () => {
               </button>
             </form>
           )}
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Modal */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-600">
+                <AlertCircle className="w-5 h-5" />
+                <h3 className="font-extrabold text-slate-900 text-sm">Cancel Service Request</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(false)}
+                disabled={isCancelling}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium">
+              Are you sure you want to cancel this service request?
+            </p>
+
+            {cancelError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                {cancelError}
+              </div>
+            )}
+
+            <form onSubmit={handleCancelRequest} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 block">
+                  Optional reason:
+                </label>
+                <div className="space-y-2">
+                  {CANCELLATION_REASONS.map((r) => (
+                    <label
+                      key={r}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                        cancelReason === r
+                          ? 'border-indigo-600 bg-indigo-50/60 text-indigo-950 font-bold'
+                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="cancelReason"
+                        value={r}
+                        checked={cancelReason === r}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        className="text-indigo-600"
+                      />
+                      <span>{r}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {cancelReason === 'Other' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Short custom reason:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="Briefly state your reason..."
+                    className="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCancelModalOpen(false)}
+                  disabled={isCancelling}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  Keep Request
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCancelling}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-xs active:scale-95"
+                >
+                  {isCancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

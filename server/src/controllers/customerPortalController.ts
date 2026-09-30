@@ -11,7 +11,7 @@ import { AuditLog } from '../models/AuditLog';
 import { ServiceRegistry } from '../config/serviceRegistry';
 import { normalizeComplaint } from '../ai/complaintNormalizer';
 import { AIFactory } from '../ai/AIFactory';
-import { generateTicketNumber } from '../services/ticketService';
+import { generateTicketNumber, isValidStatusTransition } from '../services/ticketService';
 import { calculateHaversineDistanceKm, isValidApplicationCoordinate, extractValidCoords } from '../services/location/geospatial';
 import { resolveServiceCoverage, discoverAvailableServices } from '../services/location/coverageService';
 import {
@@ -104,6 +104,15 @@ export function serializeCustomerTicket(
     },
   ];
 
+  if (status === 'CANCELLED') {
+    steps.push({
+      key: 'CANCELLED',
+      label: 'Request Cancelled',
+      status: 'COMPLETED',
+      timestamp: ticket.cancelledAt?.toISOString() || ticket.updatedAt?.toISOString(),
+    });
+  }
+
   // Customer-friendly status label
   let customerStatusLabel = 'Request Submitted';
   switch (status) {
@@ -178,6 +187,14 @@ export function serializeCustomerTicket(
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
     completedAt: ticket.completedAt?.toISOString(),
+    cancelledAt: ticket.cancelledAt ? (ticket.cancelledAt instanceof Date ? ticket.cancelledAt.toISOString() : new Date(ticket.cancelledAt).toISOString()) : undefined,
+    cancellationReason: ticket.cancellationReason,
+    cancelledBy: ticket.cancelledBy
+      ? {
+          role: ticket.cancelledBy.role,
+          name: ticket.cancelledBy.name,
+        }
+      : undefined,
     feedback: ticket.customerFeedback
       ? {
           rating: ticket.customerFeedback.rating,
@@ -819,3 +836,161 @@ export async function submitCustomerFeedback(req: AuthenticatedRequest, res: Res
     res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
   }
 }
+
+/**
+ * POST /api/customer-portal/requests/:id/cancel
+ * Customer cancels their eligible service request
+ */
+export async function cancelCustomerRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { reason, customReason } = req.body;
+
+    const ticket = await ServiceTicket.findById(id);
+    if (!ticket) {
+      res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Service request not found.' } });
+      return;
+    }
+
+    // Tenant / Customer authorization check
+    if (!req.userId) {
+      res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required to cancel requests.' } });
+      return;
+    }
+
+    const userPhone = req.user?.phone?.trim();
+    const userEmail = req.user?.email?.trim().toLowerCase();
+
+    const customerConditions: any[] = [{ userId: req.userId }];
+    if (userPhone) {
+      const digits = userPhone.replace(/\D/g, '').slice(-10);
+      if (digits.length >= 10) {
+        customerConditions.push({ phone: { $regex: `${digits}$` } });
+      } else {
+        customerConditions.push({ phone: userPhone });
+      }
+    }
+    if (userEmail) {
+      customerConditions.push({ email: { $regex: new RegExp(`^${userEmail}$`, 'i') } });
+    }
+
+    const customerDocs = await Customer.find({ $or: customerConditions });
+    const customerIds = customerDocs.map((c) => c._id.toString());
+
+    const ticketCustomer = await Customer.findById(ticket.customerId);
+    const userPhoneDigits = userPhone ? userPhone.replace(/\D/g, '').slice(-10) : '';
+    const custPhoneDigits = ticketCustomer?.phone ? ticketCustomer.phone.replace(/\D/g, '').slice(-10) : '';
+    const phoneMatches = Boolean(userPhoneDigits && custPhoneDigits && userPhoneDigits === custPhoneDigits);
+    const emailMatches = Boolean(
+      userEmail && ticketCustomer?.email && ticketCustomer.email.trim().toLowerCase() === userEmail
+    );
+
+    const isOwner =
+      customerIds.includes(ticket.customerId.toString()) ||
+      (ticket.createdBy && ticket.createdBy.toString() === req.userId.toString()) ||
+      phoneMatches ||
+      emailMatches;
+
+    if (!isOwner) {
+      res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Access denied. You can only cancel your own service requests.' },
+      });
+      return;
+    }
+
+    // State machine check
+    if (ticket.status === 'CANCELLED') {
+      res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_CANCELLED', message: 'This service request is already cancelled.' },
+      });
+      return;
+    }
+
+    if (ticket.status === 'COMPLETED') {
+      res.status(400).json({
+        success: false,
+        error: { code: 'CANNOT_CANCEL_COMPLETED', message: 'Completed service requests cannot be cancelled.' },
+      });
+      return;
+    }
+
+    if (!isValidStatusTransition(ticket.status, 'CANCELLED')) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TRANSITION', message: `Cannot cancel a request with status ${ticket.status}.` },
+      });
+      return;
+    }
+
+    // Format cancellation reason
+    let fullReason = (reason || '').trim();
+    if (customReason && typeof customReason === 'string' && customReason.trim().length > 0) {
+      fullReason = fullReason ? `${fullReason}: ${customReason.trim()}` : customReason.trim();
+    }
+    if (!fullReason) {
+      fullReason = 'Cancelled by customer';
+    }
+
+    const cancelledTimestamp = new Date();
+    ticket.status = 'CANCELLED';
+    ticket.cancelledAt = cancelledTimestamp;
+    ticket.cancellationReason = fullReason;
+    ticket.cancelledBy = {
+      role: 'CUSTOMER',
+      userId: req.userId as any,
+      name: req.user?.name || ticketCustomer?.name || 'Customer',
+    };
+
+    ticket.statusHistory.push({
+      status: 'CANCELLED',
+      changedBy: req.userId as any,
+      timestamp: cancelledTimestamp,
+      note: `Cancelled by customer: ${fullReason}`,
+    });
+
+    await ticket.save();
+
+    // Release assigned technician if one was assigned
+    if (ticket.assignedTechnicianId) {
+      try {
+        const otherActiveTickets = await ServiceTicket.countDocuments({
+          _id: { $ne: ticket._id },
+          assignedTechnicianId: ticket.assignedTechnicianId,
+          status: { $in: ['ASSIGNED', 'ACCEPTED', 'ON_THE_WAY', 'ON_SITE', 'DIAGNOSING', 'REPAIRING'] },
+        });
+        if (otherActiveTickets === 0) {
+          await Technician.findByIdAndUpdate(ticket.assignedTechnicianId, { availability: 'AVAILABLE' });
+        }
+      } catch (_techErr) {
+        // Log & proceed
+      }
+    }
+
+    await AuditLog.create({
+      companyId: ticket.companyId,
+      actorId: req.userId,
+      actorRole: 'CUSTOMER',
+      action: 'CANCEL_CUSTOMER_REQUEST',
+      entityType: 'ServiceTicket',
+      entityId: ticket._id.toString(),
+      metadata: {
+        reason: fullReason,
+        cancelledAt: cancelledTimestamp,
+      },
+    });
+
+    const company = await Company.findById(ticket.companyId);
+    const serialized = serializeCustomerTicket(ticket, company);
+
+    res.json({
+      success: true,
+      message: 'Request cancelled successfully.',
+      data: serialized,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: error.message } });
+  }
+}
+
