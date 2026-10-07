@@ -1,0 +1,36 @@
+export const electricalConfig = {
+  serviceType: 'ELECTRICAL' as const,
+  label: 'Electrical & Power Infrastructure Service',
+  ticketPrefix: 'ELE',
+  skills: [
+    'ELECTRICAL_TROUBLESHOOTING',
+    'CIRCUIT_BREAKER_MCB_REPAIR',
+    'WIRING_AND_CONDUIT_REPAIR',
+    'SWITCHBOARD_AND_SOCKET_REPAIR',
+    'EARTHING_AND_GROUND_TESTING',
+    'PHASE_LOAD_BALANCING',
+    'LIGHTING_AND_FIXTURE_FITMENT',
+    'ISOLATION_TESTING',
+  ],
+  tools: [
+    'MULTIMETER',
+    'CLAMP_METER',
+    'INSULATION_TESTER',
+    'NEON_TESTER',
+    'WIRE_STRIPPER',
+    'SCREWDRIVER_SET_INSULATED',
+    'PLIERS_INSULATED',
+  ],
+  commonSymptoms: [
+    'Main MCB or sub-circuit breaker tripping repeatedly',
+    'Burning smell, smoke, or visible spark from switchboard/socket',
+    'Single phase drop or partial blackout in rooms',
+    'Mild electric shock sensation when touching appliances or switches',
+    'Frequent voltage fluctuation or flickering lights',
+  ],
+  defaultSafetyWarnings: [
+    'Turn off the main incoming isolator switch before touching any exposed wiring.',
+    'Always use certified insulated hand tools rated for at least 1000V.',
+    'Never work on electrical installations with wet hands, footwear, or damp surrounding floors.',
+  ],
+};

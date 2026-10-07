@@ -91,6 +91,9 @@ export const Tickets: React.FC = () => {
             <option value="">All Services</option>
             <option value="SOLAR">Solar Only</option>
             <option value="AC">AC / HVAC Only</option>
+            <option value="PLUMBING">Plumbing Only</option>
+            <option value="HOME_MAINTENANCE">Home Maintenance / Civil</option>
+            <option value="ELECTRICAL">Electrical Only</option>
           </select>
 
           <select

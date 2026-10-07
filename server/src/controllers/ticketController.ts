@@ -49,8 +49,8 @@ export async function getTickets(req: AuthenticatedRequest, res: Response): Prom
       }
     }
 
-    if (serviceType && (serviceType === 'SOLAR' || serviceType === 'AC')) {
-      query.serviceType = serviceType;
+    if (serviceType && typeof serviceType === 'string' && serviceType.trim()) {
+      query.serviceType = serviceType.trim();
     }
 
     if (status) {

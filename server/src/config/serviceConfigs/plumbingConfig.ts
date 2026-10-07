@@ -1,0 +1,38 @@
+export const plumbingConfig = {
+  serviceType: 'PLUMBING' as const,
+  label: 'Plumbing & Water System Service',
+  ticketPrefix: 'PLM',
+  skills: [
+    'PIPE_FITTING',
+    'LEAK_DETECTION_AND_REPAIR',
+    'DRAIN_CLEARING_AND_AUGERING',
+    'TAP_AND_FAUCET_REPAIR',
+    'BATHROOM_SANITARY_INSTALLATION',
+    'WATER_PRESSURE_REGULATION',
+    'OVERHEAD_TANK_FLOAT_VALVE_SERVICE',
+    'SEWAGE_AND_WASTEWATER_PIPELINE',
+  ],
+  tools: [
+    'PIPE_WRENCH',
+    'ADJUSTABLE_SPANNER',
+    'PLUMBERS_TEFLON_TAPE',
+    'DRAIN_AUGER_SNAKE',
+    'PRESSURE_GAUGE',
+    'PIPE_CUTTER',
+    'HEX_KEY_SET',
+    'THREAD_SEALANT',
+  ],
+  commonSymptoms: [
+    'Continuous water dripping from tap / faucet spindle damaged',
+    'Water spraying or seeping from pipe joints / concealed line',
+    'Sink, washbasin or bathroom drain water backing up',
+    'Extremely low water pressure from shower or kitchen taps',
+    'Toilet flush valve or cistern continuously leaking water',
+    'Overhead water tank overflowing or float ball damaged',
+  ],
+  defaultSafetyWarnings: [
+    'Locate and shut off the main water supply stopcock valve before dismantling any pipe fittings.',
+    'Beware of slippery surfaces and standing water around work areas.',
+    'Verify that concealed electrical lines are not running in immediate contact with damp plumbing channels.',
+  ],
+};

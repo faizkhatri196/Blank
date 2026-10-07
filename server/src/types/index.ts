@@ -3,6 +3,7 @@ export type ServiceType =
   | 'AC'
   | 'ELECTRICAL'
   | 'PLUMBING'
+  | 'HOME_MAINTENANCE'
   | 'RO_PURIFIER'
   | 'REFRIGERATOR'
   | 'WASHING_MACHINE'

@@ -37,7 +37,7 @@ const EvaluationCaseSchema: Schema = new Schema(
     publishedSolution: { type: String, required: true },
     groundTruth: { type: String, required: true },
     evaluationNotes: { type: String },
-    serviceType: { type: String, enum: ['SOLAR', 'AC'], default: 'SOLAR', required: true },
+    serviceType: { type: String, default: 'SOLAR', required: true },
   },
   { timestamps: true }
 );

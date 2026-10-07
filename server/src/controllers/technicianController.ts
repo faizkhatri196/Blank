@@ -21,8 +21,8 @@ export async function getTechnicians(req: AuthenticatedRequest, res: Response): 
       query.userId = req.userId;
     }
 
-    if (serviceType && (serviceType === 'SOLAR' || serviceType === 'AC')) {
-      query.serviceTypes = serviceType;
+    if (serviceType && typeof serviceType === 'string' && serviceType.trim()) {
+      query.serviceTypes = serviceType.trim();
     }
 
     if (availability) {

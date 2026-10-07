@@ -1,6 +1,7 @@
 import { TicketStatus, ServiceType } from '../types';
 import { ServiceTicket, IServiceTicket } from '../models/ServiceTicket';
 import mongoose from 'mongoose';
+import { ServiceRegistry } from '../config/serviceRegistry';
 
 const VALID_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   NEW: ['AI_ANALYZED', 'WAITING_FOR_ASSIGNMENT', 'ASSIGNED', 'CANCELLED'],
@@ -34,7 +35,7 @@ export async function generateTicketNumber(
   companyId: mongoose.Types.ObjectId,
   serviceType: ServiceType
 ): Promise<string> {
-  const prefix = serviceType === 'SOLAR' ? 'SOL' : 'AC';
+  const prefix = ServiceRegistry.getService(serviceType)?.ticketPrefix || (serviceType === 'SOLAR' ? 'SOL' : serviceType === 'AC' ? 'AC' : String(serviceType).substring(0, 3).toUpperCase());
   const year = new Date().getFullYear();
 
   // Find highest existing sequence globally for this serviceType this year

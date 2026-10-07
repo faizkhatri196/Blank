@@ -1,6 +1,9 @@
 import { ServiceType, CustomerProblemCard } from '../types';
 import { solarConfig } from './serviceConfigs/solarConfig';
 import { acConfig } from './serviceConfigs/acConfig';
+import { homeMaintenanceConfig } from './serviceConfigs/homeMaintenanceConfig';
+import { plumbingConfig } from './serviceConfigs/plumbingConfig';
+import { electricalConfig } from './serviceConfigs/electricalConfig';
 
 export interface ServiceDefinition {
   serviceType: ServiceType;
@@ -405,46 +408,166 @@ export const PLUMBING_SERVICE_DEFINITION: ServiceDefinition = {
   problemCategories: [
     {
       code: 'PIPE_LEAKAGE',
-      title: 'Burst pipe or water leakage',
-      description: 'Water dripping, spraying, or seeping through wall/ceiling pipes.',
+      title: 'Water leakage',
+      description: 'Water dripping, seeping or spraying from pipeline or joints.',
       image: '/assets/problems/pipe-leak.svg',
-      alt: 'Burst or leaking pipe line',
-      recommendedEvidence: ['Photo of leaking joint or seepage area'],
+      alt: 'Water leakage from plumbing lines',
+      recommendedEvidence: ['Photo of leaking pipe joint or wet wall area'],
+    },
+    {
+      code: 'TAP_REPAIR',
+      title: 'Tap repair',
+      description: 'Leaking, dripping, loose or broken tap/faucet spindle.',
+      image: '/assets/problems/tap-repair.svg',
+      alt: 'Tap faucet repair',
+      recommendedEvidence: ['Photo of the tap or faucet fixture'],
+    },
+    {
+      code: 'PIPE_BURST_LEAK',
+      title: 'Pipe leakage',
+      description: 'Cracked, burst, corroded or damaged concealed/exposed pipe.',
+      image: '/assets/problems/pipe-burst.svg',
+      alt: 'Burst or damaged pipe line',
+      recommendedEvidence: ['Photo of damaged pipe section'],
     },
     {
       code: 'DRAIN_BLOCKED',
-      title: 'Clogged drain or sewer blockage',
-      description: 'Water backing up in sink, shower drain, or toilet.',
+      title: 'Drain blockage',
+      description: 'Water backing up or slow drainage in sink, shower drain, or toilet.',
       image: '/assets/problems/clogged-drain.svg',
-      alt: 'Blocked drain or slow water drainage',
-      recommendedEvidence: ['Photo of blocked fixture'],
+      alt: 'Blocked drain or sewer pipe',
+      recommendedEvidence: ['Photo of clogged sink or drain fixture'],
+    },
+    {
+      code: 'BATHROOM_PLUMBING',
+      title: 'Bathroom plumbing',
+      description: 'Toilet flush valve, health faucet, diverter or shower plumbing issue.',
+      image: '/assets/problems/bathroom-plumbing.svg',
+      alt: 'Bathroom sanitary and plumbing issue',
+      recommendedEvidence: ['Photo of affected bathroom fixture'],
     },
     {
       code: 'LOW_WATER_PRESSURE',
-      title: 'Low water pressure from taps',
-      description: 'Very weak water flow from bathroom or kitchen taps.',
+      title: 'Water pressure issue',
+      description: 'Low water pressure or erratic flow from taps and showers.',
       image: '/assets/problems/low-pressure.svg',
-      alt: 'Low water pressure in tap',
-      recommendedEvidence: ['Photo of water flow from tap'],
+      alt: 'Water pressure problem',
+      recommendedEvidence: ['Photo or video of water flow from tap'],
     },
     {
       code: 'SOMETHING_ELSE',
-      title: 'Other plumbing work',
-      description: 'Fixture installation, valve replacement, or pump repair.',
+      title: 'Other plumbing issue',
+      description: 'Water tank float valve, pump connection or custom plumbing repair.',
       image: '/assets/problems/plumbing-general.svg',
-      alt: 'General plumbing fixture repair',
-      recommendedEvidence: ['Photo of the plumbing fixture'],
+      alt: 'General plumbing service',
+      recommendedEvidence: ['Photo of plumbing fixture'],
     },
   ],
   triageQuestions: [
     { id: 'q_plm_source', question: 'Can you turn off the main water stopcock?', options: ['YES, TURNED OFF', 'CANNOT FIND STOPCOCK', 'LEAK IS CONTROLLED'] },
+    { id: 'q_plm_leak_type', question: 'Is the leakage constant or only when a tap is turned on?', options: ['CONTINUOUS LEAK', 'ONLY WHEN RUNNING', 'NOT SURE'] },
   ],
   allowedEvidenceTypes: ['PHOTO'],
-  requiredSkills: ['PIPE_FITTING', 'LEAK_REPAIR', 'DRAIN_CLEARING'],
-  recommendedTools: ['PIPE_WRENCH', 'PLUMBERS_TAPE', 'DRAIN_AUGER'],
-  safetyRules: ['Close the main stopcock valve immediately in case of severe water gushing.'],
+  requiredSkills: plumbingConfig.skills,
+  recommendedTools: plumbingConfig.tools,
+  safetyRules: plumbingConfig.defaultSafetyWarnings,
   readingDefinitions: {
     waterPressurePSI: 'Static Water Pressure (PSI)',
+  },
+};
+
+export const HOME_MAINTENANCE_SERVICE_DEFINITION: ServiceDefinition = {
+  serviceType: 'HOME_MAINTENANCE',
+  displayName: 'Home Maintenance / Civil Services',
+  shortDescription: 'Tile replacement, water leakage, wall/floor repair, masonry & carpentry',
+  icon: 'Home',
+  heroImage: '/assets/services/home-maintenance-hero.svg',
+  ticketPrefix: 'HMT',
+  customerSafeRoleName: 'Home Maintenance Professional',
+  problemCategories: [
+    {
+      code: 'TILE_REPLACEMENT_OR_REPAIR',
+      title: 'Tile replacement / change',
+      description: 'Loose, broken, cracked, hollow tiles or missing grout lines requiring repair.',
+      image: '/assets/problems/tile-repair.svg',
+      alt: 'Tile replacement and grouting',
+      recommendedEvidence: ['Photo of damaged or loose tiles with surrounding area'],
+    },
+    {
+      code: 'WATER_LEAKAGE',
+      title: 'Water leakage & seepage',
+      description: 'Moisture patches, damp walls, ceiling seepage or waterproofing failures.',
+      image: '/assets/problems/water-seepage.svg',
+      alt: 'Wall water leakage and seepage',
+      recommendedEvidence: ['Clear photo of damp area on wall or ceiling'],
+    },
+    {
+      code: 'WALL_REPAIR',
+      title: 'Wall repair',
+      description: 'Cracked plaster, peeling paint, masonry hole or drywall damage.',
+      image: '/assets/problems/wall-repair.svg',
+      alt: 'Wall plaster crack and damage',
+      recommendedEvidence: ['Photo of the affected wall crack or plaster damage'],
+    },
+    {
+      code: 'FLOOR_REPAIR',
+      title: 'Floor repair',
+      description: 'Uneven flooring, sinking floor tiles, broken skirting or floor leveling.',
+      image: '/assets/problems/floor-repair.svg',
+      alt: 'Floor repair and leveling',
+      recommendedEvidence: ['Photo of floor area showing unevenness or damage'],
+    },
+    {
+      code: 'BATHROOM_REPAIR',
+      title: 'Bathroom repair',
+      description: 'Tile joint waterproofing, slope leveling, floor tile regrouting or seal repair.',
+      image: '/assets/problems/bathroom-repair.svg',
+      alt: 'Bathroom civil and tile repair',
+      recommendedEvidence: ['Photo of bathroom floor, corner joints or tile edges'],
+    },
+    {
+      code: 'KITCHEN_REPAIR',
+      title: 'Kitchen repair',
+      description: 'Granite counter joint crack, kitchen platform tile or sink boundary gap.',
+      image: '/assets/problems/kitchen-repair.svg',
+      alt: 'Kitchen counter civil repair',
+      recommendedEvidence: ['Photo of kitchen counter, tiles or sink joint'],
+    },
+    {
+      code: 'DOOR_WINDOW_REPAIR',
+      title: 'Door / window related repair',
+      description: 'Door rubbing on floor, loose hinges, window frame gap or latch jamming.',
+      image: '/assets/problems/door-repair.svg',
+      alt: 'Door and window repair',
+      recommendedEvidence: ['Photo of door/window frame, hinges or sticking point'],
+    },
+    {
+      code: 'MINOR_MASONRY_WORK',
+      title: 'Minor masonry / civil work',
+      description: 'Cement plastering, brickwork touchup, boundary wall crack or step repair.',
+      image: '/assets/problems/masonry-work.svg',
+      alt: 'Minor civil masonry work',
+      recommendedEvidence: ['Photo of masonry area requiring repair'],
+    },
+    {
+      code: 'SOMETHING_ELSE',
+      title: 'Other home maintenance',
+      description: 'General home repair, carpentry, civil touchup or custom maintenance request.',
+      image: '/assets/problems/home-maintenance-general.svg',
+      alt: 'General home maintenance repair',
+      recommendedEvidence: ['Photo of area of concern'],
+    },
+  ],
+  triageQuestions: [
+    { id: 'q_hmt_pipes', question: 'Is the damage located near concealed plumbing or electrical conduits?', options: ['YES, NEAR PIPES/WIRES', 'NO, OPEN WALL/FLOOR', 'NOT SURE'] },
+    { id: 'q_hmt_water', question: 'Is there active flowing water or only stagnant dampness?', options: ['ACTIVE FLOWING WATER', 'DAMPNESS / MOISTURE ONLY', 'COMPLETELY DRY'] },
+  ],
+  allowedEvidenceTypes: ['PHOTO'],
+  requiredSkills: homeMaintenanceConfig.skills,
+  recommendedTools: homeMaintenanceConfig.tools,
+  safetyRules: homeMaintenanceConfig.defaultSafetyWarnings,
+  readingDefinitions: {
+    moistureLevelPercent: 'Surface Moisture Content (%)',
   },
 };
 
@@ -557,12 +680,17 @@ export class ServiceRegistry {
     ['AC', AC_SERVICE_DEFINITION],
     ['ELECTRICAL', ELECTRICAL_SERVICE_DEFINITION],
     ['PLUMBING', PLUMBING_SERVICE_DEFINITION],
+    ['HOME_MAINTENANCE', HOME_MAINTENANCE_SERVICE_DEFINITION],
     ['RO_PURIFIER', RO_SERVICE_DEFINITION],
     ['APPLIANCE_REPAIR', APPLIANCE_SERVICE_DEFINITION],
   ]);
 
   public static getService(serviceType: ServiceType): ServiceDefinition | undefined {
     return this.services.get(serviceType);
+  }
+
+  public static getTicketPrefix(serviceType: ServiceType): string {
+    return this.getService(serviceType)?.ticketPrefix || 'SRV';
   }
 
   public static getAllServices(): ServiceDefinition[] {

@@ -1034,7 +1034,7 @@ export const Technicians: React.FC = () => {
             <label className="block font-bold text-slate-700 mb-1">
               Certified Service Capabilities *
             </label>
-            <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   id="tech-add-solar-checkbox"
@@ -1043,7 +1043,7 @@ export const Technicians: React.FC = () => {
                   onChange={() => handleToggleServiceType('SOLAR')}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="font-bold text-slate-800">Solar Photovoltaic</span>
+                <span className="font-bold text-slate-800">Solar</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1053,7 +1053,37 @@ export const Technicians: React.FC = () => {
                   onChange={() => handleToggleServiceType('AC')}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="font-bold text-slate-800">Air Conditioning / HVAC</span>
+                <span className="font-bold text-slate-800">AC / HVAC</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  id="tech-add-plumbing-checkbox"
+                  type="checkbox"
+                  checked={serviceTypes.includes('PLUMBING')}
+                  onChange={() => handleToggleServiceType('PLUMBING')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Plumbing</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  id="tech-add-homemaintenance-checkbox"
+                  type="checkbox"
+                  checked={serviceTypes.includes('HOME_MAINTENANCE')}
+                  onChange={() => handleToggleServiceType('HOME_MAINTENANCE')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Home Maintenance / Civil</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  id="tech-add-electrical-checkbox"
+                  type="checkbox"
+                  checked={serviceTypes.includes('ELECTRICAL')}
+                  onChange={() => handleToggleServiceType('ELECTRICAL')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Electrical</span>
               </label>
             </div>
           </div>
@@ -1430,7 +1460,7 @@ export const Technicians: React.FC = () => {
             <label className="block font-bold text-slate-700 mb-1">
               Certified Service Capabilities *
             </label>
-            <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -1438,7 +1468,7 @@ export const Technicians: React.FC = () => {
                   onChange={() => handleToggleEditServiceType('SOLAR')}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="font-bold text-slate-800">Solar Photovoltaic</span>
+                <span className="font-bold text-slate-800">Solar</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -1447,7 +1477,34 @@ export const Technicians: React.FC = () => {
                   onChange={() => handleToggleEditServiceType('AC')}
                   className="rounded text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="font-bold text-slate-800">Air Conditioning / HVAC</span>
+                <span className="font-bold text-slate-800">AC / HVAC</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editServiceTypes.includes('PLUMBING')}
+                  onChange={() => handleToggleEditServiceType('PLUMBING')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Plumbing</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editServiceTypes.includes('HOME_MAINTENANCE')}
+                  onChange={() => handleToggleEditServiceType('HOME_MAINTENANCE')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Home Maintenance / Civil</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editServiceTypes.includes('ELECTRICAL')}
+                  onChange={() => handleToggleEditServiceType('ELECTRICAL')}
+                  className="rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="font-bold text-slate-800">Electrical</span>
               </label>
             </div>
           </div>

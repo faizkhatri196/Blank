@@ -37,7 +37,6 @@ const ServiceHistorySchema = new Schema<IServiceHistory>(
     },
     serviceType: {
       type: String,
-      enum: ['SOLAR', 'AC'],
       required: true,
       index: true,
     },

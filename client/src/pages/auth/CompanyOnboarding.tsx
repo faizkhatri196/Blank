@@ -53,6 +53,27 @@ const AVAILABLE_SERVICES: ServiceOption[] = [
     icon: Wind,
     color: 'sky',
   },
+  {
+    type: 'PLUMBING',
+    name: 'Plumbing Services',
+    description: 'Pipe leakage, tap repairs, blockage, water pressure & drainage',
+    icon: Droplet,
+    color: 'blue',
+  },
+  {
+    type: 'HOME_MAINTENANCE',
+    name: 'Home Maintenance & Civil',
+    description: 'Tile replacement, wall/floor repair, seepage, masonry, doors & windows',
+    icon: Wrench,
+    color: 'emerald',
+  },
+  {
+    type: 'ELECTRICAL',
+    name: 'Electrical Services',
+    description: 'Wiring, MCB tripping, switchboard, short circuits & heavy appliances',
+    icon: Zap,
+    color: 'yellow',
+  },
 ];
 
 interface CoverageAreaInput {

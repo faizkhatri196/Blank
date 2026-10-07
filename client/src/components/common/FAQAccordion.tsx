@@ -31,17 +31,17 @@ export const FAQAccordion: React.FC = () => {
         {
           question: 'Which services are currently supported on SERVORA?',
           answer:
-            'SERVORA currently supports two primary production verticals: Solar Photovoltaic (PV) systems (inverters, solar panels, power generation diagnostics) and AC / HVAC systems (cooling failures, water leaks, gas pressure, compressor diagnostics). SERVORA is designed around configurable service verticals, allowing additional service categories to be introduced in future releases.',
+            'SERVORA supports five core field service trades: Solar Photovoltaic (PV) systems (inverter fault triage, array generation diagnostics), AC / HVAC (cooling issues, condensate leaks, gas pressure), Plumbing (pipe leaks, drainage blockages, valve replacements), Electrical (MCB tripping, short circuits, switchboard faults), and Home Maintenance / Civil (tile replacement, wall seepage, masonry waterproofing). Each service has custom intake workflows, problem catalogs, and diagnostic guidance.',
         },
         {
           question: 'How does location selection work for service requests?',
           answer:
-            'Customer location selection is powered by live OpenStreetMap Nominatim search with precise India boundaries. When a customer enters their area or city, structured coordinates, pincodes, and boundaries are retrieved in real-time. There are zero hardcoded city fallbacks.',
+            'Customer location selection is powered by live OpenStreetMap Nominatim search with precise India boundaries. When a customer enters their area or city, structured coordinates, pincodes, and boundaries are retrieved in real-time. There are zero hardcoded city fallbacks, and invalid coordinates are strictly rejected.',
         },
         {
           question: 'Why are photos required for certain problems but not others?',
           answer:
-            'Each problem category defines calibrated photo requirements: REQUIRED (such as Inverter Error Codes or AC Water Leaking) where visual evidence is essential to dispatch correct components; RECOMMENDED where photos aid preliminary diagnosis; and NOT_USEFUL (such as AC noise or burning odor) where physical testing instruments on site are required rather than visual inspection.',
+            'Each problem category defines calibrated photo requirements: REQUIRED (such as Inverter Error Codes, Pipe Leakage, or Tile Damage) where visual inspection is essential to dispatch correct materials; RECOMMENDED where photos aid preliminary diagnosis; and NOT_USEFUL (such as burning odor or electrical buzzing) where physical on-site testing instruments are required.',
         },
       ],
     },
@@ -51,19 +51,19 @@ export const FAQAccordion: React.FC = () => {
       icon: Building,
       items: [
         {
-          question: 'How does the 5-factor technician recommendation work?',
+          question: 'How does service-aware technician matching work?',
           answer:
-            'The matching engine scores active company technicians using deterministic criteria: Certified Skill Match (40%), Equipped Tool Verification (20%), Availability & Status (20%), Geographic Service Area Coverage (10%), and Industry Experience (10%). Technicians outside coverage boundaries are marked as ineligible with clear diagnostic explanations.',
+            'The matching engine scores active company technicians using deterministic criteria: Certified Service Capability Match (strictly filtering by trade, e.g. Plumbing vs Solar), Equipped Tool Verification, Availability & Shift Status, Geographic Service Area Coverage, and Experience. Technicians lacking certification for the requested service vertical are disqualified with clear diagnostic explanations.',
         },
         {
-          question: 'What happens if I try to assign a technician outside the service area?',
+          question: 'What happens if I try to assign a technician to an uncertified service?',
           answer:
-            'The platform enforces strict service area validation. If a technician does not cover the customer’s locality, radius, or pincode, assignment fails safely with a structured in-app diagnostic modal detailing the mismatch and offering one-click actions to adjust technician coverage or choose another eligible technician.',
+            'The platform enforces strict capability validation. If a manager attempts to assign a Solar-only technician to a Plumbing or Electrical ticket, the backend rejects the assignment with a SERVICE_TYPE_MISMATCH error and displays an in-app diagnostic guide recommending qualified personnel.',
         },
         {
           question: 'Can managers customize service radius and technician coverage?',
           answer:
-            'Yes. In Company Settings and Technician Management, managers can edit operating coverage radius (in kilometers), assigned localities, and pincodes with smooth keystroke handling and live boundary validation.',
+            'Yes. In Company Settings and Technician Management, managers can edit operating coverage radius (in kilometers), assigned service capabilities, localities, and pincodes with smooth keystroke handling and live boundary validation.',
         },
       ],
     },
@@ -75,12 +75,12 @@ export const FAQAccordion: React.FC = () => {
         {
           question: 'How do technicians receive job assignments?',
           answer:
-            'When a manager assigns a job, a tenant-isolated in-app notification is immediately generated. Technicians see a real-time badge count, service summary, customer locality, and a direct deep-link [View Job] that opens the job execution terminal at /technician/jobs/:id.',
+            'When a manager assigns a job, a tenant-isolated in-app notification is immediately generated. Technicians see a real-time badge count, service summary, customer locality, and a direct deep-link [View Job] that opens the trade-specific execution terminal at /technician/jobs/:id.',
         },
         {
           question: 'What lifecycle stages exist for field job execution?',
           answer:
-            'Technicians move tickets through strict operational milestones: Assigned → Accepted → On The Way → On Site → Diagnosing → Repairing → Completed, with tamper-resistant audit timestamps and milestone notes.',
+            'Technicians move tickets through strict operational milestones: Assigned → Accepted → On The Way → On Site → Diagnosing → In Progress → Completed, with tamper-resistant audit timestamps, field observations, and trade-specific checklists.',
         },
       ],
     },
@@ -92,12 +92,12 @@ export const FAQAccordion: React.FC = () => {
         {
           question: 'How is tenant data isolated between service providers?',
           answer:
-            'Every organization has an isolated company boundary. All database queries, tickets, customer profiles, technician rosters, notifications, and telemetry strictly filter by companyId to guarantee zero cross-tenant leakage.',
+            'Every organization operates within an isolated tenant boundary. All database queries, tickets, customer profiles, technician rosters, notifications, and telemetry strictly filter by companyId to guarantee zero cross-tenant data leakage.',
         },
         {
-          question: 'Is SERVORA extensible to future service verticals?',
+          question: 'How is the multi-trade service model architected?',
           answer:
-            'Yes. SERVORA’s service registry, problem catalog, and AI triage architecture are completely modular. While currently active production services focus strictly on Solar and AC / HVAC, additional verticals can be registered seamlessly in upcoming releases without modifying the core matching and workflow engine.',
+            'SERVORA utilizes a modular Service Registry where each trade (Solar, AC, Plumbing, Electrical, Home Maintenance) defines its problem taxonomies, required diagnostic tools, safety warnings, and execution steps. Companies opt into specific service verticals, enabling single-trade or multi-trade dispatch from a single platform.',
         },
       ],
     },
@@ -109,7 +109,7 @@ export const FAQAccordion: React.FC = () => {
         {
           question: 'How does the AI triage assist without hallucinating?',
           answer:
-            'AI analysis normalizes unstructured customer complaints into structured symptom definitions, probable root causes, recommended toolkits, and safety advisories. Manager reviews can annotate recommendations while original AI output remains immutable for post-job accuracy audits.',
+            'The AI analysis engine parses unstructured customer complaints into structured symptom definitions, probable root causes, recommended toolkits, and mandatory safety advisories. It assists technicians and managers without replacing physical diagnosis on site.',
         },
         {
           question: 'How is customer and technician privacy protected?',
@@ -124,9 +124,9 @@ export const FAQAccordion: React.FC = () => {
       icon: CheckCircle2,
       items: [
         {
-          question: 'How has the platform been validated for real testing?',
+          question: 'How has the platform been validated for real-world operations?',
           answer:
-            'The entire core workflow has undergone end-to-end automated and human testing across location search, technician matching, area validation, in-app notifications, and field execution across both Solar and AC verticals.',
+            'The entire operational flow has undergone comprehensive end-to-end automated and human testing across location search, trade capability matching, multi-tenant boundaries, and field execution across Solar, AC, Plumbing, Electrical, and Home Maintenance.',
         },
       ],
     },

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Company, ICompany } from '../../models/Company';
 import { ServiceType } from '../../types';
 import { calculateHaversineDistanceKm, isValidApplicationCoordinate } from './geospatial';
+import { ServiceRegistry } from '../../config/serviceRegistry';
 
 export interface CoverageCheckInput {
   latitude?: number | null;
@@ -263,7 +264,7 @@ export async function discoverAvailableServices(location: {
   pincode?: string | null;
   requestedCompanyId?: string | mongoose.Types.ObjectId | null;
 }): Promise<AvailableServicesResult> {
-  const serviceTypes: ServiceType[] = ['SOLAR', 'AC'];
+  const serviceTypes: ServiceType[] = ServiceRegistry.getAllServices().map((s) => s.serviceType);
   const matchedServices: AvailableServicesResult['services'] = [];
   const coveredTypes = new Set<ServiceType>();
 

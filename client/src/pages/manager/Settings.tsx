@@ -19,11 +19,17 @@ import {
   X,
   Sun,
   Wind,
+  Droplet,
+  Zap,
+  Wrench,
 } from 'lucide-react';
 
 const SERVICE_OPTIONS = [
   { type: 'SOLAR', label: 'Solar Energy', icon: Sun, color: 'amber' },
   { type: 'AC', label: 'AC & HVAC', icon: Wind, color: 'sky' },
+  { type: 'PLUMBING', label: 'Plumbing', icon: Droplet, color: 'blue' },
+  { type: 'HOME_MAINTENANCE', label: 'Home Maintenance / Civil', icon: Wrench, color: 'emerald' },
+  { type: 'ELECTRICAL', label: 'Electrical', icon: Zap, color: 'amber' },
 ];
 
 export const Settings: React.FC = () => {

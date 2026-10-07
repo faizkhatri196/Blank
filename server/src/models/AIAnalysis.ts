@@ -33,8 +33,8 @@ const AIAnalysisSchema = new Schema<IAIAnalysis>(
     model: { type: String, required: true },
     serviceType: {
       type: String,
-      enum: ['SOLAR', 'AC'],
       required: true,
+      index: true,
     },
     possibleIssues: [
       {

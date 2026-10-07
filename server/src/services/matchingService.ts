@@ -3,6 +3,7 @@ import { IServiceTicket } from '../models/ServiceTicket';
 import { IAIAnalysis } from '../models/AIAnalysis';
 import { TechnicianMatchResult } from '../types';
 import { calculateHaversineDistanceKm, isValidApplicationCoordinate, extractValidCoords } from './location/geospatial';
+import { ServiceRegistry } from '../config/serviceRegistry';
 
 export interface CustomerLocationContext {
   city?: string;
@@ -45,8 +46,11 @@ export function calculateTechnicianMatches(
   const locText = `${ticketCity} ${ticketArea} ${ticketAddress} ${ticketPincode}`.toLowerCase().trim();
   const customerLocDisplay = [ticketArea, ticketCity].filter(Boolean).join(', ') || ticketCity || 'Customer location';
 
-  // Extract required skills and tools from AI analysis or defaults
-  const requiredTools = aiAnalysis?.recommendedTools || ['MULTIMETER', 'CLAMP_METER'];
+  // Extract required skills and tools from AI analysis, service registry, or defaults
+  const serviceDef = ServiceRegistry.getService(serviceType);
+  const requiredTools = aiAnalysis?.recommendedTools?.length
+    ? aiAnalysis.recommendedTools
+    : serviceDef?.recommendedTools || ['MULTIMETER', 'CLAMP_METER'];
 
   // Required skills based on service type and issue
   const requiredSkills: string[] = [];
@@ -77,8 +81,38 @@ export function calculateTechnicianMatches(
     if (complaint.includes('compressor')) {
       requiredSkills.push('COMPRESSOR_REPAIR');
     }
+  } else if (serviceType === 'PLUMBING') {
+    requiredSkills.push('PIPE_FITTING', 'LEAK_REPAIR');
+    const complaint = (ticket.complaint || '').toLowerCase();
+    if (complaint.includes('drain') || complaint.includes('block') || complaint.includes('clog')) {
+      requiredSkills.push('DRAIN_CLEARING');
+    }
+    if (complaint.includes('tap') || complaint.includes('faucet')) {
+      requiredSkills.push('TAP_REPAIR');
+    }
+  } else if (serviceType === 'HOME_MAINTENANCE') {
+    const complaint = (ticket.complaint || '').toLowerCase();
+    if (complaint.includes('tile')) {
+      requiredSkills.push('TILE_INSTALLATION_AND_REPAIR');
+    } else if (complaint.includes('leak') || complaint.includes('seep') || complaint.includes('water')) {
+      requiredSkills.push('WATERPROOFING_AND_SEEPAGE');
+    } else if (complaint.includes('wall') || complaint.includes('plaster')) {
+      requiredSkills.push('WALL_PLASTER_AND_CRACK_REPAIR');
+    } else if (complaint.includes('floor')) {
+      requiredSkills.push('FLOOR_REPAIR_AND_LEVELING');
+    } else if (complaint.includes('door') || complaint.includes('window')) {
+      requiredSkills.push('DOOR_WINDOW_CARPENTRY_FITMENT');
+    } else if (complaint.includes('masonry') || complaint.includes('civil')) {
+      requiredSkills.push('CIVIL_MASONRY');
+    } else {
+      requiredSkills.push(serviceDef?.requiredSkills?.[0] || 'CIVIL_MASONRY');
+    }
   } else {
-    requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
+    if (serviceDef?.requiredSkills?.length) {
+      requiredSkills.push(...serviceDef.requiredSkills.slice(0, 2));
+    } else {
+      requiredSkills.push('ELECTRICAL_TROUBLESHOOTING');
+    }
   }
 
   // 1. FILTER: Active and certified for this ticket's serviceType

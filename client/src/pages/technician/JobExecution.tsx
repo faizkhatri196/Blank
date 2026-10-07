@@ -522,10 +522,14 @@ export const JobExecution: React.FC = () => {
             />
           </div>
 
-          {/* Vertical Specific Readings */}
+          {/* Service Specific Readings */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
             <span className="font-bold text-slate-700 block">
-              Field Electrical & Environmental Readings
+              {ticket.serviceType === 'SOLAR'
+                ? 'Solar Array Electrical Readings'
+                : ticket.serviceType === 'AC'
+                ? 'HVAC Operating Temperatures & Pressure'
+                : 'Service Specific Inspection & Technical Readings'}
             </span>
 
             {ticket.serviceType === 'SOLAR' ? (
@@ -562,7 +566,7 @@ export const JobExecution: React.FC = () => {
                   />
                 </div>
               </div>
-            ) : (
+            ) : ticket.serviceType === 'AC' ? (
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Indoor Temp (°C)</label>
@@ -606,6 +610,10 @@ export const JobExecution: React.FC = () => {
                   />
                 </div>
               </div>
+            ) : (
+              <p className="text-[11px] text-slate-500 italic">
+                Inspection measurements recorded in technician completion notes and photos.
+              </p>
             )}
           </div>
 

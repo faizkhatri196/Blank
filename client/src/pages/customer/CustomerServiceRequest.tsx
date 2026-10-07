@@ -616,6 +616,13 @@ export const CustomerServiceRequest: React.FC = () => {
                       selectedRing: 'border-blue-500 bg-blue-50/40 ring-blue-500/20',
                       selectedRadio: 'bg-blue-500 border-blue-500',
                     };
+                  case 'HOME_MAINTENANCE':
+                    return {
+                      icon: <Wrench className="w-6 h-6" />,
+                      iconBg: 'bg-emerald-100 text-emerald-600',
+                      selectedRing: 'border-emerald-500 bg-emerald-50/40 ring-emerald-500/20',
+                      selectedRadio: 'bg-emerald-500 border-emerald-500',
+                    };
                   default:
                     return {
                       icon: <Wrench className="w-6 h-6" />,

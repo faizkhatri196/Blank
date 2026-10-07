@@ -1,323 +1,419 @@
-# Servora — AI-Powered Field Service Operations
-### *Operational Co-pilot for Solar PV and AC / HVAC Field Service Businesses*
+# Servora
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-4.21-000000?logo=express&logoColor=white)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-Passing_100%25-green?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Servora-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/company/servoraaiop/)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](#-license--intellectual-property)
+## AI-Powered Field Service Operations Platform
+
+[![Platform](https://img.shields.io/badge/Platform-Servora_Field_Ops-4F46E5?style=flat-square)](https://github.com/faizkhatri196/Servora)
+[![Verticals](https://img.shields.io/badge/Trades-Solar_|_HVAC_|_Plumbing_|_Electrical_|_Civil-10B981?style=flat-square)](#8-service-categories)
+[![Architecture](https://img.shields.io/badge/Architecture-Service--Aware_Multi--Tenant-0284C7?style=flat-square)](#14-product-architecture)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Servora-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/company/servoraaiop/)
+[![Status](https://img.shields.io/badge/Status-Production_Ready-emerald?style=flat-square)](#17-current-product-status)
 
 ---
 
-## 📌 Executive Summary
+## 1. Product Overview
 
-**Servora** is an enterprise-grade operational management and AI assistance platform built specifically for field service companies running physical technician operations. 
+**Servora** is an enterprise-grade field service operations platform built to modernize physical maintenance, diagnostic triage, and dispatch for distributed service businesses.
 
-Unlike consumer marketplaces or generic CRM ticketing tools, Servora bridges the critical operational gap between **complaint intake**, **grounded AI diagnostic preparation**, **deterministic skill-matching**, **mobile field execution**, **physical groundwork verification**, and **empirical AI-vs-Actual benchmarking**.
+Modern residential, commercial, and industrial maintenance companies operate in high-friction environments. Service requests routinely arrive across fragmented channels: phone calls, WhatsApp chats, paper receipts, and unorganized spreadsheets. Dispatchers struggle to match job requirements against technician certifications, tools, and real-time geographic coverage. Technicians arrive on-site with incomplete fault context, lacking necessary replacement parts or precision instruments.
 
-Servora is architected from day one to support two high-demand physical service verticals without code duplication:
-1. ☀️ **Solar PV Systems**: Grid-tied, off-grid, and hybrid solar installations (photovoltaic panels, string inverters, charge controllers, net metering, battery storage).
-2. ❄️ **AC / HVAC Systems**: Split, window, cassette, and package systems (compressor, condenser, evaporator, refrigerant cycle, electrical controls).
+Servora replaces this fragmented patchwork with a unified, end-to-end operational operating system:
 
----
-
-## 🎬 3-Minute Y Combinator Product Walkthrough
-
-Servora includes an end-to-end recorded 3-minute video demonstration (`SERVORA_3MIN_YC_DEMO.mp4`) captured live from the operational environment without slides or mockups, showing how a high-priority service request moves through all three system portals in Mandvi, Kutch:
-
-```mermaid
-graph LR
-    subgraph Act1["Act 1: Customer Portal"]
-        A["Location & Equipment Check"] --> B["AI Diagnostic Intake"]
-        B --> C["Live Ticket Created"]
-    end
-    subgraph Act2["Act 2: Operations Command Center"]
-        C --> D["Root-Cause Diagnostic Analysis"]
-        D --> E["5-Factor Match Engine"]
-        E --> F["1-Click Technician Dispatch"]
-    end
-    subgraph Act3["Act 3: Field Technician Mobile"]
-        F --> G["Mobile Work Queue"]
-        G --> H["Physical Readings Verified"]
-        H --> I["Photo Proof & Customer Signoff"]
-    end
+```
+Customer Problem
+       ↓
+Location-Aware Discovery & Service Filtering
+       ↓
+AI Complaint Understanding & Diagnostic Preparation
+       ↓
+Multi-Tenant Operations Queue
+       ↓
+Service-Aware Capability Matching & Dispatch
+       ↓
+Mobile Field Execution & Physical Inspection
+       ↓
+Tamper-Resistant Milestone Progression & Completion Record
 ```
 
-- **Video Demonstration**: [`SERVORA_3MIN_YC_DEMO.mp4`](./SERVORA_3MIN_YC_DEMO.mp4) (Full HD 1080p, 24fps, H.264)
-- **Interactive In-App Walkthrough**: Visit `/walkthrough` in the portal to scrub through all 8 interactive milestones with real-time HUD telemetry.
-
 ---
 
-## 🎯 The Operational Problem & The Servora Solution
+## 2. The Core Problem
 
-| Operational Bottleneck | Industry Status Quo | The Servora Solution |
-| :--- | :--- | :--- |
-| **Pre-Arrival Diagnostic Blindness** | Technicians arrive on-site with zero preparation based only on a vague complaint like *"solar not working"* or *"AC warm"*. | Grounded AI analyzes the complaint, equipment brand/model, error codes, and past service history to build a 5-point pre-dispatch preparation package. |
-| **Missing Tools & Spare Parts** | Up to 35% of first-time visits fail because the technician did not bring the required tool (e.g. MC4 crimper, manifold gauge) or spare part. | AI recommends mandatory tools and candidate spare parts *before dispatch*, preventing repeat truck rolls. |
-| **Skill Mismatch & Random Dispatch** | Dispatchers assign whichever tech is nearest, even if they lack inverter certification or HVAC refrigerant experience. | Deterministic 5-factor scoring matches technicians based on vertical certification, skill matrix, proximity, onboard tools, and availability. |
-| **Hallucinated / Unchecked AI** | Teams fear deploying AI that makes dangerous or inaccurate recommendations without verification. | AI is strictly labeled as assistant hypothesis. Technicians must record physical multimeter/gauge readings on-site to verify or refute AI. |
-| **Lack of Operational Ground Truth** | Companies have no empirical data on whether AI recommendations actually matched real physical fault conditions. | Automated AI-vs-Actual benchmark engine tracks diagnostic match %, tool match %, part match %, and repeat visit rate with 22-column CSV export. |
-
----
-
-## 📱 Designed for All Devices & Screen Sizes
-
-Servora is engineered for seamless operation across desktop control centers and rugged mobile fieldwork:
-
-- 📱 **Mobile Smartphones (320px – 480px)**:
-  - Touch targets calibrated to $\ge 44\text{px}$ for gloved or field use.
-  - High-contrast **Outdoor Field Mode** for readability in direct sunlight.
-  - Fixed ergonomic thumb bottom bar for field technicians.
-  - Slide-out navigation drawer with touch backdrop for mobile managers.
-- 💻 **Tablets & Laptops (768px – 1024px)**:
-  - Adaptive 2-column layouts for ticket triaging and customer equipment inspection.
-  - Responsive modals for technician assignment and review.
-- 🖥️ **Desktop & Ultrawide (1200px+)**:
-  - Full-featured Operations Center with live pipeline queues, technician rosters, and Pilot Insights analytics.
-
----
-
-## 🏗️ System Architecture
+Field service operations across energy, climate, plumbing, electrical, and structural maintenance suffer from five structural bottlenecks:
 
 ```mermaid
 graph TD
-    ClientApp[Vite + React 18 Mobile/Desktop Frontend]
-    APIGateway[Express REST API Gateway + Auth JWT Middleware]
-    
-    subgraph Services [Application Business Layer]
-        AuthSvc[Auth & Role Service]
-        TicketSvc[Ticket State Machine Service]
-        AISvc[AI Diagnostics & Grounding Engine]
-        MatchSvc[5-Factor Technician Matching]
-        EvalSvc[AI vs Actual Comparison Benchmark]
-        MetricSvc[Pilot Metrics & CSV Export Engine]
-    end
-    
-    subgraph Data [Data & Storage Layer]
-        MongoDB[(MongoDB Atlas Multi-Tenant Collections)]
-        FSStorage[Local Uploads / Storage]
-    end
-    
-    subgraph AIProviders [AI Layer Fallback Chain]
-        Gemini[Google Gemini 1.5 Flash]
-        Groq[Groq Llama 3 70B Fast Engine]
-        DemoAI[Deterministic Rule-Based Knowledge Base]
-    end
-
-    ClientApp -->|HTTP/REST /api/*| APIGateway
-    APIGateway --> Services
-    Services --> Data
-    AISvc --> Gemini
-    Gemini -.->|Fallback on error/quota| Groq
-    Groq -.->|Fallback on offline/demo| DemoAI
+    A["Unstructured Customer Intake<br/><i>'AC is leaking' / 'Solar not working'</i>"] --> B["Diagnostic Blindness<br/><i>Technician dispatched without symptom clarity</i>"]
+    B --> C["Tool & Skill Mismatch<br/><i>Plumber assigned electrical fault or wrong tools onboard</i>"]
+    C --> D["Wasted Truck Rolls & Repeat Visits<br/><i>Failed first-time fix rate exceeds 30%</i>"]
+    D --> E["Scattered Records & Zero Audit Trail<br/><i>No standardized proof of work or ground truth</i>"]
 ```
+
+1. **Intake Ambiguity**: Customers describe complex electromechanical or civil failures in non-technical terms, leaving dispatchers guessing what parts or trades are required.
+2. **Capability Misalignment**: Traditional dispatching routes jobs based strictly on distance rather than certified trade capabilities, resulting in cross-domain dispatch errors (e.g., dispatching solar specialists to plumbing emergencies).
+3. **Pre-Arrival Diagnostic Blindness**: Field personnel enter client premises without preliminary checklists, diagnostic schematics, or required safety protocols.
+4. **Unverified Field Execution**: Work completion relies on verbal confirmations or unstructured photos rather than calibrated measurement checklists, safety validations, and structured observation records.
+5. **Data Silos in Multi-Trade Businesses**: Companies offering multiple trades manage each team through separate channels, destroying operational visibility and customer continuity.
 
 ---
 
-## 🔄 End-to-End Operational Lifecycle
+## 3. The Servora Solution
+
+Servora bridges the gap between client problem intake and verified physical field resolution through four core pillars:
+
+- **Location-First Service Availability**: Real-time geographic boundary and locality validation ensuring requests only enter active operational coverage zones.
+- **Intelligent Intake & AI Diagnostic Triage**: Structured symptom normalization, candidate cause modeling, required tool forecasting, and mandatory safety advisories generated at request creation.
+- **Service-Aware Capability Dispatch**: Deterministic 5-factor scoring engine that mathematically prevents cross-domain technician mismatch and optimizes for certification, tools, distance, and availability.
+- **Standardized Field Execution Pipeline**: Mobile-responsive milestone workflows guiding professionals from dispatch acceptance through on-site physical measurement, observation recording, and customer handoff.
+
+---
+
+## 4. How Servora Works
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor C as Customer / Dispatcher
-    actor M as Service Manager
-    participant AI as AI Diagnostics Engine
-    actor T as Field Technician
-    participant S as Groundwork Engine
+flowchart TD
+    subgraph CustomerPortal["1. Customer Intake & Triage"]
+        CP1["Live Locality Search & Coverage Check"] --> CP2["Trade Selection: Solar / AC / Plumbing / Electrical / Civil"]
+        CP2 --> CP3["Structured Symptom & Complaint Input"]
+        CP3 --> CP4["AI Complaint Analysis Engine"]
+    end
 
-    C->>M: Submits complaint (e.g., Solar Error 04 / AC warm air)
-    M->>AI: Trigger AI Diagnostic Analysis
-    AI-->>M: Diagnostic Checklist, Tools, Spare Parts & Safety Protocols
-    M->>M: 5-Factor Technician Match & Assignment
-    M->>T: Dispatch to Technician Mobile App
-    T->>T: Acknowledge -> On The Way -> Mark Arrived On Site
-    T->>T: Perform Safety LOTO & Measure Physical Readings
-    T->>S: Submit Service Report (Readings, Actual Diagnosis, Photos)
-    S->>S: Automated AI vs Actual Groundwork Benchmark
-    M->>M: Review Pilot Metrics & Export 22-Column CSV Telemetry
+    subgraph OperationsHub["2. Operations Command Center"]
+        OH1["Central Multi-Tenant Ticket Queue"] --> OH2["AI Diagnostic Review & Tool Prediction"]
+        OH2 --> OH3["Service-Aware Capability Matching"]
+        OH3 --> OH4["Targeted Technician Dispatch"]
+    end
+
+    subgraph FieldExecution["3. Professional Field Execution"]
+        FE1["In-App Dispatch Notification"] --> FE2["Milestone: Accepted → En Route → On Site"]
+        FE2 --> FE3["Trade-Specific Physical Inspection & Checklist"]
+        FE3 --> FE4["Digital Completion Record & Audit History"]
+    end
+
+    CustomerPortal --> OperationsHub
+    OperationsHub --> FieldExecution
 ```
 
 ---
 
-## 🔑 Demo Access & Role-Based Permissions
+## 5. Customer Experience
 
-The system includes pre-configured demo accounts to test both operational perspectives:
+The customer journey is designed for frictionless, location-aware service booking without requiring account creation:
 
-| Role | Email | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Service Manager** | `manager@demo.com` | `Demo@12345` | Full access: Operations dashboard, ticket creation, AI analysis, 5-factor dispatch, customer directory, technician management, Pilot Insights, and CSV export. |
-| **Field Technician** | `technician@demo.com` | `Demo@12345` | Fieldwork only: Assigned jobs queue, job progression (Accept $\to$ En Route $\to$ Arrived $\to$ Diagnosing $\to$ Repairing $\to$ Complete), physical reading capture, and report submission. *(Manager routes return `403 Forbidden`)* |
-
----
-
-## 🛠️ Multi-Vertical Groundwork Configurations
-
-### 1. Solar Photovoltaic (PV)
-- **Equipment Attributes**: Capacity (kW), Panel Make/Model, Inverter Make/Model, System Type (`ON_GRID`, `OFF_GRID`, `HYBRID`), Battery Storage Present.
-- **Physical Readings Required On-Site**:
-  - String Open-Circuit Voltage ($V_{oc}$)
-  - String Short-Circuit Current ($I_{sc}$)
-  - Inverter AC Output Voltage ($V_{ac}$)
-  - Grid Voltage ($V_{grid}$)
-  - Earth Resistance ($\Omega$)
-- **Mandatory Safety Protocols**: DC Disconnect isolation, Lockout-Tagout (LOTO), arc-flash PPE, rooftop fall protection.
-
-### 2. AC / HVAC Systems
-- **Equipment Attributes**: Tonnage (TR), AC Type (`SPLIT`, `WINDOW`, `CASSETTE`, `DUCTED`), Brand, Refrigerant Type (`R32`, `R410A`, `R22`).
-- **Physical Readings Required On-Site**:
-  - Indoor Room Temperature ($^\circ\text{C}$)
-  - Grille Supply Air Temperature ($^\circ\text{C}$)
-  - $\Delta T$ Cooling Differential ($^\circ\text{C}$)
-  - Compressor Suction Line Pressure ($\text{PSI}$)
-  - Running Current / Amperage ($A$)
-- **Mandatory Safety Protocols**: Mains breaker isolation, refrigerant venting compliance, condenser fan pinch hazard verification.
+1. **Location-First Discovery**: Customers specify their locality via live search. Servora validates administrative boundaries and coordinates in real-time. Only services actively covered by licensed providers in that geographic zone are presented.
+2. **Trade & Problem Selection**: Clear visual taxonomies for Solar Energy, AC/HVAC, Plumbing, Electrical, and Home Maintenance. Customers pick specific problem categories (e.g., *Inverter Tripping*, *Compressor Failure*, *Water Leakage*, *MCB Sparking*, *Tile Replacement*).
+3. **Structured Complaint Input**: Intuitive text and voice-assisted intake capturing exact operational symptoms.
+4. **Calibrated Evidence Collection**: Dynamic media requirements based on problem category. High-visibility issues require photo uploads (e.g., damaged piping or inverter LCD codes), while acoustic or odor issues bypass camera requirements to prevent unnecessary friction.
+5. **Instant AI Diagnostic Feedback**: Customers receive immediate reassurance with an AI-generated intake summary detailing understood symptoms and expected technician preparation.
+6. **Real-Time Status Tracking**: Live ticket tracker displaying operational milestones: `NEW` $\to$ `ASSIGNED` $\to$ `ACCEPTED` $\to$ `ON THE WAY` $\to$ `ON SITE` $\to$ `COMPLETED`.
 
 ---
 
-## 📊 Pilot Validation Metrics & CSV Export
+## 6. AI-Powered Complaint Understanding
 
-Servora tracks real-world operational KPIs directly against field ground truth:
+Servora features an integrated diagnostic intake engine that translates informal customer descriptions into structured engineering hypotheses:
 
-1. **Diagnosis Match Rate**: Percentage of jobs where technician's verified on-site diagnosis matched the AI hypothesis.
-2. **Tool Match Rate**: Percentage of recommended tools that were physically utilized during the repair.
-3. **Part Prediction Rate**: Accuracy of pre-arrival replacement part predictions.
-4. **Repeat Visit Rate**: Rate of secondary dispatches (lower indicates higher first-time fix rate).
-5. **Technician AI Preparation Rating**: Subjective satisfaction rating ($1$ to $5$ stars) given by technicians on pre-dispatch preparation usefulness.
-6. **22-Column CSV Export**: Comprehensive raw telemetry including ticket numbers, vertical, customer coordinates, AI hypotheses, physical readings, actual diagnoses, and technician feedback.
+### Example Input
+> *"Water is leaking heavily from the pipe below my bathroom sink and the cabinet wood is getting soaked."*
 
----
+### AI Engine Output
 
-## 🚀 Quickstart & Local Installation
-
-### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher
-- **MongoDB**: Local instance or MongoDB Atlas cluster URI
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/faizkhatri196/Servora.git
-cd Servora
+```json
+{
+  "serviceType": "PLUMBING",
+  "category": "PIPE_LEAKAGE",
+  "urgency": "HIGH",
+  "probableCauses": [
+    "P-trap slip joint washer deterioration or displacement",
+    "Compression valve fitting failure at cold/hot supply riser",
+    "Threaded tailpiece corrosion under high household water pressure"
+  ],
+  "recommendedTools": [
+    "PIPE_WRENCH",
+    "BASIN_WRENCH",
+    "TEFLON_THREAD_TAPE",
+    "COMPRESSION_SLEEVE_PULLER"
+  ],
+  "safetyAdvisory": [
+    "Locate and close the fixture isolation valve or main water stopcock immediately",
+    "Keep electrical outlets and appliances in the vicinity isolated from standing water"
+  ],
+  "missingInformation": [
+    "Confirmation whether leakage occurs continuously or only when tap is running"
+  ]
+}
 ```
 
-### 2. Install All Dependencies
-```bash
-npm run install:all
-```
-*Or install root, server, and client individually:*
-```bash
-npm install
-npm --prefix server install
-npm --prefix client install
-```
-
-### 3. Environment Configuration
-Create `server/.env` based on `server/.env.example`:
-```env
-PORT=5000
-NODE_ENV=development
-CLIENT_URL=http://localhost:5173
-MONGODB_URI=mongodb://localhost:27017/servora
-JWT_SECRET=your_super_secret_jwt_key_min_32_chars_here
-AI_PROVIDER=demo
-```
-
-Create `client/.env` based on `client/.env.example`:
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-> **Note on AI Providers**: By default, `AI_PROVIDER=demo` runs completely offline with zero API cost using a deterministic knowledge engine. To use real LLMs, set `AI_PROVIDER=gemini` and provide `GEMINI_API_KEY`, or `AI_PROVIDER=groq` and provide `GROQ_API_KEY`.
-
-### 4. Seed the Database
-Populate 20 realistic service tickets, customer records, installed assets, and demo accounts:
-```bash
-npm run seed
-```
-
-### 5. Run the Application
-Start both the backend server and frontend client concurrently:
-```bash
-npm run dev
-```
-- **Backend API**: [http://localhost:5000](http://localhost:5000) (Health check: `http://localhost:5000/health`)
-- **Frontend App**: [http://localhost:5173](http://localhost:5173)
+### Safety & Operational Guardrails
+- **Assistance, Not Final Diagnosis**: All AI recommendations are explicitly categorized as operational hypotheses. Technicians must conduct physical inspections on-site to verify or refute candidate causes.
+- **Provider Implementation**: Powered by Servora's deterministic multi-trade engineering rules engine (`DemoAIProvider`), ensuring zero API downtime, deterministic reproducibility, and zero exposure of private customer data. Optional cloud LLM grounding adapters (Google Gemini / Groq LLaMA) integrate seamlessly where cloud intelligence is configured.
 
 ---
 
-## 🧪 Automated Testing
+## 7. Service-Aware Operations
 
-Servora includes automated unit and integration tests covering the end-to-end workflow:
-```bash
-npm test
+Servora treats trades as modular operational domains. Organizations define which services they license, and technician eligibility is governed strictly by verifiable capabilities:
+
+```mermaid
+graph LR
+    subgraph MultiTradeCompany["Multi-Trade Service Provider"]
+        direction TB
+        S["☀️ Solar PV"]
+        A["❄️ AC / HVAC"]
+        P["🔧 Plumbing"]
+        E["⚡ Electrical"]
+        C["🏠 Civil / Home Maintenance"]
+    end
+
+    subgraph CapabilityMatrix["Certified Technician Roster"]
+        T1["Technician 1: Solar Lead (SOLAR)"]
+        T2["Technician 2: HVAC Specialist (AC)"]
+        T3["Technician 3: Master Plumber (PLUMBING)"]
+        T4["Technician 4: Licensed Electrician (ELECTRICAL)"]
+        T5["Technician 5: Multi-Skilled (PLUMBING + CIVIL)"]
+    end
+
+    subgraph DispatchEngine["Capability Matching Guard"]
+        TKT["Incoming Plumbing Ticket"]
+        RULE{"Capability Check:<br/>tech.serviceTypes.includes('PLUMBING')"}
+    end
+
+    TKT --> RULE
+    RULE -->|Eligible| T3
+    RULE -->|Eligible| T5
+    RULE -->|Disqualified: 400 Mismatch| T1
+    RULE -->|Disqualified: 400 Mismatch| T2
+    RULE -->|Disqualified: 400 Mismatch| T4
 ```
-*Test suite validates:*
-- Multi-vertical ticket creation and state machine progression.
-- Grounded AI diagnostic generation and deterministic fallback.
-- 5-factor technician matching scoring.
-- Mobile service report submission with physical readings.
-- Role-based authorization guards (`403 Forbidden` on unauthorized manager routes).
-- Pilot telemetry calculation and CSV export generation.
+
+### Capability Guarantees
+- A Solar technician can **never** be dispatched to an Electrical or Plumbing ticket unless certified in that secondary domain.
+- The matching engine ranks technicians by:
+  1. **Trade Certification Match (Mandatory)**
+  2. **Required Onboard Tools Verification**
+  3. **Duty Status & Real-Time Availability**
+  4. **Geographic Proximity & Coverage Radius**
+  5. **Domain Experience & Past Fix Rating**
 
 ---
 
-## 🌐 Production Infrastructure Architecture
+## 8. Service Categories
 
-Servora is designed for cloud-native deployment with distributed frontend and microservice backend separation:
+Servora supports five verified trade verticals across all system layers:
 
-- **Frontend Tier**: Single-Page Application (SPA) built with React 18, Vite, and Tailwind CSS.
-- **Backend Tier**: Node.js & Express REST API with TypeScript, JWT authentication, and real-time operational state machine.
-- **Data Tier**: MongoDB Atlas multi-tenant cluster with geospatial indexing and automated telemetry collection.
-- **AI Processing**: Grounded field diagnostic preparation engine supporting dynamic provider switching.
-
----
-
-## 📡 REST API Reference
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Public | System health check (`{"status":"ok"}`) |
-| `POST` | `/api/auth/login` | Public | Authenticate user and issue JWT cookie/token |
-| `GET` | `/api/auth/me` | Authenticated | Retrieve profile of currently logged-in user |
-| `GET` | `/api/tickets` | Authenticated | List tickets (filtered by role and vertical) |
-| `POST` | `/api/tickets` | Manager | Create new service request with asset context |
-| `GET` | `/api/tickets/:id` | Authenticated | Get ticket details, asset history, and report |
-| `POST` | `/api/tickets/:id/analyze` | Manager | Run grounded AI diagnostic preparation |
-| `GET` | `/api/tickets/:id/recommended-technicians` | Manager | Compute 5-factor technician match scores |
-| `POST` | `/api/tickets/:id/assign` | Manager | Assign certified technician to ticket |
-| `PATCH` | `/api/tickets/:id/status` | Authenticated | Advance ticket state machine |
-| `POST` | `/api/service-reports/:id` | Technician | Submit fieldwork report with physical readings |
-| `GET` | `/api/pilot/metrics` | Manager | Retrieve aggregated pilot evaluation rates |
-| `GET` | `/api/pilot/export.csv` | Manager | Download 22-column pilot evaluation telemetry |
+| Trade | Icon | Supported Problem Taxonomy | Required Toolsets & Equipment | Mandatory Safety Protocols |
+| :--- | :---: | :--- | :--- | :--- |
+| **Solar Photovoltaics** | ☀️ | Inverter Error Codes, Zero Generation, Solar Panel Physical Damage, High DC Voltage Faults, Structure Earthing | Multimeter, Clamp Meter, MC4 Crimper, Irradiance Meter, Thermal Camera | Rooftop Fall Harness, DC Disconnect Isolation, Lockout-Tagout (LOTO), Arc Flash PPE |
+| **AC / HVAC Systems** | ❄️ | No Cooling / Low Airflow, Water Dripping, Gas Pressure Leak, Compressor Trip, Blower Noise | Manifold Gauge Set, Vacuum Pump, Refrigerant Canister, Amperage Clamp, Leak Detector | Main Circuit Isolation, Refrigerant Handling Compliance, Condenser Fan Pinch Guards |
+| **Plumbing & Water** | 🔧 | Pipe Burst / Joint Leakage, Drain Blockage, Pressure Pump Failure, Low Water Pressure, Fixture Replacement | Pipe Wrench, Basin Wrench, Teflon Tape, Plumber Snake, Compression Crimper | Stopcock Water Isolation, Sump Valve Lockout, Slip Hazard Mitigation |
+| **Electrical Systems** | ⚡ | MCB Tripping, Short Circuits, Switchboard Burnout, Voltage Fluctuations, Grounding Leakage | Digital Multimeter, Insulated Screwdriver Set (1000V), Wire Stripper, Continuity Tester | Mains Sub-Panel Breaker Lockout, Rubber Insulated Gloves, Voltage Absence Verification |
+| **Home Maintenance** | 🏠 | Floor / Wall Tile Replacement, Seepage Dampness, Plaster Cracks, Door Alignment, Waterproofing | Notched Trowel, Tile Cutter, Grout Float, Moisture Meter, Rubber Mallet | Dust Respirator Mask, Safety Goggles, Structural Weight Precautions |
 
 ---
 
-## 🔒 Security & Safe Operations
+## 9. Professional Workflow
 
-- **Strict Role Separation**: Technicians cannot access manager endpoints or reassign jobs.
-- **Physical Safety First**: Fall protection PPE, Arc-Flash safety, and Lockout-Tagout (LOTO) isolation are enforced in both the AI checklist and field reporting forms.
-- **Transparent AI Disclaimers**: All AI outputs carry clear assistance notices (`AI ASSISTANCE — VERIFY ON SITE`).
-- **Zero Public Secret Leaks**: All credentials and database connection strings are stored in environment variables, excluded from git via strict `.gitignore` rules.
+Field technicians interface with a purpose-built, high-contrast mobile terminal:
+
+```
+Assigned Work Queue
+       ↓
+Job Acceptance (ACCEPTED)
+       ↓
+Travel Notification (ON THE WAY)
+       ↓
+Customer Site Arrival (ON SITE)
+       ↓
+Safety Pre-Check & Trade Inspection
+       ↓
+Execution Checklist & Field Observations
+       ↓
+Job Completion & Customer Verification (COMPLETED)
+```
+
+- **Touch-Optimized**: Calibrated touch targets ($\ge 44\text{px}$) designed for one-handed and gloved operation in outdoor daylight.
+- **Trade-Calibrated Checklists**: Plumbing jobs prompt for pipe inspection and joint pressure verification; Solar jobs prompt for voltage readings and DC isolation; Electrical jobs enforce breaker lockout confirmation.
+- **Tamper-Resistant Timestamps**: Every milestone records an immutable operational timestamp for customer transparency and billing precision.
 
 ---
 
-## 🌐 Connect with Servora
+## 10. Manager Operations
 
-- 💼 **Official LinkedIn**: [Servora Technologies on LinkedIn](https://www.linkedin.com/company/servoraaiop/)
-- 🏢 **Operations Verticals**: Solar Photovoltaics (PV) & AC / HVAC Field Operations
+The Operations Command Center equips service managers with end-to-end operational control:
+
+- **Unified Pipeline Queue**: Real-time filtering across trades (`SOLAR`, `AC`, `PLUMBING`, `ELECTRICAL`, `HOME_MAINTENANCE`), status stages, and priority tiers.
+- **AI Triage Inspection**: Managers review symptom extractions, probable causes, and safety warnings prior to dispatch.
+- **5-Factor Dispatch Recommendation**: One-click recommendation modal ranking candidate technicians by match percentage, displaying clear explanations for disqualified candidates.
+- **Real-Time Technician Telemetry**: Status indicators showing which technicians are `AVAILABLE`, `ON_DUTY`, `EN_ROUTE`, or `ON_SITE`.
+- **Quality Assurance & Audit Logs**: Full chronological event trail on every service request from submission to post-service resolution.
 
 ---
 
-## 🔒 License & Intellectual Property
+## 11. Location & Service Coverage
 
-Copyright © 2026 Servora Technologies. All rights reserved.
+Servora features a strict location verification architecture:
 
-This software, source code, system architecture, operational workflows, scoring algorithms, and associated documentation are **confidential and proprietary**.
+```mermaid
+graph TD
+    A["Customer Address Input"] --> B["Live OpenStreetMap Geocoding"]
+    B --> C{"Coordinate & Boundary Validation"}
+    C -->|Invalid Coords [0,0] / Out of Range| D["Explicit Rejection with User Notice"]
+    C -->|Valid Coordinates| E["Geospatial Radius Check Against Providers"]
+    E --> F{"Active Coverage Found?"}
+    F -->|No Coverage| G["Informative Out-of-Area Notice"]
+    F -->|Coverage Active| H["Filter Services to Provider Enabled Capabilities"]
+```
 
-- **Proprietary & Confidential**: Unauthorized copying, distribution, reproduction, reverse engineering, sublicensing, or public dissemination of this codebase or any portion thereof is strictly prohibited without explicit prior written authorization from Servora Technologies.
-- **Pilot & Evaluation Grant**: Access is granted solely for authorized demonstration, operational pilot testing, and evaluation purposes under direct agreement with Servora Technologies.
+- **Zero Guessing / Fallbacks**: Coordinates such as `[0, 0]` are rejected. The system never silently substitutes arbitrary default cities.
+- **Deterministic Administrative Scoping**: Service availability reflects actual licensed provider operating radii and verified pincodes.
+
+---
+
+## 12. Multi-Tenant Business Model
+
+Servora provides strict logical isolation between independent service businesses:
+
+```mermaid
+graph TD
+    subgraph ServoraPlatform["Servora Platform Core"]
+        Auth["Authentication & Role Gateway"]
+        Registry["Service Taxonomy Registry"]
+    end
+
+    subgraph TenantA["Tenant: Helios Energy (SOLAR + AC)"]
+        TA_Data["Isolated Customers, Tickets, Techs"]
+    end
+
+    subgraph TenantB["Tenant: Apex Multi-Trade (PLUMBING + ELECTRICAL + CIVIL)"]
+        TB_Data["Isolated Customers, Tickets, Techs"]
+    end
+
+    ServoraPlatform --> TenantA
+    ServoraPlatform --> TenantB
+```
+
+- **Company Isolation**: Every database operation enforces strict tenant boundary scoping (`companyId`). No service provider can view another company's tickets, customer records, or staff.
+- **Configurable Service Portfolios**: Providers independently toggle supported trades based on their licensing and workforce composition.
+
+---
+
+## 13. Status Lifecycle
+
+Service requests progress through an auditable, finite-state lifecycle:
+
+```mermaid
+stateDiagram-v2
+    [*] --> NEW: Customer submits request
+    NEW --> AI_ANALYZED: Engine extracts symptoms & tools
+    AI_ANALYZED --> ASSIGNED: Manager assigns certified tech
+    ASSIGNED --> ACCEPTED: Technician acknowledges job
+    ACCEPTED --> ON_THE_WAY: Technician starts transit
+    ON_THE_WAY --> ON_SITE: Technician arrives at customer location
+    ON_SITE --> IN_PROGRESS: Technician begins diagnosis / repair
+    IN_PROGRESS --> COMPLETED: Work verified & notes submitted
+    COMPLETED --> [*]
+```
+
+---
+
+## 14. Product Architecture
+
+```mermaid
+graph TD
+    subgraph Clients["Frontend Presentation Layer"]
+        C_Customer["Customer Booking Portal (Web / Mobile)"]
+        C_Manager["Manager Command Center (Desktop / Tablet)"]
+        C_Tech["Technician Mobile Terminal (High-Contrast PWA)"]
+    end
+
+    subgraph API["Application & Domain Layer"]
+        Gateway["REST API Gateway + Role Middleware"]
+        AuthService["Auth & Multi-Tenant Context Engine"]
+        TicketService["Ticket Lifecycle State Machine"]
+        MatchService["5-Factor Service-Aware Dispatch Engine"]
+        AIEngine["AI Diagnostic Triage & Grounding Engine"]
+        LocService["Geospatial Coverage & Geocoding Engine"]
+    end
+
+    subgraph Persistence["Storage & External Providers"]
+        MongoAtlas[("Multi-Tenant MongoDB Atlas Collections")]
+        GeoProvider["OpenStreetMap Boundary & Nominatim Service"]
+        LocalEngine["Deterministic Multi-Vertical Knowledge Base"]
+    end
+
+    Clients --> Gateway
+    Gateway --> AuthService
+    Gateway --> TicketService
+    Gateway --> MatchService
+    Gateway --> AIEngine
+    Gateway --> LocService
+
+    AuthService --> MongoAtlas
+    TicketService --> MongoAtlas
+    MatchService --> MongoAtlas
+    LocService --> GeoProvider
+    AIEngine --> LocalEngine
+```
+
+---
+
+## 15. Data & Operations Flow
+
+1. **Intake Event**: Customer registers a complaint with validated coordinates and category selection.
+2. **Analysis Event**: AI engine normalizes unstructured symptoms into candidate root causes, recommended toolkits, and safety requirements.
+3. **Dispatch Event**: Operations manager triggers capability matching; system scores and validates available technicians against the ticket's trade.
+4. **Field Event**: Technician receives real-time notification, confirms transit, checks in on site, and executes trade-specific checklist.
+5. **Completion Event**: Technician logs physical observations and resolution steps, transitioning the ticket to `COMPLETED` and archiving the historical service record.
+
+---
+
+## 16. Security & Isolation
+
+- **Role-Based Access Control (RBAC)**: Strict segregation between `CUSTOMER`, `TECHNICIAN`, `MANAGER`, and `ADMIN`. Technicians attempting to access manager dispatch or analytics endpoints receive immediate `403 Forbidden` responses.
+- **Tenant Scoping**: All database queries enforce tenant isolation at the query execution level.
+- **Privacy Protection**: Customer telephone numbers and precise addresses are obscured from technicians until an assignment is actively accepted.
+- **Cryptographic Security**: Salted password hashing, stateless signed session tokens, and zero credentials committed to source control.
+
+---
+
+## 17. Current Product Status
+
+- **Unit & Integration Test Coverage**: 109/109 automated tests passing across 14 test suites.
+- **Production Builds**: Backend (`tsc`) and Frontend (`vite build`) passing with zero compile errors.
+- **Verified Trade Verticals**:
+  - ☀️ Solar Photovoltaic (PV) — **Production Ready**
+  - ❄️ AC / HVAC — **Production Ready**
+  - 🔧 Plumbing — **Production Ready**
+  - ⚡ Electrical — **Production Ready**
+  - 🏠 Home Maintenance / Civil — **Production Ready**
+- **Dynamic Routing**: Verified zero hardcoded technician names; routing strictly governed by `serviceTypes` capabilities.
+
+---
+
+## 18. Product Demo
+
+Experience Servora in action:
+
+- **Interactive In-App Walkthrough**: Launch the interactive product walkthrough at `/walkthrough` to scrub through all 8 operational milestones with live telemetry and HUD inspection.
+- **Platform Demonstration Video**: [Servora 3-Minute Platform Walkthrough](./SERVORA_3MIN_YC_DEMO.mp4) (High-Definition operational recording showing customer intake, AI triage, manager dispatch, and field technician execution).
+
+---
+
+## 19. Why Servora
+
+| Without Servora | With Servora |
+| :--- | :--- |
+| Customer complaints lost in WhatsApp chats and phone logs | Centralized, location-validated intake portal with instant confirmation |
+| Technicians arrive with zero diagnostic context or wrong tools | Pre-arrival AI diagnostic packages with tool forecasts and safety checklists |
+| Technicians dispatched by guesswork, causing trade mismatch | Deterministic 5-factor scoring enforcing certified service capabilities |
+| Paper receipts and unverifiable verbal updates | Real-time milestone tracking with auditable digital completion records |
+| Separate tools needed for Solar, AC, Plumbing, and Maintenance | One unified, modular multi-trade platform serving all field operations |
+
+Servora is designed to turn fragmented field service businesses into structured, high-margin, scalable operations.
+
+---
+
+## 20. Connect with Servora
+
+- 💼 **LinkedIn**: [Servora Technologies on LinkedIn](https://www.linkedin.com/company/servoraaiop/)
+- 🌐 **Platform**: Field Service Operations & Intelligent Dispatch Automation
+- 🔒 **Intellectual Property**: Copyright © 2026 Servora Technologies. All rights reserved.

@@ -239,7 +239,7 @@ export const createPilotFeedbackSchema = z.object({
 });
 
 export const aiOutputSchema = z.object({
-  serviceType: z.enum(['SOLAR', 'AC']),
+  serviceType: z.string(),
   possibleIssues: z.array(
     z.object({
       issue: z.string(),

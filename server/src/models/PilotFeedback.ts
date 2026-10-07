@@ -30,7 +30,7 @@ const PilotFeedbackSchema = new Schema<IPilotFeedback>(
     ticketId: { type: Schema.Types.ObjectId, ref: 'ServiceTicket', required: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     role: { type: String, enum: ['SERVICE_MANAGER', 'TECHNICIAN', 'CUSTOMER'], required: true },
-    serviceType: { type: String, enum: ['SOLAR', 'AC'], required: true, index: true },
+    serviceType: { type: String, required: true, index: true },
     aiUtilityRating: { type: Number, required: true, min: 1, max: 5 },
     wasAiSuggestionUseful: { type: String, enum: ['YES', 'PARTIALLY', 'NO'] },
     didTechnicianHaveRequiredTools: { type: String, enum: ['YES', 'NO'] },
