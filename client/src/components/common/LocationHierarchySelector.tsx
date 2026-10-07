@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2, X, Compass, Building, ChevronRight } from 'lucide-react';
 import { searchLocations, fetchCityLocalities, StructuredLocationSuggestion } from '../../utils/locationSearch';
+import { getCityLocalityPlaceholder } from '../../utils/localityExamples';
 import { CustomerLocation } from '../../utils/customerLocation';
 import { gpsEngine } from '../../services/gpsEngine';
 
@@ -484,7 +485,7 @@ export const LocationHierarchySelector: React.FC<LocationHierarchySelectorProps>
                 onFocus={() => {
                   if (areaSuggestions.length > 0) setIsAreaOpen(true);
                 }}
-                placeholder={`Search area in ${selectedCity.city} (e.g. Samaghoga, Baroi, Mundra Port)...`}
+                placeholder={getCityLocalityPlaceholder(selectedCity.city)}
                 className="w-full pl-10 pr-9 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white text-slate-900 font-medium shadow-2xs"
               />
               {isAreaLoading ? (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Search, Loader2, X, Check } from 'lucide-react';
 import { searchLocations, StructuredLocationSuggestion } from '../../utils/locationSearch';
+import { getCityLocalityPlaceholder } from '../../utils/localityExamples';
 import { CustomerLocation } from '../../utils/customerLocation';
 
 interface LocationAutocompleteInputProps {
@@ -13,11 +14,16 @@ interface LocationAutocompleteInputProps {
 
 export const LocationAutocompleteInput: React.FC<LocationAutocompleteInputProps> = ({
   value = '',
-  placeholder = 'Type area or city (e.g. Bopal, Maninagar, Kalavad Road)...',
+  placeholder,
   cityContext,
   onSelect,
   className = '',
 }) => {
+  const effectivePlaceholder =
+    placeholder ||
+    (cityContext
+      ? getCityLocalityPlaceholder(cityContext)
+      : 'Type area or city (e.g. Bopal, Maninagar, Kalawad Road)...');
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<StructuredLocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,7 +116,7 @@ export const LocationAutocompleteInput: React.FC<LocationAutocompleteInputProps>
             if (suggestions.length > 0) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           className="w-full pl-9 pr-8 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-slate-800 shadow-2xs font-medium"
         />
         {isLoading ? (
