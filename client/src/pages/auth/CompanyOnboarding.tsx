@@ -277,12 +277,15 @@ export const CompanyOnboarding: React.FC = () => {
       setError('Please select at least one service category that your company provides.');
       return false;
     }
-    // Pre-populate service areas with selected services if area services are empty
+    // Strictly synchronize service areas with selected global services
     setServiceAreas((prev) =>
-      prev.map((sa) => ({
-        ...sa,
-        services: sa.services.length > 0 ? sa.services : [...selectedGlobalServices],
-      }))
+      prev.map((sa) => {
+        const valid = sa.services.filter((s) => selectedGlobalServices.includes(s));
+        return {
+          ...sa,
+          services: valid.length > 0 ? valid : [...selectedGlobalServices],
+        };
+      })
     );
     setError(null);
     return true;
@@ -347,7 +350,10 @@ export const CompanyOnboarding: React.FC = () => {
             longitude: lon,
             radius: sa.radius || 20,
             radiusKm: sa.radius || 20,
-            services: sa.services,
+            services:
+              sa.services.filter((s) => selectedGlobalServices.includes(s)).length > 0
+                ? sa.services.filter((s) => selectedGlobalServices.includes(s))
+                : selectedGlobalServices,
           };
         })
       );

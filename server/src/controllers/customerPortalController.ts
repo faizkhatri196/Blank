@@ -411,6 +411,31 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
     const requestedCompanyId = req.body.companyId || (userRole === 'SERVICE_MANAGER' || userRole === 'ADMIN' ? (req.user as any)?.companyId : undefined);
     const effectiveArea = location.area || location.localityDisplayName || location.address?.suburb || location.address?.neighbourhood || undefined;
 
+    // Strict Ticket Security: If an explicit company is requested, verify it supports the serviceType
+    if (requestedCompanyId) {
+      const explicitCompany = await Company.findById(requestedCompanyId);
+      if (!explicitCompany) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'COMPANY_NOT_FOUND',
+            message: 'Requested service provider was not found.',
+          },
+        });
+        return;
+      }
+      if (!explicitCompany.servicesSupported || !explicitCompany.servicesSupported.includes(serviceType)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+            message: `Provider '${explicitCompany.name}' does not provide ${serviceType} services.`,
+          },
+        });
+        return;
+      }
+    }
+
     let coverageResult = await resolveServiceCoverage({
       latitude: custLat,
       longitude: custLon,
@@ -421,8 +446,8 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       requestedCompanyId,
     });
 
-    // If requested company did not match, fallback to evaluate all active providers in the area
-    if (!coverageResult.covered && requestedCompanyId) {
+    // If no specific company was requested and no coverage matched, try finding any eligible provider in area
+    if (!coverageResult.covered && !requestedCompanyId) {
       coverageResult = await resolveServiceCoverage({
         latitude: custLat,
         longitude: custLon,
@@ -449,6 +474,18 @@ export async function createCustomerRequest(req: AuthenticatedRequest, res: Resp
       res.status(400).json({
         success: false,
         error: { code: 'SERVICE_UNAVAILABLE_AT_LOCATION', message: 'Service provider not found.' },
+      });
+      return;
+    }
+
+    // Final security boundary: ensure target company definitively supports serviceType
+    if (!targetCompanyDoc.servicesSupported || !targetCompanyDoc.servicesSupported.includes(serviceType)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+          message: `The provider '${targetCompanyDoc.name}' does not support ${serviceType} services.`,
+        },
       });
       return;
     }

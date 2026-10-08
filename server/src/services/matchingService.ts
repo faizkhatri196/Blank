@@ -216,8 +216,9 @@ export function calculateTechnicianMatches(
     let toolScore = 0;
     if (requiredTools.length > 0) {
       let toolMatchedCount = 0;
+      const techTools = tech.tools || [];
       for (const reqTool of requiredTools) {
-        if (tech.tools.includes(reqTool)) {
+        if (techTools.includes(reqTool)) {
           toolMatchedCount++;
           reasons.push(`Equipped with ${reqTool.replace(/_/g, ' ').toLowerCase()}`);
         } else {

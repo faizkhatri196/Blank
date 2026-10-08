@@ -96,6 +96,10 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
         const center = isValidApplicationCoordinate(lat, lon) ? createGeoPoint(lat!, lon!) : undefined;
         const radiusKm = sa.radiusKm ?? sa.radius ?? 20;
 
+        const rawAreaServices = sa.services && sa.services.length > 0 ? sa.services : servicesSupported;
+        const constrainedAreaServices = rawAreaServices.filter((s: string) => servicesSupported.includes(s));
+        const finalAreaServices = constrainedAreaServices.length > 0 ? constrainedAreaServices : servicesSupported;
+
         return {
           city: sa.city.trim(),
           state: sa.state?.trim(),
@@ -107,7 +111,7 @@ export async function signup(req: AuthenticatedRequest, res: Response): Promise<
           center,
           radius: radiusKm,
           radiusKm,
-          services: sa.services && sa.services.length > 0 ? sa.services : servicesSupported,
+          services: finalAreaServices,
           active: true,
         };
       })

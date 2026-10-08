@@ -47,6 +47,15 @@ export const JobExecution: React.FC = () => {
   const [grilleTemp, setGrilleTemp] = useState('');
   const [suctionPressure, setSuctionPressure] = useState('');
   const [operatingAmps, setOperatingAmps] = useState('');
+  // Plumbing Readings
+  const [waterPressure, setWaterPressure] = useState('');
+  const [pipeMaterial, setPipeMaterial] = useState('');
+  // Electrical Readings
+  const [supplyVoltage, setSupplyVoltage] = useState('');
+  const [measuredLoad, setMeasuredLoad] = useState('');
+  // Home Maintenance Readings
+  const [affectedAreaSqFt, setAffectedAreaSqFt] = useState('');
+  const [structuralIntegrity, setStructuralIntegrity] = useState('VERIFIED_STABLE');
 
   const [partsUsedInput, setPartsUsedInput] = useState('');
   const [toolsUsedInput, setToolsUsedInput] = useState('MULTIMETER, CLAMP_METER');
@@ -148,11 +157,20 @@ export const JobExecution: React.FC = () => {
         if (dcVoltage) readings.dcVoltage = Number(dcVoltage);
         if (acVoltage) readings.acVoltage = Number(acVoltage);
         if (dcCurrent) readings.dcCurrent = Number(dcCurrent);
-      } else {
+      } else if (ticket?.serviceType === 'AC') {
         if (indoorTemp) readings.indoorTemp = Number(indoorTemp);
         if (grilleTemp) readings.grilleTemp = Number(grilleTemp);
         if (suctionPressure) readings.suctionPressurePSI = Number(suctionPressure);
         if (operatingAmps) readings.operatingCurrent = Number(operatingAmps);
+      } else if (ticket?.serviceType === 'PLUMBING') {
+        if (waterPressure) readings.waterPressurePSI = Number(waterPressure);
+        if (pipeMaterial) readings.pipeMaterial = pipeMaterial;
+      } else if (ticket?.serviceType === 'ELECTRICAL') {
+        if (supplyVoltage) readings.supplyVoltage = Number(supplyVoltage);
+        if (measuredLoad) readings.measuredLoadAmps = Number(measuredLoad);
+      } else if (ticket?.serviceType === 'HOME_MAINTENANCE') {
+        if (affectedAreaSqFt) readings.affectedAreaSqFt = Number(affectedAreaSqFt);
+        if (structuralIntegrity) readings.structuralIntegrity = structuralIntegrity;
       }
 
       await apiClient.post(`/service-reports/${id}`, {
@@ -608,6 +626,79 @@ export const JobExecution: React.FC = () => {
                     onChange={(e) => setOperatingAmps(e.target.value)}
                     className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
                   />
+                </div>
+              </div>
+            ) : ticket.serviceType === 'PLUMBING' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Water Pressure (PSI)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 45"
+                    value={waterPressure}
+                    onChange={(e) => setWaterPressure(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Pipe Material</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. CPVC, GI, PPR"
+                    value={pipeMaterial}
+                    onChange={(e) => setPipeMaterial(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  />
+                </div>
+              </div>
+            ) : ticket.serviceType === 'ELECTRICAL' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Supply Voltage L-N (V)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 230"
+                    value={supplyVoltage}
+                    onChange={(e) => setSupplyVoltage(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Measured Load (A)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g. 16.2"
+                    value={measuredLoad}
+                    onChange={(e) => setMeasuredLoad(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  />
+                </div>
+              </div>
+            ) : ticket.serviceType === 'HOME_MAINTENANCE' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Area Span (sq ft)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 25"
+                    value={affectedAreaSqFt}
+                    onChange={(e) => setAffectedAreaSqFt(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Surface / Civil Status</label>
+                  <select
+                    value={structuralIntegrity}
+                    onChange={(e) => setStructuralIntegrity(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-white text-xs"
+                  >
+                    <option value="VERIFIED_STABLE">Verified Stable / Non-structural</option>
+                    <option value="TILE_BED_REPAIRED">Tile Bed & Grout Remedied</option>
+                    <option value="WATERPROOF_SEALED">Waterproof Barrier Applied</option>
+                    <option value="MASONRY_PLASTER_FINISHED">Masonry Plaster Restored</option>
+                  </select>
                 </div>
               </div>
             ) : (

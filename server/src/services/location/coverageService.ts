@@ -86,7 +86,21 @@ export async function resolveServiceCoverage(input: CoverageCheckInput): Promise
     for (const a of areas) {
       if (a.active === false) continue;
 
-      const servicesForArea = a.services || comp.servicesSupported || ['SOLAR', 'AC'];
+      // Authoritative company service check:
+      // A company can NEVER provide a service that is not in its servicesSupported.
+      const companyServices = Array.isArray(comp.servicesSupported) && comp.servicesSupported.length > 0
+        ? comp.servicesSupported
+        : [];
+      if (!companyServices.includes(input.serviceType)) continue;
+
+      // Area-specific restriction:
+      // If the area specifies explicit services, constrain them by companyServices.
+      // If the area does not restrict services, use companyServices.
+      // Never fall back to global services or unapproved verticals.
+      const servicesForArea = Array.isArray(a.services) && a.services.length > 0
+        ? a.services.filter((s: ServiceType) => companyServices.includes(s))
+        : companyServices;
+
       if (!servicesForArea.includes(input.serviceType)) continue;
 
       const aLat = a.latitude ?? a.center?.coordinates?.[1];

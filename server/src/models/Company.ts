@@ -71,7 +71,7 @@ const CompanySchema = new Schema<ICompany>(
         },
         radius: { type: Number, default: 20 },
         radiusKm: { type: Number, default: 20 },
-        services: { type: [String], default: ['SOLAR', 'AC'] },
+        services: { type: [String], default: undefined },
         active: { type: Boolean, default: true },
       },
     ],
@@ -93,8 +93,21 @@ const CompanySchema = new Schema<ICompany>(
   { timestamps: true }
 );
 
-// Clean up invalid or empty center coordinates before MongoDB 2dsphere indexing
+// Clean up invalid or empty center coordinates and enforce company service isolation
 CompanySchema.pre('validate', function (next) {
+  if (this.servicesSupported && Array.isArray(this.servicesSupported) && this.servicesSupported.length > 0) {
+    if (this.serviceAreas && Array.isArray(this.serviceAreas)) {
+      for (const sa of this.serviceAreas) {
+        if (!sa.services || sa.services.length === 0) {
+          sa.services = [...this.servicesSupported];
+        } else {
+          const valid = sa.services.filter((s: ServiceType) => this.servicesSupported.includes(s));
+          sa.services = valid.length > 0 ? valid : [...this.servicesSupported];
+        }
+      }
+    }
+  }
+
   if (this.serviceAreas && Array.isArray(this.serviceAreas)) {
     for (const sa of this.serviceAreas) {
       if (sa.center) {

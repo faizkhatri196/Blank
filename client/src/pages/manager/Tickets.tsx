@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
 import { ServiceTicket, ServiceType, TicketStatus } from '../../types';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { PriorityBadge } from '../../components/common/PriorityBadge';
@@ -8,6 +9,11 @@ import { ServiceBadge } from '../../components/common/ServiceBadge';
 import { Search, Plus, Filter, Loader2 } from 'lucide-react';
 
 export const Tickets: React.FC = () => {
+  const { user } = useAuth();
+  const companyServices = (user?.servicesSupported && user.servicesSupported.length > 0)
+    ? user.servicesSupported
+    : ['SOLAR', 'AC'];
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [tickets, setTickets] = useState<ServiceTicket[]>([]);
   const [total, setTotal] = useState(0);
@@ -88,12 +94,12 @@ export const Tickets: React.FC = () => {
             onChange={(e) => handleFilterChange('serviceType', e.target.value)}
             className="text-xs border border-slate-300 rounded-xl px-3 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
           >
-            <option value="">All Services</option>
-            <option value="SOLAR">Solar Only</option>
-            <option value="AC">AC / HVAC Only</option>
-            <option value="PLUMBING">Plumbing Only</option>
-            <option value="HOME_MAINTENANCE">Home Maintenance / Civil</option>
-            <option value="ELECTRICAL">Electrical Only</option>
+            <option value="">All Services ({companyServices.length})</option>
+            {companyServices.includes('SOLAR' as any) && <option value="SOLAR">Solar Only</option>}
+            {companyServices.includes('AC' as any) && <option value="AC">AC / HVAC Only</option>}
+            {companyServices.includes('PLUMBING' as any) && <option value="PLUMBING">Plumbing Only</option>}
+            {companyServices.includes('HOME_MAINTENANCE' as any) && <option value="HOME_MAINTENANCE">Home Maintenance / Civil</option>}
+            {companyServices.includes('ELECTRICAL' as any) && <option value="ELECTRICAL">Electrical Only</option>}
           </select>
 
           <select

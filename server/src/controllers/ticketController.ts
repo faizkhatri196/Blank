@@ -39,18 +39,30 @@ export async function getTickets(req: AuthenticatedRequest, res: Response): Prom
 
     const query: any = { companyId: req.companyId };
 
-    // If technician, filter to their assigned jobs
+    // If technician, filter to their assigned jobs and enforce professional service isolation
     if (req.role === 'TECHNICIAN') {
       const techProfile = await Technician.findOne({ userId: req.userId, companyId: req.companyId });
       if (techProfile) {
         query.assignedTechnicianId = techProfile._id;
+        // Strictly reinforce professional service capability isolation:
+        // A technician must ONLY see tickets matching their qualified serviceTypes
+        query.serviceType = { $in: techProfile.serviceTypes };
       } else {
         query.assignedTechnicianId = new mongoose.Types.ObjectId();
       }
     }
 
     if (serviceType && typeof serviceType === 'string' && serviceType.trim()) {
-      query.serviceType = serviceType.trim();
+      if (req.role === 'TECHNICIAN') {
+        const allowed = Array.isArray(query.serviceType?.$in) && query.serviceType.$in.includes(serviceType.trim());
+        if (allowed) {
+          query.serviceType = serviceType.trim();
+        } else {
+          query.serviceType = '__UNQUALIFIED__';
+        }
+      } else {
+        query.serviceType = serviceType.trim();
+      }
     }
 
     if (status) {
@@ -119,7 +131,7 @@ export async function getTicketById(req: AuthenticatedRequest, res: Response): P
       return;
     }
 
-    // Role-based authorization: technicians may only view tickets assigned to them
+    // Role-based authorization: technicians may only view tickets assigned to them for certified services
     if (req.role === 'TECHNICIAN') {
       const techProfile = await Technician.findOne({ userId: req.userId, companyId: req.companyId });
       const assignedId = ticket.assignedTechnicianId && ((ticket.assignedTechnicianId as any)._id || ticket.assignedTechnicianId);
@@ -127,6 +139,13 @@ export async function getTicketById(req: AuthenticatedRequest, res: Response): P
         res.status(403).json({
           success: false,
           error: { code: 'FORBIDDEN', message: 'Access denied. You can only view jobs assigned to you.' },
+        });
+        return;
+      }
+      if (!techProfile.serviceTypes.includes(ticket.serviceType)) {
+        res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: `Access denied. You are not certified for ${ticket.serviceType} jobs.` },
         });
         return;
       }
@@ -205,6 +224,16 @@ export async function createTicket(req: AuthenticatedRequest, res: Response): Pr
     const normalizedResult = normalizeComplaint(rawInput, data.serviceType);
 
     const company = await Company.findById(req.companyId);
+    if (!company || !company.servicesSupported || !company.servicesSupported.includes(data.serviceType)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+          message: `Company does not support ${data.serviceType} service`,
+        },
+      });
+      return;
+    }
 
     const ticket = await ServiceTicket.create({
       companyId: req.companyId,
@@ -284,6 +313,13 @@ export async function updateTicketStatus(req: AuthenticatedRequest, res: Respons
         res.status(403).json({
           success: false,
           error: { code: 'FORBIDDEN', message: 'You can only update tickets assigned to you.' },
+        });
+        return;
+      }
+      if (!techProfile.serviceTypes.includes(ticket.serviceType)) {
+        res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: `You are not certified for ${ticket.serviceType} jobs.` },
         });
         return;
       }
@@ -607,6 +643,18 @@ export async function assignTechnician(req: AuthenticatedRequest, res: Response)
         error: {
           code: 'SERVICE_TYPE_MISMATCH',
           message: `Technician ${technician.name} is not certified for ${ticket.serviceType} service`,
+        },
+      });
+      return;
+    }
+
+    const company = await Company.findById(ticket.companyId);
+    if (!company || !company.servicesSupported || !company.servicesSupported.includes(ticket.serviceType)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+          message: `Company does not support ${ticket.serviceType} service`,
         },
       });
       return;

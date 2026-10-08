@@ -4,6 +4,8 @@ import { AuthenticatedRequest } from '../middleware/auth';
 import { Technician } from '../models/Technician';
 import { User } from '../models/User';
 import { AuditLog } from '../models/AuditLog';
+import { Company } from '../models/Company';
+import { ServiceType } from '../types';
 import {
   createTechnicianSchema,
   updateTechnicianSchema,
@@ -101,6 +103,24 @@ export async function createTechnician(req: AuthenticatedRequest, res: Response)
 
     const rawPassword = (data.temporaryPassword || data.password)!;
     const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+    const company = await Company.findById(req.companyId);
+    if (!company) {
+      res.status(400).json({ success: false, error: { code: 'COMPANY_NOT_FOUND', message: 'Company not found' } });
+      return;
+    }
+    const invalidTypes = data.serviceTypes.filter((st: ServiceType) => !company.servicesSupported.includes(st));
+    if (invalidTypes.length > 0) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+          message: `Company does not support technician service vertical(s): ${invalidTypes.join(', ')}`,
+        },
+      });
+      return;
+    }
+
     const user = await User.create({
       companyId: req.companyId,
       name: data.name.trim(),
@@ -194,6 +214,25 @@ export async function updateTechnician(req: AuthenticatedRequest, res: Response)
     }
 
     const updateData: any = { ...parseResult.data };
+
+    if (updateData.serviceTypes && updateData.serviceTypes.length > 0) {
+      const company = await Company.findById(req.companyId);
+      if (!company) {
+        res.status(400).json({ success: false, error: { code: 'COMPANY_NOT_FOUND', message: 'Company not found' } });
+        return;
+      }
+      const invalidTypes = updateData.serviceTypes.filter((st: ServiceType) => !company.servicesSupported.includes(st));
+      if (invalidTypes.length > 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNSUPPORTED_SERVICE_FOR_COMPANY',
+            message: `Company does not support technician service vertical(s): ${invalidTypes.join(', ')}`,
+          },
+        });
+        return;
+      }
+    }
     if (
       updateData.baseLocation &&
       typeof updateData.baseLocation.latitude === 'number' &&
