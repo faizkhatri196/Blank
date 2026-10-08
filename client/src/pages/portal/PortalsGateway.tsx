@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, User, Wrench, Building2, ArrowRight, CheckCircle2, Sparkles, LogIn, PlayCircle } from 'lucide-react';
+import { Shield, User, Wrench, Building2, ArrowRight, CheckCircle2, Sparkles, LogIn } from 'lucide-react';
 import { ServoraLogo } from '../../components/common/ServoraLogo';
 
 export const PortalsGateway: React.FC = () => {
@@ -70,6 +70,13 @@ export const PortalsGateway: React.FC = () => {
               <LogIn className="w-3.5 h-3.5 text-indigo-400" />
               <span>Customer Sign In</span>
             </Link>
+            <Link
+              to="/walkthrough?role=customer"
+              className="w-full py-2 px-4 rounded-xl text-indigo-300 hover:text-white bg-indigo-950/40 hover:bg-indigo-900/50 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-indigo-700/50 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>How it works →</span>
+            </Link>
           </div>
         </div>
 
@@ -124,6 +131,13 @@ export const PortalsGateway: React.FC = () => {
             >
               <LogIn className="w-3.5 h-3.5 text-emerald-400" />
               <span>Technician Sign In</span>
+            </Link>
+            <Link
+              to="/walkthrough?role=professional"
+              className="w-full py-2 px-4 rounded-xl text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/50 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-emerald-700/50 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>How it works →</span>
             </Link>
           </div>
         </div>
@@ -180,6 +194,13 @@ export const PortalsGateway: React.FC = () => {
               <LogIn className="w-3.5 h-3.5 text-amber-400" />
               <span>Manager Sign In</span>
             </Link>
+            <Link
+              to="/walkthrough?role=service"
+              className="w-full py-2 px-4 rounded-xl text-amber-300 hover:text-white bg-amber-950/40 hover:bg-amber-900/50 text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-amber-700/50 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>How it works →</span>
+            </Link>
           </div>
         </div>
       </main>
@@ -188,11 +209,25 @@ export const PortalsGateway: React.FC = () => {
       <footer className="max-w-6xl mx-auto w-full pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            to="/walkthrough"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition-colors font-medium shadow-xs"
+            to="/walkthrough?role=customer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition-colors font-medium shadow-xs"
           >
-            <PlayCircle className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Product Walkthrough</span>
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Customer Walkthrough</span>
+          </Link>
+          <Link
+            to="/walkthrough?role=service"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-colors font-medium shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Service Business Walkthrough</span>
+          </Link>
+          <Link
+            to="/walkthrough?role=professional"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-colors font-medium shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Professional Walkthrough</span>
           </Link>
           <Link
             to="/onboarding"

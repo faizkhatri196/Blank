@@ -32,7 +32,6 @@ import { JobExecution } from '../pages/technician/JobExecution';
 import { TechnicianProfile } from '../pages/technician/TechnicianProfile';
 
 import { WalkthroughPage } from '../pages/marketing/WalkthroughPage';
-import { HowItWorksPage } from '../pages/marketing/HowItWorksPage';
 import { PortalsGateway } from '../pages/portal/PortalsGateway';
 
 export const AppRoutes: React.FC = () => {
@@ -41,9 +40,11 @@ export const AppRoutes: React.FC = () => {
       <Route path="/" element={<Navigate to="/customer" replace />} />
       <Route path="/portals" element={<PortalsGateway />} />
       <Route path="/gateway" element={<Navigate to="/portals" replace />} />
-      <Route path="/how-it-works" element={<HowItWorksPage />} />
-      <Route path="/how-servora-works" element={<Navigate to="/how-it-works" replace />} />
       <Route path="/walkthrough" element={<WalkthroughPage />} />
+      <Route path="/how-it-works" element={<WalkthroughPage />} />
+      <Route path="/how-servora-works" element={<Navigate to="/walkthrough" replace />} />
+      <Route path="/customer/how-it-works" element={<Navigate to="/walkthrough?role=customer" replace />} />
+      <Route path="/how-it-works/customer" element={<Navigate to="/walkthrough?role=customer" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/customer/login" element={<Navigate to="/login?portal=customer" replace />} />
       <Route path="/technician/login" element={<Navigate to="/login?portal=technician" replace />} />
