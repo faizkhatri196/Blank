@@ -272,17 +272,10 @@ export const Login: React.FC = () => {
           <div className="mb-5 pb-4 border-b border-slate-100">
             {activePortal === 'customer' && (
               <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
                     Customer Experience Portal
                   </span>
-                  <Link
-                    to="/walkthrough?role=customer"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-                  >
-                    <Sparkles className="w-3 h-3 text-indigo-500" />
-                    <span>How it works →</span>
-                  </Link>
                 </div>
                 <h2 className="text-lg font-black text-slate-900 leading-snug">
                   {mode === 'LOGIN' ? 'Sign In to Customer Portal' : 'Create Customer Account'}
@@ -297,17 +290,10 @@ export const Login: React.FC = () => {
 
             {activePortal === 'technician' && (
               <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                     Field Engineer Mobile Terminal
                   </span>
-                  <Link
-                    to="/walkthrough?role=professional"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900 transition-colors"
-                  >
-                    <Sparkles className="w-3 h-3 text-emerald-600" />
-                    <span>How it works →</span>
-                  </Link>
                 </div>
                 <h2 className="text-lg font-black text-slate-900 leading-snug">Technician Sign In</h2>
                 <p className="text-xs text-slate-500 leading-relaxed">
@@ -318,17 +304,10 @@ export const Login: React.FC = () => {
 
             {activePortal === 'manager' && (
               <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">
                     Company Operations Suite
                   </span>
-                  <Link
-                    to="/walkthrough?role=service"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 hover:text-amber-900 transition-colors"
-                  >
-                    <Sparkles className="w-3 h-3 text-amber-600" />
-                    <span>How it works →</span>
-                  </Link>
                 </div>
                 <h2 className="text-lg font-black text-slate-900 leading-snug">
                   {mode === 'LOGIN' ? 'Operations Manager Sign In' : 'Register Service Company'}
@@ -481,47 +460,22 @@ export const Login: React.FC = () => {
                     >
                       Or browse & book services without signing in →
                     </Link>
-                    <Link
-                      to="/walkthrough?role=customer"
-                      className="inline-flex items-center justify-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-bold text-xs pt-1 hover:underline"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>How Servora Works for Customers →</span>
-                    </Link>
                   </>
                 )}
 
                 {activePortal === 'technician' && (
-                  <div className="space-y-1.5">
-                    <p className="text-[11px] text-slate-400">
-                      Technician accounts are provisioned by company dispatchers. Contact your manager if you need login access.
-                    </p>
-                    <Link
-                      to="/walkthrough?role=professional"
-                      className="inline-flex items-center justify-center gap-1.5 text-emerald-700 hover:text-emerald-900 font-bold text-xs pt-1 hover:underline"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>How Servora Works for Professionals →</span>
-                    </Link>
-                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Technician accounts are provisioned by company dispatchers. Contact your manager if you need login access.
+                  </p>
                 )}
 
                 {activePortal === 'manager' && (
-                  <div className="space-y-1.5">
-                    <Link
-                      to="/onboarding"
-                      className="font-bold text-amber-700 hover:text-amber-800 hover:underline block"
-                    >
-                      New service company? Complete Guided Onboarding →
-                    </Link>
-                    <Link
-                      to="/walkthrough?role=service"
-                      className="inline-flex items-center justify-center gap-1.5 text-amber-700 hover:text-amber-900 font-bold text-xs pt-1 hover:underline"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      <span>How Servora Works for Service Businesses →</span>
-                    </Link>
-                  </div>
+                  <Link
+                    to="/onboarding"
+                    className="font-bold text-amber-700 hover:text-amber-800 hover:underline block"
+                  >
+                    New service company? Complete Guided Onboarding →
+                  </Link>
                 )}
               </div>
             </form>
@@ -784,28 +738,7 @@ export const Login: React.FC = () => {
             </form>
           )}
 
-          <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
-            <div>
-              <Link
-                to={
-                  activePortal === 'technician'
-                    ? '/walkthrough?role=professional'
-                    : activePortal === 'manager'
-                    ? '/walkthrough?role=service'
-                    : '/walkthrough?role=customer'
-                }
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                <span>
-                  {activePortal === 'technician'
-                    ? 'How Servora Works for Professionals →'
-                    : activePortal === 'manager'
-                    ? 'How Servora Works for Service Businesses →'
-                    : 'How Servora Works for Customers →'}
-                </span>
-              </Link>
-            </div>
+          <div className="mt-6 pt-4 border-t border-slate-100 text-center">
             <p className="text-[11px] text-slate-400">
               Enterprise Field Service Platform • Protected by Servora Auth Guard
             </p>
