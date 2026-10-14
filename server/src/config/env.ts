@@ -17,6 +17,7 @@ export const ENV = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
   GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  SARVAM_API_KEY: process.env.SARVAM_API_KEY || '',
 };
 
 export function validateEnv() {

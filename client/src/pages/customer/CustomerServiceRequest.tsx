@@ -83,6 +83,7 @@ export const CustomerServiceRequest: React.FC = () => {
 
   // Step 4: Complaint & Interactive AI Triage
   const [complaint, setComplaint] = useState<string>('');
+  const [isVoiceTranscribing, setIsVoiceTranscribing] = useState<boolean>(false);
   const [isAnalyzingTriage, setIsAnalyzingTriage] = useState<boolean>(false);
   const [triageAnswers, setTriageAnswers] = useState<Record<string, string>>({});
   const [triageSummary, setTriageSummary] = useState<any>(null);
@@ -917,6 +918,7 @@ export const CustomerServiceRequest: React.FC = () => {
               <VoiceInput
                 onTranscript={(text) => setComplaint(text)}
                 currentValue={complaint}
+                onTranscribingChange={setIsVoiceTranscribing}
               />
             </div>
 
@@ -958,10 +960,10 @@ export const CustomerServiceRequest: React.FC = () => {
           <div className="flex justify-end pt-2">
             <button
               onClick={() => setStep(5)}
-              disabled={!complaint.trim()}
+              disabled={!complaint.trim() || isVoiceTranscribing}
               className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
             >
-              <span>Next: Add Photos</span>
+              <span>{isVoiceTranscribing ? 'Transcribing voice complaint...' : 'Next: Add Photos'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

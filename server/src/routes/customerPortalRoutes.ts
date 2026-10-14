@@ -8,6 +8,7 @@ import {
   submitCustomerFeedback,
   cancelCustomerRequest,
 } from '../controllers/customerPortalController';
+import { handleVoiceUpload, transcribeCustomerVoice } from '../controllers/voiceController';
 import { optionalAuthenticate, authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -15,6 +16,9 @@ const router = Router();
 // Public / Location-based Service Discovery
 router.post('/services/available', optionalAuthenticate, getAvailableServices);
 router.get('/services/:serviceType', optionalAuthenticate, getServiceCatalog);
+
+// Customer Voice Complaint Transcription (guest & authenticated)
+router.post('/voice/transcribe', optionalAuthenticate, handleVoiceUpload, transcribeCustomerVoice);
 
 // Customer Service Request creation (allows guest submission with contact or authenticated customer)
 router.post('/requests', optionalAuthenticate, createCustomerRequest);
