@@ -5,6 +5,7 @@ import { useCustomerLocation } from '../contexts/LocationContext';
 import { Sparkles, MapPin, ClipboardList, Home, User as UserIcon, LogIn, LogOut, PlayCircle, Menu, X, ChevronRight } from 'lucide-react';
 import { ServoraLogo } from '../components/common/ServoraLogo';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
+import { InstallButton } from '../components/common/InstallButton';
 
 export const CustomerLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -97,6 +98,7 @@ export const CustomerLayout: React.FC = () => {
               </span>
             </button>
 
+            <InstallButton />
             <PortalSwitcher />
 
             {/* Auth */}
@@ -234,6 +236,11 @@ export const CustomerLayout: React.FC = () => {
                   <span className="text-[10px] text-slate-500">Operations dispatch</span>
                 </button>
               </div>
+            </div>
+
+            {/* Mobile Install App Button */}
+            <div className="pt-1">
+              <InstallButton variant="dropdown" />
             </div>
 
             {/* Navigation links */}

@@ -5,6 +5,7 @@ import { apiClient } from '../api/client';
 import { Wrench, CheckCircle2, UserCheck, LogOut, Bell, X, ExternalLink } from 'lucide-react';
 import { PortalSwitcher } from '../components/common/PortalSwitcher';
 import { ServoraLogo } from '../components/common/ServoraLogo';
+import { InstallButton } from '../components/common/InstallButton';
 
 interface InAppNotification {
   _id: string;
@@ -241,6 +242,7 @@ export const TechnicianLayout: React.FC = () => {
               )}
             </div>
 
+            <InstallButton />
             <PortalSwitcher variant="dark" />
             <button
               onClick={logout}

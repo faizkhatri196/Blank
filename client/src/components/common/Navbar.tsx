@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { LogOut, User as UserIcon, Sun, Wind, Layers, Menu } from 'lucide-react';
 import { PortalSwitcher } from './PortalSwitcher';
 import { ServoraLogo } from './ServoraLogo';
+import { InstallButton } from './InstallButton';
 
 interface NavbarProps {
   onOpenMobileNav?: () => void;
@@ -88,6 +89,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMobileNav }) => {
 
       {/* Right: Portal Switcher, User Profile, Sign Out */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Install App Button */}
+        <div className="hidden sm:block">
+          <InstallButton />
+        </div>
+
         {/* Desktop Portal Switcher */}
         <div className="hidden sm:block">
           <PortalSwitcher />
